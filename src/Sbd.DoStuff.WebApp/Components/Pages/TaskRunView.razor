@@ -20,7 +20,7 @@ else
         @if (_run.Status == TaskRunStatus.Running)
         {
             <button type="button"
-                    class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-500"
+                    class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500"
                     @onclick="Cancel">
                 Cancel
             </button>
@@ -29,12 +29,12 @@ else
 
     @if (_run.ResultCode is not null)
     {
-        <div class="@ResultBadgeClass(_run.ResultCode.Value) mb-4 rounded px-3 py-2 text-sm">
+        <div class="@ResultBadgeClass(_run.ResultCode.Value) mb-4 rounded-md px-3 py-2 text-sm">
             @_run.ResultCode: @_run.ResultMessage
         </div>
     }
 
-    <pre class="max-h-[32rem] overflow-y-auto rounded bg-slate-950 p-4 text-sm leading-6">@foreach (var line in _run.OutputLines)
+    <pre class="max-h-[32rem] overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 shadow-inner">@foreach (var line in _run.OutputLines)
 {<div class="@LineClass(line.Stream)">@line.Text</div>}</pre>
 }
 

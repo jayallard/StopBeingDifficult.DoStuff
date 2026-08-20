@@ -40,7 +40,7 @@ else
                     }
                 </div>
                 <button type="button"
-                        class="rounded bg-slate-900 px-3 py-1 text-sm text-white hover:bg-slate-700"
+                        class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500"
                         @onclick="() => Run(entry.View)">
                     Run
                 </button>
@@ -55,7 +55,7 @@ else
         @foreach (var run in RunStore.GetRecentForTask(TaskId))
         {
             <a href="@($"lists/{ListId}/tasks/{TaskId}/runs/{run.RunId}")"
-               class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 hover:border-slate-400">
+               class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 transition hover:border-indigo-300 hover:bg-indigo-50/40">
                 <span class="text-sm text-slate-500">@run.StartedAt.LocalDateTime</span>
                 <span class="text-sm font-medium">@run.Status</span>
             </a>

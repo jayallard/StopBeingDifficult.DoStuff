@@ -1,5 +1,8 @@
 <Solution>
   <Project Path="tests/Sbd.DoStuff.UnitTests/Sbd.DoStuff.UnitTests.csproj" />
+  <Folder Name="/Files/">
+    <File Path="CLAUDE.md" />
+  </Folder>
   <Project Path="src/Sbd.DoStuff.Domain/Sbd.DoStuff.Domain.csproj" />
   <Project Path="src/Sbd.DoStuff.WebApp/Sbd.DoStuff.WebApp.csproj" />
 </Solution>

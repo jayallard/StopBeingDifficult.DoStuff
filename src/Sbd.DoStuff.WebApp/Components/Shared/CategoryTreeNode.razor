@@ -14,7 +14,7 @@
 else
 {
     <details class="ml-2 border-l border-slate-200 pl-3" open>
-        <summary class="cursor-pointer select-none font-medium text-slate-800">@Node.Segment</summary>
+        <summary class="cursor-pointer select-none font-medium text-slate-800 hover:text-indigo-700">@Node.Segment</summary>
 
         <div class="mt-2 space-y-2 pb-2">
             @foreach (var child in Node.Children.Values.OrderBy(c => c.Segment))
@@ -24,12 +24,12 @@ else
 
             @foreach (var task in Node.Tasks)
             {
-                <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2">
-                    <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:underline">
+                <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 transition hover:border-indigo-300">
+                    <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
                         @task.Definition.Name
                     </a>
                     <button type="button"
-                            class="rounded bg-slate-900 px-3 py-1 text-sm text-white hover:bg-slate-700"
+                            class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500"
                             @onclick="() => Run(task)">
                         Run
                     </button>
