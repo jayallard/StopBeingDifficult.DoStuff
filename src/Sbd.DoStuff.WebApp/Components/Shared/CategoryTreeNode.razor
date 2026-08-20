@@ -1,0 +1,52 @@
+@inject ITaskFactory TaskFactory
+@inject ITaskExecutionEngine Engine
+@inject NavigationManager Navigation
+
+@if (string.IsNullOrEmpty(Node.Segment))
+{
+    <div class="space-y-2">
+        @foreach (var child in Node.Children.Values.OrderBy(c => c.Segment))
+        {
+            <CategoryTreeNode Node="child" ListId="ListId"/>
+        }
+    </div>
+}
+else
+{
+    <details class="ml-2 border-l border-slate-200 pl-3" open>
+        <summary class="cursor-pointer select-none font-medium text-slate-800">@Node.Segment</summary>
+
+        <div class="mt-2 space-y-2 pb-2">
+            @foreach (var child in Node.Children.Values.OrderBy(c => c.Segment))
+            {
+                <CategoryTreeNode Node="child" ListId="ListId"/>
+            }
+
+            @foreach (var task in Node.Tasks)
+            {
+                <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2">
+                    <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:underline">
+                        @task.Definition.Name
+                    </a>
+                    <button type="button"
+                            class="rounded bg-slate-900 px-3 py-1 text-sm text-white hover:bg-slate-700"
+                            @onclick="() => Run(task)">
+                        Run
+                    </button>
+                </div>
+            }
+        </div>
+    </details>
+}
+
+@code {
+    [Parameter, EditorRequired] public CategoryNode Node { get; set; } = null!;
+    [Parameter, EditorRequired] public string ListId { get; set; } = "";
+
+    private void Run(TaskListEntryView view)
+    {
+        var task = TaskFactory.Create(view.Definition, view.ParameterValues);
+        var run = Engine.StartRun(task);
+        Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+    }
+}

@@ -1,0 +1,33 @@
+@page "/lists/{ListId}"
+@inject ITaskListRepository ListRepository
+@inject ITaskLibrary Library
+
+<PageTitle>@(_list?.Name ?? "List not found")</PageTitle>
+
+@if (_list is null)
+{
+    <p class="text-slate-500">List not found.</p>
+}
+else
+{
+    <h1 class="mb-1 text-2xl font-semibold text-slate-900">@_list.Name</h1>
+    @if (!string.IsNullOrWhiteSpace(_list.Description))
+    {
+        <p class="mb-4 text-slate-500">@_list.Description</p>
+    }
+
+    <CategoryTreeNode Node="_root!" ListId="ListId"/>
+}
+
+@code {
+    [Parameter] public string ListId { get; set; } = "";
+
+    private TaskListDefinition? _list;
+    private CategoryNode? _root;
+
+    protected override void OnParametersSet()
+    {
+        _list = ListRepository.Find(ListId);
+        _root = _list is null ? null : CategoryTreeBuilder.Build(_list.Entries, Library);
+    }
+}

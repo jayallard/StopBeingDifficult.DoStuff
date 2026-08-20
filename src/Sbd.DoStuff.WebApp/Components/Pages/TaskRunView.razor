@@ -1,0 +1,85 @@
+@page "/lists/{ListId}/tasks/{TaskId}/runs/{RunId:guid}"
+@implements IDisposable
+@inject ITaskRunStore RunStore
+@inject ITaskExecutionEngine Engine
+
+<PageTitle>@(_run?.TaskName ?? "Run not found")</PageTitle>
+
+@if (_run is null)
+{
+    <p class="text-slate-500">Run not found.</p>
+}
+else
+{
+    <div class="mb-4 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900">@_run.TaskName</h1>
+            <p class="text-sm text-slate-500">Status: <span class="@StatusClass(_run.Status)">@_run.Status</span></p>
+        </div>
+
+        @if (_run.Status == TaskRunStatus.Running)
+        {
+            <button type="button"
+                    class="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-500"
+                    @onclick="Cancel">
+                Cancel
+            </button>
+        }
+    </div>
+
+    @if (_run.ResultCode is not null)
+    {
+        <div class="@ResultBadgeClass(_run.ResultCode.Value) mb-4 rounded px-3 py-2 text-sm">
+            @_run.ResultCode: @_run.ResultMessage
+        </div>
+    }
+
+    <pre class="max-h-[32rem] overflow-y-auto rounded bg-slate-950 p-4 text-sm leading-6">@foreach (var line in _run.OutputLines)
+{<div class="@LineClass(line.Stream)">@line.Text</div>}</pre>
+}
+
+@code {
+    [Parameter] public string ListId { get; set; } = "";
+    [Parameter] public string TaskId { get; set; } = "";
+    [Parameter] public Guid RunId { get; set; }
+
+    private TaskRun? _run;
+
+    protected override void OnInitialized()
+    {
+        _run = RunStore.Get(RunId);
+        Engine.RunChanged += OnRunChanged;
+    }
+
+    private void OnRunChanged(TaskRun run)
+    {
+        if (run.RunId == RunId)
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void Cancel() => Engine.TryCancelRun(RunId);
+
+    private static string StatusClass(TaskRunStatus status) => status switch
+    {
+        TaskRunStatus.Succeeded => "font-medium text-emerald-600",
+        TaskRunStatus.Failed => "font-medium text-red-600",
+        TaskRunStatus.Cancelled => "font-medium text-amber-600",
+        TaskRunStatus.Running => "font-medium text-sky-600",
+        _ => "font-medium text-slate-600",
+    };
+
+    private static string ResultBadgeClass(int resultCode) => resultCode == 0
+        ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+        : "border border-red-200 bg-red-50 text-red-700";
+
+    private static string LineClass(OutputStream stream) => stream switch
+    {
+        OutputStream.StandardError => "text-red-400",
+        OutputStream.System => "italic text-slate-500",
+        _ => "text-slate-100",
+    };
+
+    public void Dispose() => Engine.RunChanged -= OnRunChanged;
+}

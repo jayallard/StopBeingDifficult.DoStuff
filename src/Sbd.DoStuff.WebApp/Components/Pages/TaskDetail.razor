@@ -1,0 +1,106 @@
+@page "/lists/{ListId}/tasks/{TaskId}"
+@inject ITaskListRepository ListRepository
+@inject ITaskLibrary Library
+@inject ITaskRunStore RunStore
+@inject ITaskFactory TaskFactory
+@inject ITaskExecutionEngine Engine
+@inject NavigationManager Navigation
+
+<PageTitle>@(_definition?.Name ?? "Task not found")</PageTitle>
+
+@if (_list is null || _definition is null)
+{
+    <p class="text-slate-500">Task not found.</p>
+}
+else
+{
+    <h1 class="mb-1 text-2xl font-semibold text-slate-900">@_definition.Name</h1>
+    @if (!string.IsNullOrWhiteSpace(_definition.Description))
+    {
+        <p class="mb-4 text-slate-500">@_definition.Description</p>
+    }
+
+    <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-500">
+        In this list
+    </h2>
+    <div class="mb-6 space-y-2">
+        @foreach (var entry in _entries)
+        {
+            <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2">
+                <div>
+                    <div class="text-sm text-slate-500">@string.Join(", ", entry.Entry.Categories)</div>
+                    @if (entry.View.ParameterValues.Count > 0)
+                    {
+                        <div class="mt-1 flex flex-wrap gap-2">
+                            @foreach (var (name, value) in entry.View.ParameterValues)
+                            {
+                                <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700">@name: @value</span>
+                            }
+                        </div>
+                    }
+                </div>
+                <button type="button"
+                        class="rounded bg-slate-900 px-3 py-1 text-sm text-white hover:bg-slate-700"
+                        @onclick="() => Run(entry.View)">
+                    Run
+                </button>
+            </div>
+        }
+    </div>
+
+    <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-500">
+        Recent runs
+    </h2>
+    <div class="space-y-1">
+        @foreach (var run in RunStore.GetRecentForTask(TaskId))
+        {
+            <a href="@($"lists/{ListId}/tasks/{TaskId}/runs/{run.RunId}")"
+               class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 hover:border-slate-400">
+                <span class="text-sm text-slate-500">@run.StartedAt.LocalDateTime</span>
+                <span class="text-sm font-medium">@run.Status</span>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public string ListId { get; set; } = "";
+    [Parameter] public string TaskId { get; set; } = "";
+
+    private TaskListDefinition? _list;
+    private EffectiveTaskDefinition? _definition;
+    private List<(TaskListEntry Entry, TaskListEntryView View)> _entries = [];
+
+    protected override void OnParametersSet()
+    {
+        _list = ListRepository.Find(ListId);
+        _entries = [];
+        _definition = null;
+
+        if (_list is null)
+        {
+            return;
+        }
+
+        var definition = Library.Find(TaskId);
+        if (definition is null)
+        {
+            return;
+        }
+
+        foreach (var entry in _list.Entries.Where(e => e.TaskId == TaskId))
+        {
+            var effective = TaskDefinitionResolver.Resolve(definition, Library);
+            var values = TaskParameterResolver.Resolve(effective, entry.ParameterValues);
+            _definition = effective;
+            _entries.Add((entry, new TaskListEntryView(effective, values)));
+        }
+    }
+
+    private void Run(TaskListEntryView view)
+    {
+        var task = TaskFactory.Create(view.Definition, view.ParameterValues);
+        var run = Engine.StartRun(task);
+        Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+    }
+}

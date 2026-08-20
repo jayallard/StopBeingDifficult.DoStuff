@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="tests/Sbd.DoStuff.UnitTests/Sbd.DoStuff.UnitTests.csproj" />
+  <Project Path="src/Sbd.DoStuff.Domain/Sbd.DoStuff.Domain.csproj" />
+  <Project Path="src/Sbd.DoStuff.WebApp/Sbd.DoStuff.WebApp.csproj" />
+</Solution>
