@@ -7,7 +7,7 @@
     <div class="space-y-2">
         @foreach (var child in Node.Children.Values.OrderBy(c => c.Segment))
         {
-            <CategoryTreeNode Node="child" ListId="ListId"/>
+            <CategoryTreeNode Node="child" ListId="@ListId"/>
         }
     </div>
 }
@@ -19,7 +19,7 @@ else
         <div class="mt-2 space-y-2 pb-2">
             @foreach (var child in Node.Children.Values.OrderBy(c => c.Segment))
             {
-                <CategoryTreeNode Node="child" ListId="ListId"/>
+                <CategoryTreeNode Node="child" ListId="@ListId"/>
             }
 
             @foreach (var task in Node.Tasks)

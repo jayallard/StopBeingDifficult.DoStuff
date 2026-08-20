@@ -1,5 +1,13 @@
 [
   {
+    "id": "slow-dir",
+    "name": "Slow Dir",
+    "description": "Show the contents of a directory unnecessarily slowly",
+    "type": "shell",
+    "command": "powershell -Command \"Get-ChildItem -r | ForEach-Object { $_; Start-Sleep -Milliseconds 250 }\"",
+    "parameters": []
+  },
+  {
     "id": "delete-folder",
     "name": "Delete Folder",
     "description": "Recursively deletes a folder",
