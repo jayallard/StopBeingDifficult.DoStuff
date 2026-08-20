@@ -4,4 +4,5 @@ public sealed record TaskParameterDefinition(
     string Name,
     string? Description,
     bool Required,
-    string? DefaultValue);
+    string? DefaultValue,
+    bool CanOverride = true);

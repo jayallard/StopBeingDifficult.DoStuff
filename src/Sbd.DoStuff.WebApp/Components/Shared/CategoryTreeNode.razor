@@ -25,9 +25,20 @@ else
             @foreach (var task in Node.Tasks)
             {
                 <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 transition hover:border-indigo-300">
-                    <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
-                        @task.Definition.Name
-                    </a>
+                    <div>
+                        <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
+                            @task.Definition.Name
+                        </a>
+                        @if (task.ParameterValues.Count > 0)
+                        {
+                            <div class="mt-1 flex flex-wrap gap-1.5">
+                                @foreach (var (name, value) in task.ParameterValues)
+                                {
+                                    <span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">@name: @value</span>
+                                }
+                            </div>
+                        }
+                    </div>
                     <button type="button"
                             class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500"
                             @onclick="() => Run(task)">
@@ -37,16 +48,4 @@ else
             }
         </div>
     </details>
-}
-
-@code {
-    [Parameter, EditorRequired] public CategoryNode Node { get; set; } = null!;
-    [Parameter, EditorRequired] public string ListId { get; set; } = "";
-
-    private void Run(TaskListEntryView view)
-    {
-        var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-        var run = Engine.StartRun(task);
-        Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
-    }
 }

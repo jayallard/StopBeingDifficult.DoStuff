@@ -31,12 +31,15 @@ else
                     <div class="text-sm text-slate-500">@string.Join(", ", entry.Entry.Categories)</div>
                     @if (entry.View.ParameterValues.Count > 0)
                     {
-                        <div class="mt-1 flex flex-wrap gap-2">
+                        <dl class="mt-2 space-y-1">
                             @foreach (var (name, value) in entry.View.ParameterValues)
                             {
-                                <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700">@name: @value</span>
+                                <div class="flex items-baseline gap-2 text-xs">
+                                    <dt class="font-medium text-slate-500">@name</dt>
+                                    <dd class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@value</dd>
+                                </div>
                             }
-                        </div>
+                        </dl>
                     }
                 </div>
                 <button type="button"
@@ -61,46 +64,4 @@ else
             </a>
         }
     </div>
-}
-
-@code {
-    [Parameter] public string ListId { get; set; } = "";
-    [Parameter] public string TaskId { get; set; } = "";
-
-    private TaskListDefinition? _list;
-    private EffectiveTaskDefinition? _definition;
-    private List<(TaskListEntry Entry, TaskListEntryView View)> _entries = [];
-
-    protected override void OnParametersSet()
-    {
-        _list = ListRepository.Find(ListId);
-        _entries = [];
-        _definition = null;
-
-        if (_list is null)
-        {
-            return;
-        }
-
-        var definition = Library.Find(TaskId);
-        if (definition is null)
-        {
-            return;
-        }
-
-        foreach (var entry in _list.Entries.Where(e => e.TaskId == TaskId))
-        {
-            var effective = TaskDefinitionResolver.Resolve(definition, Library);
-            var values = TaskParameterResolver.Resolve(effective, entry.ParameterValues);
-            _definition = effective;
-            _entries.Add((entry, new TaskListEntryView(effective, values)));
-        }
-    }
-
-    private void Run(TaskListEntryView view)
-    {
-        var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-        var run = Engine.StartRun(task);
-        Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
-    }
 }

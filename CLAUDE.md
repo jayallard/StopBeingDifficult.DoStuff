@@ -27,6 +27,8 @@ The solution is split so that all OS/process/business logic lives in a plain cla
 - **`Sbd.DoStuff.Domain`** — no ASP.NET Core dependency. Contains the task model, cross-platform process execution, and the execution engine. Internal implementation types (e.g. `JsonTaskLibrary`, `TaskExecutionEngine`) are exercised directly in tests via `InternalsVisibleTo("Sbd.DoStuff.UnitTests")` in `AssemblyInfo.cs`.
 - **`Sbd.DoStuff.WebApp`** — a Blazor **Server** app. The server process itself runs on the user's machine and has full OS access (spawns processes directly); the browser is purely the UI. There is no separate desktop shell, background agent, or extra SignalR hub — Blazor Server's own persistent circuit is the live-update transport.
 
+Components use code-behind: markup and directives (`@page`, `@inject`, `@implements`, etc.) stay in the `.razor` file, and `@code` logic goes in a matching `ComponentName.razor.cs` partial class. No inline `@code` blocks in new or edited components.
+
 ### Task model: three-tier terminology
 
 - **Task Library**: the full pool of `TaskDefinition`s, loaded from every `*.json` file in `Data/TaskLibrary/` (one file may contain one or many definitions — it's just deserialized as an array).
