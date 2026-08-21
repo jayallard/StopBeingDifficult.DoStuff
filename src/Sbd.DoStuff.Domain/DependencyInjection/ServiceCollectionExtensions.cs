@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITaskLibrary>(_ => new YamlTaskLibrary(RequireDirectory(configuration, "TaskLibrary:Directory")));
         services.AddSingleton<ITaskListRepository>(_ => new YamlTaskListRepository(RequireDirectory(configuration, "TaskLists:Directory")));
 
-        services.AddSingleton<ITaskRunStore, InMemoryTaskRunStore>();
+        services.AddSingleton<ITaskRunStore>(_ => CreateTaskRunStore(configuration));
         services.AddSingleton<ITaskExecutionEngine, TaskExecutionEngine>();
 
         services.AddHostedService<TaskListValidationHostedService>();
@@ -32,4 +32,20 @@ public static class ServiceCollectionExtensions
 
     private static string RequireDirectory(IConfiguration configuration, string key) =>
         configuration[key] ?? throw new InvalidOperationException($"Configuration value '{key}' is not set.");
+
+    private static ITaskRunStore CreateTaskRunStore(IConfiguration configuration)
+    {
+        var kind = configuration["TaskRunStore"] ?? "memory";
+
+        return kind.ToLowerInvariant() switch
+        {
+            "memory" => new InMemoryTaskRunStore(),
+            "yaml" => new YamlTaskRunStore(ResolveTaskRunStoreFilePath(configuration)),
+            _ => throw new InvalidOperationException($"Unknown TaskRunStore '{kind}'. Expected 'memory' or 'yaml'."),
+        };
+    }
+
+    private static string ResolveTaskRunStoreFilePath(IConfiguration configuration) =>
+        configuration["taskrunstore:yaml:file"] ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".sbd.dostuff", "TaskRuns.yaml");
 }

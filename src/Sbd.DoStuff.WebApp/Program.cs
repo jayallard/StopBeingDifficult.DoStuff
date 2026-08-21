@@ -3,6 +3,10 @@ using Sbd.DoStuff.WebApp.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Without this, Kestrel waits indefinitely for open Blazor Server SignalR
+// circuits to drain on shutdown, so a stale browser tab hangs the process exit.
+builder.Host.ConfigureHostOptions(o => o.ShutdownTimeout = TimeSpan.FromSeconds(5));
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

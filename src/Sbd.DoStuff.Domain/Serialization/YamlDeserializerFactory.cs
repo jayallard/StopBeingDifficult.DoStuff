@@ -14,6 +14,7 @@ internal static class YamlDeserializerFactory
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
             .WithObjectFactory(new RecordFriendlyObjectFactory())
             .WithNodeDeserializer(new ReadOnlyCollectionNodeDeserializer(), s => s.Before<ObjectNodeDeserializer>())
+            .WithTypeConverter(new DateTimeOffsetYamlConverter())
             .Build();
 
     // Our domain records expose IReadOnlyList<T>/IReadOnlyDictionary<K,V> properties (by

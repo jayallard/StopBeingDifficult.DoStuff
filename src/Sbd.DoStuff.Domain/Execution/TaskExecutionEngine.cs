@@ -67,6 +67,7 @@ internal sealed class TaskExecutionEngine(IProcessRunner processRunner, ITaskRun
         {
             run.CompletedAt = DateTimeOffset.UtcNow;
             _cancellationSources.TryRemove(run.RunId, out _);
+            runStore.Add(run);
             RunChanged?.Invoke(run);
         }
     }
