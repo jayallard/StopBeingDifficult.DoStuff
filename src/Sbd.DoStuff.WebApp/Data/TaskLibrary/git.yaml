@@ -2,5 +2,23 @@
   name: Get Git CLI Version
   description: Prints the version of git
   type: powershell
-  command: git --version
+  command: |-
+    $gitVersion = git --version
+    if ($LASTEXITCODE -ne 0) {
+      Write-Output "Git failed with exit code $LASTEXITCODE. Is git not installed?"
+      exit -1
+    }
+  
+  
+    if ($gitVersion -match '\b(\d+\.\d+\.\d+)\b') {
+      $v = [version]$Matches[1];
+      Write-Output "Git Version: $v"
+      if ($v -lt [version]"2.53.0") {
+        Write-Error "Git Version validation failed. $v is less than 3.1.0"
+        exit 1
+      }
+    }
+    
+    Write-Output "Passed: $v >= 2.53.0"
+    exit 0  
   parameters: []

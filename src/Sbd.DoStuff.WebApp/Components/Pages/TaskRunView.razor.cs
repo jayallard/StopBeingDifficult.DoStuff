@@ -11,6 +11,8 @@ public partial class TaskRunView
 
     private TaskRun? _run;
 
+    private string BackHref => $"lists/{ListId}";
+
     protected override void OnInitialized()
     {
         _run = RunStore.Get(RunId);
