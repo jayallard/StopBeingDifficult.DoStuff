@@ -10,11 +10,12 @@ internal sealed class TaskExecutionEngine(IProcessRunner processRunner, ITaskRun
 
     public event Action<TaskRun>? RunChanged;
 
-    public TaskRun StartRun(ITask task)
+    public TaskRun StartRun(ITask task, string listId)
     {
         var run = new TaskRun
         {
             RunId = Guid.NewGuid(),
+            ListId = listId,
             TaskId = task.Id,
             TaskName = task.Name,
             StartedAt = DateTimeOffset.UtcNow,

@@ -10,19 +10,18 @@ internal sealed class InMemoryTaskRunStore : ITaskRunStore
 
     public TaskRun? Get(Guid runId) => _runs.GetValueOrDefault(runId);
 
-    public IReadOnlyList<TaskRun> GetRecentForTask(string taskId, int limit = 20) =>
+    public IReadOnlyList<TaskRun> GetRecentForTask(string listId, string taskId, int limit = 20) =>
         _runs.Values
-            .Where(r => r.TaskId == taskId)
+            .Where(r => r.ListId == listId && r.TaskId == taskId)
             .OrderByDescending(r => r.StartedAt)
             .Take(limit)
             .ToList();
 
     public IReadOnlyList<TaskRun> GetAll() => _runs.Values.OrderByDescending(r => r.StartedAt).ToList();
 
-    public void ClearForTasks(IEnumerable<string> taskIds)
+    public void ClearForList(string listId)
     {
-        var ids = new HashSet<string>(taskIds);
-        foreach (var run in _runs.Values.Where(r => ids.Contains(r.TaskId)))
+        foreach (var run in _runs.Values.Where(r => r.ListId == listId))
         {
             _runs.TryRemove(run.RunId, out _);
         }

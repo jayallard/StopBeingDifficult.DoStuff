@@ -15,7 +15,7 @@ public class TaskExecutionEngineTests
         var gate = new TaskCompletionSource();
         var task = new FakeTask(run: async (_, _) => await gate.Task);
 
-        var run = engine.StartRun(task);
+        var run = engine.StartRun(task, "list-a");
         await WaitUntil(() => run.Status == TaskRunStatus.Running);
         gate.SetResult();
         await WaitUntil(() => run.Status == TaskRunStatus.Succeeded);
@@ -29,7 +29,7 @@ public class TaskExecutionEngineTests
         var engine = CreateEngine();
         var task = new FakeTask(run: (_, _) => throw new InvalidOperationException("boom"));
 
-        var run = engine.StartRun(task);
+        var run = engine.StartRun(task, "list-a");
         await WaitUntil(() => run.Status == TaskRunStatus.Failed);
 
         run.ErrorMessage.ShouldBe("boom");
@@ -46,7 +46,7 @@ public class TaskExecutionEngineTests
             await Task.Delay(Timeout.Infinite, ct);
         });
 
-        var run = engine.StartRun(task);
+        var run = engine.StartRun(task, "list-a");
         await started.Task;
         engine.TryCancelRun(run.RunId).ShouldBeTrue();
         await WaitUntil(() => run.Status == TaskRunStatus.Cancelled);

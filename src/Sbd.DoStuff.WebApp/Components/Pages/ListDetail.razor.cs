@@ -24,7 +24,7 @@ public partial class ListDetail
             return;
         }
 
-        RunStore.ClearForTasks(_list.Entries.Select(e => e.TaskId).Distinct());
+        RunStore.ClearForList(ListId);
         _resetVersion++;
     }
 }

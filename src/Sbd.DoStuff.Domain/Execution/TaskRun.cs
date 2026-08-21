@@ -12,6 +12,7 @@ public sealed class TaskRun
     private readonly ConcurrentQueue<TaskOutputLine> _outputLines = new();
 
     public required Guid RunId { get; init; }
+    public required string ListId { get; init; }
     public required string TaskId { get; init; }
     public required string TaskName { get; init; }
     public TaskRunStatus Status { get; internal set; } = TaskRunStatus.Pending;

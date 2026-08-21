@@ -55,7 +55,7 @@ else
         Recent runs
     </h2>
     <div class="space-y-1">
-        @foreach (var run in RunStore.GetRecentForTask(TaskId))
+        @foreach (var run in RunStore.GetRecentForTask(ListId, TaskId))
         {
             <a href="@($"lists/{ListId}/tasks/{TaskId}/runs/{run.RunId}")"
                class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 transition hover:border-indigo-300 hover:bg-indigo-50/40">

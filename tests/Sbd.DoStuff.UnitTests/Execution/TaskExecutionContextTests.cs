@@ -9,6 +9,7 @@ public class TaskExecutionContextTests
     private static TaskRun NewRun() => new()
     {
         RunId = Guid.NewGuid(),
+        ListId = "list-a",
         TaskId = "task-a",
         TaskName = "Task A",
         StartedAt = DateTimeOffset.UtcNow,

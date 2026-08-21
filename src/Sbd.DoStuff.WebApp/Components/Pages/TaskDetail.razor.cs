@@ -42,7 +42,7 @@ public partial class TaskDetail
     private void Run(TaskListEntryView view)
     {
         var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-        var run = Engine.StartRun(task);
+        var run = Engine.StartRun(task, ListId);
         Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
     }
 }

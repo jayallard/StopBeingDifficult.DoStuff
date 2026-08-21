@@ -15,7 +15,7 @@ public partial class CategoryTreeNode : IDisposable
     {
         foreach (var task in Node.Tasks)
         {
-            var lastRun = RunStore.GetRecentForTask(task.Definition.Id, 1).FirstOrDefault();
+            var lastRun = RunStore.GetRecentForTask(ListId, task.Definition.Id, 1).FirstOrDefault();
             if (lastRun is not null)
             {
                 _lastRuns[task.Definition.Id] = lastRun;
@@ -27,7 +27,7 @@ public partial class CategoryTreeNode : IDisposable
 
     private void OnRunChanged(TaskRun run)
     {
-        if (Node.Tasks.Any(t => t.Definition.Id == run.TaskId))
+        if (run.ListId == ListId && Node.Tasks.Any(t => t.Definition.Id == run.TaskId))
         {
             _lastRuns[run.TaskId] = run;
             InvokeAsync(StateHasChanged);
@@ -37,7 +37,7 @@ public partial class CategoryTreeNode : IDisposable
     private void Run(TaskListEntryView view)
     {
         var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-        var run = Engine.StartRun(task);
+        var run = Engine.StartRun(task, ListId);
         Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
     }
 
