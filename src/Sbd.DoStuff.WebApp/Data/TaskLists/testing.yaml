@@ -1,12 +1,10 @@
 id: testing
 name: Testing
-description: Dev/Tes
+description: Dev/Test
 entries:
-  - taskId: slow-dir
-    categories:
-      - demo
-    parameterValues: {}
   - taskId: get-git-version
     categories:
       - prerequisites   
-
+  - taskId: is-vscode-installed
+    categories:
+      - prerequisites
