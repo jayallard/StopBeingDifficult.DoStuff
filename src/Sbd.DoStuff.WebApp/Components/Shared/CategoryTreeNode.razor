@@ -1,5 +1,6 @@
 @inject ITaskFactory TaskFactory
 @inject ITaskExecutionEngine Engine
+@inject ITaskRunStore RunStore
 @inject NavigationManager Navigation
 
 @if (string.IsNullOrEmpty(Node.Segment))
@@ -24,7 +25,7 @@ else
 
             @foreach (var task in Node.Tasks)
             {
-                <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2 transition hover:border-indigo-300">
+                <div class="@RowClass(task)">
                     <div>
                         <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
                             @task.Definition.Name

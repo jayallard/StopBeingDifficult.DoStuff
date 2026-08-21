@@ -11,7 +11,7 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
 
     public YamlTaskListRepository(string directory)
     {
-        foreach (var file in Directory.EnumerateFiles(directory, "*.yaml"))
+        foreach (var file in Directory.EnumerateFiles(directory, "*.yaml", new EnumerationOptions{RecurseSubdirectories = true}))
         {
             var yaml = File.ReadAllText(file);
             var list = Deserializer.Deserialize<TaskListDefinition>(yaml)

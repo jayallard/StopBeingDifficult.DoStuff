@@ -9,7 +9,7 @@ public class TaskParameterResolverTests
         TaskParameterDefinition parameter,
         IReadOnlyDictionary<string, string>? pinned = null,
         IReadOnlySet<string>? nonOverridable = null) =>
-        new("task", "Task", null, "shell", "echo {X}", null, null, [parameter],
+        new("task", "Task", null, "powershell", "echo {X}", null, null, [parameter],
             pinned ?? new Dictionary<string, string>(), nonOverridable ?? new HashSet<string>());
 
     [Fact]

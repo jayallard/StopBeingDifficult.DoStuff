@@ -1,0 +1,6 @@
+﻿- id: get-git-version
+  name: Get Git CLI Version
+  description: Prints the version of git
+  type: powershell
+  command: git --version
+  parameters: []

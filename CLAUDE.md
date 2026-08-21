@@ -48,7 +48,7 @@ This is the trickiest part of the domain and spans several files:
 
 ### Execution & live output
 
-`ITask.RunAsync(ITaskExecutionContext, CancellationToken)` is the pluggable task contract; `ShellCommandTask` (type `"shell"`) is the only built-in implementation, running a command via `IProcessRunner`. Cross-platform differences are isolated to `WindowsProcessRunner` (`cmd.exe /c`) and `UnixProcessRunner` (`/bin/sh -c`), both sharing process-launch/kill logic in `ProcessRunnerBase`.
+`ITask.RunAsync(ITaskExecutionContext, CancellationToken)` is the pluggable task contract; `ShellCommandTask` (type `"powershell"`) is the only built-in implementation, running a command via `IProcessRunner`. Cross-platform differences are isolated to `WindowsProcessRunner` (`powershell.exe -NoProfile -NonInteractive -EncodedCommand`, Base64/UTF-16LE-encoded to avoid quoting issues with multiline scripts) and `UnixProcessRunner` (`/bin/sh -c`), both sharing process-launch/kill logic in `ProcessRunnerBase`.
 
 `ITaskExecutionContext` has three ways for a task to report back: `Report` (raw stdout/stderr lines, wired up automatically by `ShellCommandTask`), `Log` (task-authored messages), and `SetResult(int resultCode, string message)` (a structured outcome, independent of whether the run is considered Failed by the engine). All three funnel through one internal `Append` in `TaskExecutionContext` that appends to the `TaskRun.OutputLines` timeline and raises `ITaskExecutionEngine.RunChanged`.
 

@@ -9,7 +9,7 @@ namespace Sbd.DoStuff.UnitTests.Validation;
 public class TaskListValidationTests
 {
     private static TaskDefinition ShellTask(string id, params TaskParameterDefinition[] parameters) =>
-        new(id, id, null, null, null, "shell", $"echo {id}", null, null, parameters);
+        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, parameters);
 
     [Fact]
     public async Task ValidLibraryAndLists_DoesNotThrow()

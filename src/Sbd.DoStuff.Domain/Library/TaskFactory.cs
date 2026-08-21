@@ -7,7 +7,7 @@ internal sealed class TaskFactory : ITaskFactory
     public ITask Create(EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> allParameterValues) =>
         effective.Type switch
         {
-            "shell" => CreateShellCommandTask(effective, allParameterValues),
+            "powershell" => CreateShellCommandTask(effective, allParameterValues),
             _ => throw new InvalidOperationException($"Unknown task type '{effective.Type}' for task '{effective.Id}'."),
         };
 

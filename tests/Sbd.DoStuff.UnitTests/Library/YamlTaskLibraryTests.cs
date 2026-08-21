@@ -13,7 +13,7 @@ public class YamlTaskLibraryTests : IDisposable
         WriteFile("a.yaml", """
             - id: task-a
               name: Task A
-              type: shell
+              type: powershell
               command: echo a
             """);
 
@@ -29,11 +29,11 @@ public class YamlTaskLibraryTests : IDisposable
         WriteFile("a.yaml", """
             - id: task-a
               name: Task A
-              type: shell
+              type: powershell
               command: echo a
             - id: task-b
               name: Task B
-              type: shell
+              type: powershell
               command: echo b
             """);
 
@@ -48,13 +48,13 @@ public class YamlTaskLibraryTests : IDisposable
         WriteFile("a.yaml", """
             - id: task-a
               name: Task A
-              type: shell
+              type: powershell
               command: echo a
             """);
         WriteFile("b.yaml", """
             - id: task-a
               name: Task A Again
-              type: shell
+              type: powershell
               command: echo a
             """);
 
@@ -67,7 +67,7 @@ public class YamlTaskLibraryTests : IDisposable
         WriteFile("a.yaml", """
             - id: base
               name: Base
-              type: shell
+              type: powershell
               command: echo base
             """);
         WriteFile("b.yaml", """

@@ -7,7 +7,7 @@ namespace Sbd.DoStuff.UnitTests.Library;
 public class TaskDefinitionResolverTests
 {
     private static TaskDefinition ShellTask(string id, params TaskParameterDefinition[] parameters) =>
-        new(id, id, null, null, null, "shell", $"echo {id}", null, null, parameters);
+        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, parameters);
 
     private static TaskDefinition Derived(string id, string baseTaskId, IReadOnlyDictionary<string, string> pinned) =>
         new(id, id, null, baseTaskId, pinned, null, null, null, null, null);
@@ -27,7 +27,7 @@ public class TaskDefinitionResolverTests
 
         effective.Parameters.ShouldContain(p => p.Name == "FolderName");
         effective.PinnedParameterValues["FolderName"].ShouldBe("C:\\temp");
-        effective.Type.ShouldBe("shell");
+        effective.Type.ShouldBe("powershell");
         effective.Command.ShouldBe("echo delete-folder");
     }
 
@@ -42,13 +42,13 @@ public class TaskDefinitionResolverTests
         var effective = TaskDefinitionResolver.Resolve(leaf, library);
 
         effective.PinnedParameterValues["X"].ShouldBe("leaf-value");
-        effective.Type.ShouldBe("shell");
+        effective.Type.ShouldBe("powershell");
     }
 
     [Fact]
     public void LeafNameAndDescription_WinOverBase()
     {
-        var baseDef = new TaskDefinition("base", "Base Name", "Base Description", null, null, "shell", "echo hi", null, null, []);
+        var baseDef = new TaskDefinition("base", "Base Name", "Base Description", null, null, "powershell", "echo hi", null, null, []);
         var derived = new TaskDefinition(
             "derived", "Derived Name", "Derived Description", "base", new Dictionary<string, string>(),
             null, null, null, null, null);

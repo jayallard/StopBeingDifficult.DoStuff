@@ -15,7 +15,7 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
 
     public YamlTaskLibrary(string directory)
     {
-        foreach (var file in Directory.EnumerateFiles(directory, "*.yaml"))
+        foreach (var file in Directory.EnumerateFiles(directory, "*.yaml", new EnumerationOptions{RecurseSubdirectories = true}))
         {
             var yaml = File.ReadAllText(file);
             var definitions = Deserializer.Deserialize<TaskDefinition[]>(yaml)

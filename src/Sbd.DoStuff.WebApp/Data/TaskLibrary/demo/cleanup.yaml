@@ -1,15 +1,19 @@
 - id: slow-dir
   name: Slow Dir
   description: Show the contents of a directory unnecessarily slowly
-  type: shell
+  type: powershell
   command: |-
-    powershell -Command "Get-ChildItem -r | ForEach-Object { $_; Start-Sleep -Milliseconds 250 }"
+    Get-ChildItem -r | ForEach-Object {
+      Write-Output "File!!!"
+      Write-Error "Error!!!"
+      Start-Sleep -Milliseconds 250
+    }
   parameters: []
 - id: delete-folder
   name: Delete Folder
   description: Recursively deletes a folder
-  type: shell
-  command: 'rmdir /s /q "{FolderName}"'
+  type: powershell
+  command: 'Remove-Item -Recurse -Force "{FolderName}"'
   parameters:
     - name: FolderName
       description: Absolute path to delete
