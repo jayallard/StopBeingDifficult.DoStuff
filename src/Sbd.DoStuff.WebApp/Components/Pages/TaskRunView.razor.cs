@@ -42,6 +42,9 @@ public partial class TaskRunView
         ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
         : "border border-red-200 bg-red-50 text-red-700";
 
+    private IEnumerable<TaskOutputLine> MessageLines =>
+        _run?.OutputLines.Where(l => l.Text.StartsWith(':')) ?? [];
+
     private static string LineClass(OutputStream stream) => stream switch
     {
         OutputStream.StandardError => "text-red-400",

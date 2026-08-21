@@ -4,10 +4,9 @@ description: Dev/Tes
 entries:
   - taskId: slow-dir
     categories:
-      - hidey.ho.good-neighbor
+      - demo
     parameterValues: {}
   - taskId: get-git-version
     categories:
-      - build.frontend
-      - release.pre-flight
-    parameterValues: {}
+      - prerequisites   
+

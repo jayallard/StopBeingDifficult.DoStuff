@@ -19,12 +19,12 @@
   
     if ($gitVersion -match '\b(\d+\.\d+\.\d+)\b') {
       $v = [version]$Matches[1];
-      Write-Output "Git Version: $v"
+      Write-Output ":Git Version: $v"
       if ($v -lt $min) {
         Write-Error "Git Version validation failed. $v is less than $min"
         exit 1
       }
     }
     
-    Write-Output "Passed: $v >= 2.53.0"
+    Write-Output ":Passed: $v >= 2.53.0"
     exit 0  
