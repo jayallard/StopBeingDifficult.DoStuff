@@ -13,7 +13,7 @@
   name: Delete Folder
   description: Recursively deletes a folder
   type: powershell
-  command: 'Remove-Item -Recurse -Force "{FolderName}"'
+  command: 'Remove-Item -Recurse -Force "$FolderName"'
   parameters:
     - name: FolderName
       description: Absolute path to delete

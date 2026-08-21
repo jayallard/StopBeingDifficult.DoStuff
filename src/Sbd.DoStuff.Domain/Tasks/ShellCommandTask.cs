@@ -20,7 +20,9 @@ public sealed class ShellCommandTask(
 
     public async Task RunAsync(ITaskExecutionContext context, CancellationToken cancellationToken)
     {
-        context.Log($"Starting: {Command}");
+        context.Log($"Running Powershell Script:");
+        context.Log(string.Empty);
+        context.Log(Command);
 
         var request = new ProcessRunRequest(Command, WorkingDirectory, EnvironmentVariables);
         var result = await context.ProcessRunner.RunAsync(request, context.Report, cancellationToken);

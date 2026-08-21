@@ -19,7 +19,7 @@ internal sealed class TaskFactory : ITaskFactory
             throw new InvalidOperationException($"Shell task '{effective.Id}' has no Command.");
         }
 
-        var command = ParameterTemplate.Substitute(effective.Command, values);
+        var command = PrependParameterAssignments(effective.Command, values);
         var workingDirectory = effective.WorkingDirectory is null
             ? null
             : ParameterTemplate.Substitute(effective.WorkingDirectory, values);
@@ -29,4 +29,17 @@ internal sealed class TaskFactory : ITaskFactory
         return new ShellCommandTask(
             effective.Id, effective.Name, command, workingDirectory, environmentVariables, effective.Description);
     }
+
+    private static string PrependParameterAssignments(string command, IReadOnlyDictionary<string, string> values)
+    {
+        if (values.Count == 0)
+        {
+            return command;
+        }
+
+        var assignments = values.Select(kvp => $"${kvp.Key} = {ToPowerShellStringLiteral(kvp.Value)}");
+        return $"# --- Parameters ---\n{string.Join('\n', assignments)}\n# --- End Parameters ---\n{command}";
+    }
+
+    private static string ToPowerShellStringLiteral(string value) => $"'{value.Replace("'", "''")}'";
 }
