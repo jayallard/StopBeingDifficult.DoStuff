@@ -24,15 +24,15 @@ Package versions are centrally managed in `Directory.Packages.props` — add new
 
 The solution is split so that all OS/process/business logic lives in a plain class library, independent of the web framework:
 
-- **`Sbd.DoStuff.Domain`** — no ASP.NET Core dependency. Contains the task model, cross-platform process execution, and the execution engine. Internal implementation types (e.g. `JsonTaskLibrary`, `TaskExecutionEngine`) are exercised directly in tests via `InternalsVisibleTo("Sbd.DoStuff.UnitTests")` in `AssemblyInfo.cs`.
+- **`Sbd.DoStuff.Domain`** — no ASP.NET Core dependency. Contains the task model, cross-platform process execution, and the execution engine. Internal implementation types (e.g. `YamlTaskLibrary`, `TaskExecutionEngine`) are exercised directly in tests via `InternalsVisibleTo("Sbd.DoStuff.UnitTests")` in `AssemblyInfo.cs`.
 - **`Sbd.DoStuff.WebApp`** — a Blazor **Server** app. The server process itself runs on the user's machine and has full OS access (spawns processes directly); the browser is purely the UI. There is no separate desktop shell, background agent, or extra SignalR hub — Blazor Server's own persistent circuit is the live-update transport.
 
 Components use code-behind: markup and directives (`@page`, `@inject`, `@implements`, etc.) stay in the `.razor` file, and `@code` logic goes in a matching `ComponentName.razor.cs` partial class. No inline `@code` blocks in new or edited components.
 
 ### Task model: three-tier terminology
 
-- **Task Library**: the full pool of `TaskDefinition`s, loaded from every `*.json` file in `Data/TaskLibrary/` (one file may contain one or many definitions — it's just deserialized as an array).
-- **Task Definition**: one reusable, parameterized template for a unit of work (e.g. "Delete Folder" with a `FolderName` parameter). A definition can *inherit* another via `BaseTaskId`, pinning some of the base's parameter values (e.g. "Delete Temp Folder" = "Delete Folder" with `FolderName` fixed to `C:\temp`). A definition is either a **base** (`BaseTaskId` is null; sets `Type`/`Command`/etc. directly) or **derived** (`BaseTaskId` set; must leave `Type`/`Command`/`WorkingDirectory`/`EnvironmentVariables`/`Parameters` null — `JsonTaskLibrary` enforces this at load time).
+- **Task Library**: the full pool of `TaskDefinition`s, loaded from every `*.yaml` file in `Data/TaskLibrary/` (one file may contain one or many definitions — it's just deserialized as an array).
+- **Task Definition**: one reusable, parameterized template for a unit of work (e.g. "Delete Folder" with a `FolderName` parameter). A definition can *inherit* another via `BaseTaskId`, pinning some of the base's parameter values (e.g. "Delete Temp Folder" = "Delete Folder" with `FolderName` fixed to `C:\temp`). A definition is either a **base** (`BaseTaskId` is null; sets `Type`/`Command`/etc. directly) or **derived** (`BaseTaskId` set; must leave `Type`/`Command`/`WorkingDirectory`/`EnvironmentVariables`/`Parameters` null — `YamlTaskLibrary` enforces this at load time).
 - **Task List**: a curated, categorized collection loaded from `Data/TaskLists/` (one file per list). Each entry references a Task Definition by id, assigns it one or more dot-notation category paths (e.g. `"cleanup.temp"` — split into a tree for the UI, and the same entry can appear under multiple paths), and may supply parameter values.
 
 ### Parameter resolution pipeline

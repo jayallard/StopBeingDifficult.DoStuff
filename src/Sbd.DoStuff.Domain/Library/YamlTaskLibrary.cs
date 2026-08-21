@@ -1,4 +1,5 @@
-using System.Text.Json;
+using Sbd.DoStuff.Domain.Serialization;
+using YamlDotNet.Serialization;
 
 namespace Sbd.DoStuff.Domain.Library;
 
@@ -6,21 +7,18 @@ namespace Sbd.DoStuff.Domain.Library;
 /// Holds raw definitions (data, including unresolved derived ones), not executable ITask
 /// instances — a definition alone may not have its parameters or base chain resolved yet.
 /// </summary>
-internal sealed class JsonTaskLibrary : ITaskLibrary
+internal sealed class YamlTaskLibrary : ITaskLibrary
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly IDeserializer Deserializer = YamlDeserializerFactory.Create();
 
     private readonly Dictionary<string, TaskDefinition> _definitions = new();
 
-    public JsonTaskLibrary(string directory)
+    public YamlTaskLibrary(string directory)
     {
-        foreach (var file in Directory.EnumerateFiles(directory, "*.json"))
+        foreach (var file in Directory.EnumerateFiles(directory, "*.yaml"))
         {
-            var json = File.ReadAllText(file);
-            var definitions = JsonSerializer.Deserialize<TaskDefinition[]>(json, SerializerOptions)
+            var yaml = File.ReadAllText(file);
+            var definitions = Deserializer.Deserialize<TaskDefinition[]>(yaml)
                 ?? throw new InvalidOperationException($"Task library file '{file}' did not deserialize to an array.");
 
             foreach (var definition in definitions)

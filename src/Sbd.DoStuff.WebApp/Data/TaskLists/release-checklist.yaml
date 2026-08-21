@@ -1,0 +1,33 @@
+id: release-checklist
+name: Release Checklist
+description: Tasks to run before cutting a release
+entries:
+  - taskId: slow-dir
+    categories:
+      - hidey.ho.good-neighbor
+    parameterValues: {}
+  - taskId: build-frontend
+    categories:
+      - build.frontend
+      - release.pre-flight
+    parameterValues: {}
+  - taskId: get-git-version
+    categories:
+      - build.frontend
+      - release.pre-flight
+    parameterValues: {}
+  - taskId: delete-folder
+    categories:
+      - cleanup.build-output
+    parameterValues:
+      FolderName: 'C:\repo\frontend\dist'
+  - taskId: delete-folder
+    categories:
+      - cleanup.temp
+    parameterValues:
+      FolderName: 'C:\Temp\build-cache'
+  - taskId: delete-temp-folder
+    categories:
+      - cleanup.other-temp
+    parameterValues:
+      FolderName: 'D:\scratch'

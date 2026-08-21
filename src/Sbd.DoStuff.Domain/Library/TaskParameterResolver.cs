@@ -23,23 +23,27 @@ public static class TaskParameterResolver
                 }
 
                 resolved[parameter.Name] = supplied;
+                continue;
             }
-            else if (effective.PinnedParameterValues.TryGetValue(parameter.Name, out var pinned))
+
+            if (effective.PinnedParameterValues.TryGetValue(parameter.Name, out var pinned))
             {
                 resolved[parameter.Name] = pinned;
+                continue;
             }
-            else if (parameter.DefaultValue is not null)
+
+            if (parameter.DefaultValue is not null)
             {
                 resolved[parameter.Name] = parameter.DefaultValue;
+                continue;
             }
-            else if (parameter.Required)
+
+            if (parameter.Required)
             {
                 throw new MissingRequiredParameterException(effective.Id, parameter.Name);
             }
-            else
-            {
-                resolved[parameter.Name] = string.Empty;
-            }
+
+            resolved[parameter.Name] = string.Empty;
         }
 
         return resolved;

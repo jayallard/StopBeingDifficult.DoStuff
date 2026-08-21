@@ -4,7 +4,7 @@ namespace Sbd.DoStuff.Domain.Library;
 /// Either a "base" definition (BaseTaskId is null; Type/Command carry the actual work) or a
 /// "derived" definition (BaseTaskId is set; ParameterValues pins some of the base's
 /// parameters; Type/Command/WorkingDirectory/EnvironmentVariables/Parameters must all be
-/// null — enforced by JsonTaskLibrary at load time).
+/// null — enforced by YamlTaskLibrary at load time).
 ///
 /// CanOverride lets any level of the BaseTaskId chain — base or derived — forbid a Task List
 /// entry from overriding a parameter's resolved value, by mapping the parameter name to

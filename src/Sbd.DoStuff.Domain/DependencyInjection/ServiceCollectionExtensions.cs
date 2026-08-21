@@ -19,8 +19,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ITaskFactory, Library.TaskFactory>();
 
-        services.AddSingleton<ITaskLibrary>(_ => new JsonTaskLibrary(RequireDirectory(configuration, "TaskLibrary:Directory")));
-        services.AddSingleton<ITaskListRepository>(_ => new JsonTaskListRepository(RequireDirectory(configuration, "TaskLists:Directory")));
+        services.AddSingleton<ITaskLibrary>(_ => new YamlTaskLibrary(RequireDirectory(configuration, "TaskLibrary:Directory")));
+        services.AddSingleton<ITaskListRepository>(_ => new YamlTaskListRepository(RequireDirectory(configuration, "TaskLists:Directory")));
 
         services.AddSingleton<ITaskRunStore, InMemoryTaskRunStore>();
         services.AddSingleton<ITaskExecutionEngine, TaskExecutionEngine>();

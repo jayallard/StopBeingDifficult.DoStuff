@@ -1,22 +1,20 @@
-using System.Text.Json;
+using Sbd.DoStuff.Domain.Serialization;
+using YamlDotNet.Serialization;
 
 namespace Sbd.DoStuff.Domain.Lists;
 
-internal sealed class JsonTaskListRepository : ITaskListRepository
+internal sealed class YamlTaskListRepository : ITaskListRepository
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
+    private static readonly IDeserializer Deserializer = YamlDeserializerFactory.Create();
 
     private readonly Dictionary<string, TaskListDefinition> _lists = new();
 
-    public JsonTaskListRepository(string directory)
+    public YamlTaskListRepository(string directory)
     {
-        foreach (var file in Directory.EnumerateFiles(directory, "*.json"))
+        foreach (var file in Directory.EnumerateFiles(directory, "*.yaml"))
         {
-            var json = File.ReadAllText(file);
-            var list = JsonSerializer.Deserialize<TaskListDefinition>(json, SerializerOptions)
+            var yaml = File.ReadAllText(file);
+            var list = Deserializer.Deserialize<TaskListDefinition>(yaml)
                 ?? throw new InvalidOperationException($"Task list file '{file}' did not deserialize.");
 
             if (!_lists.TryAdd(list.Id, list))
