@@ -1,0 +1,35 @@
+﻿- id: get-winget-version
+  name: Get Winget Version
+  description: Prints the version of winget
+  type: powershell
+  parameters:
+    - name: MinVersion
+      defaultValue: 1.29
+      required: true
+      canOverride: true
+  command: |-
+    $version = winget --version
+    $min = [version]$MinVersion
+
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+      Write-Output "!WinGet is not installed."
+      exit 2
+    }
+    
+    $version = [version]([regex]::Match($string, '\d+(?:\.\d+){1,3}').Value)
+    Write-Output ":WinGet Version: $version"
+    if ($version -lt $min) {
+      Write-Output "!Failed: $version < MinVersion $min"
+      exit 1
+    }
+
+    Write-Output ":Passed: $version >= $min"
+    exit 0  
+- id: install-winget
+  name: Install WinGet
+  description: Install WinGet, if it isn't already installed.
+  type: powershell
+  command: |-
+    Write-Output "!Not implemented yet. You should install it manually in the meantime."
+    exit 1
+    

@@ -4,7 +4,19 @@ description: Dev/Test
 entries:
   - taskId: get-git-version
     categories:
-      - prerequisites   
+      - prerequisites.git
+  - taskId: install-git
+    categories:
+      - prerequisites.git
+
+
+  - taskId: get-winget-version
+    categories:
+      - prerequisites.winget
+  - taskId: install-winget
+    categories:
+      - prerequisites.winget
+
   - taskId: is-vscode-installed
     categories:
-      - prerequisites
+      - prerequisites.vscode

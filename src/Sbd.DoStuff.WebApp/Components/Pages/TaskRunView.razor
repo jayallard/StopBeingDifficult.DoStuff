@@ -11,30 +11,30 @@
 }
 else
 {
-    <div class="mb-4">
-        <a href="@BackHref"
-           class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 transition hover:text-slate-900">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-            </svg>
-            Back
-        </a>
-    </div>
-
-    <div class="mb-4 flex items-center justify-between">
+    <div class="mb-4 flex items-start justify-between">
         <div>
             <h1 class="text-2xl font-semibold text-slate-900">@_run.TaskName</h1>
             <p class="text-sm text-slate-500">Status: <span class="@StatusClass(_run.Status)">@_run.Status</span></p>
         </div>
 
-        @if (_run.Status == TaskRunStatus.Running)
-        {
-            <button type="button"
-                    class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500"
-                    @onclick="Cancel">
-                Cancel
-            </button>
-        }
+        <div class="flex flex-col items-end gap-2">
+            <a href="@BackHref"
+               class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 transition hover:text-slate-900">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+                Back
+            </a>
+
+            @if (_run.Status == TaskRunStatus.Running)
+            {
+                <button type="button"
+                        class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500"
+                        @onclick="Cancel">
+                    Cancel
+                </button>
+            }
+        </div>
     </div>
 
     @if (_run.ResultCode is not null)

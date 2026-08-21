@@ -1,4 +1,17 @@
-﻿- id: get-git-version
+﻿- id: install-git
+  name: Install Git
+  description: Install git, if it isn't already installed.
+  type: powershell
+  command: |-
+    winget install --id Git.Git -e --source winget
+    $error = $LASTEXITCODE
+    if ($error -eq -1978335189) {
+      Write-Output ":Git is already installed and is up to date"
+      exit 0
+    }
+    
+    exit $error
+- id: get-git-version
   name: Get Git CLI Version
   description: Prints the version of git
   type: powershell
@@ -11,20 +24,19 @@
     $gitVersion = git --version
     $min = [version]$MinVersion
 
-    if ($LASTEXITCODE -ne 0) {
-      Write-Output "Git failed with exit code $LASTEXITCODE. Is git not installed?"
-      exit -1
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+      Write-Output "!Git is not installed."
+      exit 2
     }
-  
   
     if ($gitVersion -match '\b(\d+\.\d+\.\d+)\b') {
       $v = [version]$Matches[1];
       Write-Output ":Git Version: $v"
       if ($v -lt $min) {
-        Write-Error "Git Version validation failed. $v is less than $min"
+        Write-Output "!Git Version validation failed. $v < $min"
         exit 1
       }
     }
     
-    Write-Output ":Passed: $v >= 2.53.0"
+    Write-Output ":Passed: $v >= $min"
     exit 0  
