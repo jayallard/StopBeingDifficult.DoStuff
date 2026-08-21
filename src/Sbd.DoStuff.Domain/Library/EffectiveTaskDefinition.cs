@@ -3,7 +3,8 @@ namespace Sbd.DoStuff.Domain.Library;
 /// <summary>
 /// The flattened result of walking a BaseTaskId chain. Parameters is the root's full
 /// declared parameter list — nothing removed for pinned names, since a Task List entry
-/// is allowed to override even an already-pinned value.
+/// is allowed to override even an already-pinned value, unless the parameter's name appears
+/// in NonOverridableParameterNames.
 /// </summary>
 public sealed record EffectiveTaskDefinition(
     string Id,
@@ -14,4 +15,5 @@ public sealed record EffectiveTaskDefinition(
     string? WorkingDirectory,
     IReadOnlyDictionary<string, string>? EnvironmentVariables,
     IReadOnlyList<TaskParameterDefinition> Parameters,
-    IReadOnlyDictionary<string, string> PinnedParameterValues);
+    IReadOnlyDictionary<string, string> PinnedParameterValues,
+    IReadOnlySet<string> NonOverridableParameterNames);

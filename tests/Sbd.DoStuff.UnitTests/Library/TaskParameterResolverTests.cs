@@ -6,8 +6,11 @@ namespace Sbd.DoStuff.UnitTests.Library;
 public class TaskParameterResolverTests
 {
     private static EffectiveTaskDefinition Effective(
-        TaskParameterDefinition parameter, IReadOnlyDictionary<string, string>? pinned = null) =>
-        new("task", "Task", null, "shell", "echo {X}", null, null, [parameter], pinned ?? new Dictionary<string, string>());
+        TaskParameterDefinition parameter,
+        IReadOnlyDictionary<string, string>? pinned = null,
+        IReadOnlySet<string>? nonOverridable = null) =>
+        new("task", "Task", null, "shell", "echo {X}", null, null, [parameter],
+            pinned ?? new Dictionary<string, string>(), nonOverridable ?? new HashSet<string>());
 
     [Fact]
     public void SuppliedValue_WinsOverPinnedAndDefault()
@@ -71,5 +74,26 @@ public class TaskParameterResolverTests
         var resolved = TaskParameterResolver.Resolve(effective, new Dictionary<string, string> { ["X"] = "overridden" });
 
         resolved["X"].ShouldBe("overridden");
+    }
+
+    [Fact]
+    public void SuppliedValue_ForNonOverridableParameter_Throws()
+    {
+        var parameter = new TaskParameterDefinition("X", null, Required: false, DefaultValue: "default");
+        var effective = Effective(parameter, new Dictionary<string, string> { ["X"] = "pinned" }, new HashSet<string> { "X" });
+
+        Should.Throw<ParameterNotOverridableException>(
+            () => TaskParameterResolver.Resolve(effective, new Dictionary<string, string> { ["X"] = "supplied" }));
+    }
+
+    [Fact]
+    public void PinnedValue_ForNonOverridableParameter_ResolvesFine_WhenNotSupplied()
+    {
+        var parameter = new TaskParameterDefinition("X", null, Required: false, DefaultValue: "default");
+        var effective = Effective(parameter, new Dictionary<string, string> { ["X"] = "pinned" }, new HashSet<string> { "X" });
+
+        var resolved = TaskParameterResolver.Resolve(effective, null);
+
+        resolved["X"].ShouldBe("pinned");
     }
 }

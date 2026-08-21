@@ -6,6 +6,7 @@ public static class TaskDefinitionResolver
     {
         var chain = new List<string> { definition.Id };
         var pinned = new Dictionary<string, string>();
+        var nonOverridable = new HashSet<string>();
         var current = definition;
 
         while (current.BaseTaskId is not null)
@@ -19,6 +20,8 @@ public static class TaskDefinitionResolver
                     pinned.TryAdd(key, value);
                 }
             }
+
+            AccumulateNonOverridable(current, nonOverridable);
 
             var baseDefinition = library.Find(current.BaseTaskId);
             if (baseDefinition is null || chain.Contains(baseDefinition.Id))
@@ -36,6 +39,17 @@ public static class TaskDefinitionResolver
             throw new InvalidOperationException($"Task definition '{current.Id}' has no Type.");
         }
 
+        // The root never enters the loop above (it has no BaseTaskId), so its own CanOverride
+        // map — and its parameters' declared CanOverride — are folded in here.
+        AccumulateNonOverridable(current, nonOverridable);
+        foreach (var parameter in current.Parameters ?? Array.Empty<TaskParameterDefinition>())
+        {
+            if (!parameter.CanOverride)
+            {
+                nonOverridable.Add(parameter.Name);
+            }
+        }
+
         return new EffectiveTaskDefinition(
             definition.Id,
             definition.Name,
@@ -45,6 +59,26 @@ public static class TaskDefinitionResolver
             current.WorkingDirectory,
             current.EnvironmentVariables,
             current.Parameters ?? Array.Empty<TaskParameterDefinition>(),
-            pinned);
+            pinned,
+            nonOverridable);
+    }
+
+    // A parameter locked to false anywhere in the chain stays locked: this only ever adds
+    // names, never removes them, so a more-derived level setting CanOverride back to true
+    // cannot undo a false set by a level closer to the root.
+    private static void AccumulateNonOverridable(TaskDefinition definition, HashSet<string> nonOverridable)
+    {
+        if (definition.CanOverride is null)
+        {
+            return;
+        }
+
+        foreach (var (name, canOverride) in definition.CanOverride)
+        {
+            if (!canOverride)
+            {
+                nonOverridable.Add(name);
+            }
+        }
     }
 }

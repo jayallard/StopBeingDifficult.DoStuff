@@ -12,6 +12,10 @@ public class TaskDefinitionResolverTests
     private static TaskDefinition Derived(string id, string baseTaskId, IReadOnlyDictionary<string, string> pinned) =>
         new(id, id, null, baseTaskId, pinned, null, null, null, null, null);
 
+    private static TaskDefinition Derived(
+        string id, string baseTaskId, IReadOnlyDictionary<string, string> pinned, IReadOnlyDictionary<string, bool> canOverride) =>
+        new(id, id, null, baseTaskId, pinned, null, null, null, null, null, canOverride);
+
     [Fact]
     public void SingleLevelInheritance_PinsParameter_ButKeepsItInParametersList()
     {
@@ -73,5 +77,57 @@ public class TaskDefinitionResolverTests
         var library = new FakeTaskLibrary(a, b);
 
         Should.Throw<TaskDefinitionCycleException>(() => TaskDefinitionResolver.Resolve(a, library));
+    }
+
+    [Fact]
+    public void ParameterDefault_CanOverride_IsTrue_WhenUnspecified()
+    {
+        var baseDef = ShellTask("delete-folder", new TaskParameterDefinition("FolderName", null, true, null));
+        var library = new FakeTaskLibrary(baseDef);
+
+        var effective = TaskDefinitionResolver.Resolve(baseDef, library);
+
+        effective.NonOverridableParameterNames.ShouldNotContain("FolderName");
+    }
+
+    [Fact]
+    public void BaseParameter_CanOverrideFalse_MarksParameterNonOverridable()
+    {
+        var baseDef = ShellTask("delete-folder", new TaskParameterDefinition("FolderName", null, true, null, CanOverride: false));
+        var library = new FakeTaskLibrary(baseDef);
+
+        var effective = TaskDefinitionResolver.Resolve(baseDef, library);
+
+        effective.NonOverridableParameterNames.ShouldContain("FolderName");
+    }
+
+    [Fact]
+    public void DerivedDefinition_CanOverrideFalse_MarksParameterNonOverridable()
+    {
+        var baseDef = ShellTask("delete-folder", new TaskParameterDefinition("FolderName", null, true, null));
+        var derived = Derived(
+            "delete-temp-folder", "delete-folder",
+            new Dictionary<string, string> { ["FolderName"] = "C:\\temp" },
+            new Dictionary<string, bool> { ["FolderName"] = false });
+        var library = new FakeTaskLibrary(baseDef, derived);
+
+        var effective = TaskDefinitionResolver.Resolve(derived, library);
+
+        effective.NonOverridableParameterNames.ShouldContain("FolderName");
+    }
+
+    [Fact]
+    public void MoreDerivedLevel_CannotReenable_ParameterLockedFalseByBase()
+    {
+        var baseDef = ShellTask("delete-folder", new TaskParameterDefinition("FolderName", null, true, null, CanOverride: false));
+        var derived = Derived(
+            "delete-temp-folder", "delete-folder",
+            new Dictionary<string, string> { ["FolderName"] = "C:\\temp" },
+            new Dictionary<string, bool> { ["FolderName"] = true });
+        var library = new FakeTaskLibrary(baseDef, derived);
+
+        var effective = TaskDefinitionResolver.Resolve(derived, library);
+
+        effective.NonOverridableParameterNames.ShouldContain("FolderName");
     }
 }
