@@ -1,6 +1,7 @@
 @page "/lists/{ListId}"
 @inject ITaskListRepository ListRepository
 @inject ITaskLibrary Library
+@inject ITaskRunStore RunStore
 
 <PageTitle>@(_list?.Name ?? "List not found")</PageTitle>
 
@@ -10,11 +11,19 @@
 }
 else
 {
+    <nav class="mb-4 flex items-center justify-end border-b border-slate-200 pb-3">
+        <button type="button"
+                class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                @onclick="Reset">
+            Reset
+        </button>
+    </nav>
+
     <h1 class="mb-1 text-2xl font-semibold text-slate-900">@_list.Name</h1>
     @if (!string.IsNullOrWhiteSpace(_list.Description))
     {
         <p class="mb-4 text-slate-500">@_list.Description</p>
     }
 
-    <CategoryTreeNode Node="_root!" ListId="@ListId"/>
+    <CategoryTreeNode @key="_resetVersion" Node="_root!" ListId="@ListId"/>
 }

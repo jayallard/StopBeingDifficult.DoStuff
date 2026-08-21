@@ -1,0 +1,11 @@
+﻿id: testing2
+name: Testing2
+description: Dev/Tes
+entries:
+  - taskId: slow-dir
+    categories:
+      - demo
+    parameterValues: {}
+  - taskId: get-git-version
+    categories:
+      - prerequisites   

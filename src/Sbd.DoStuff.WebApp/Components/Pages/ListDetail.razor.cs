@@ -9,10 +9,22 @@ public partial class ListDetail
 
     private TaskListDefinition? _list;
     private CategoryNode? _root;
+    private int _resetVersion;
 
     protected override void OnParametersSet()
     {
         _list = ListRepository.Find(ListId);
         _root = _list is null ? null : CategoryTreeBuilder.Build(_list.Entries, Library);
+    }
+
+    private void Reset()
+    {
+        if (_list is null)
+        {
+            return;
+        }
+
+        RunStore.ClearForTasks(_list.Entries.Select(e => e.TaskId).Distinct());
+        _resetVersion++;
     }
 }

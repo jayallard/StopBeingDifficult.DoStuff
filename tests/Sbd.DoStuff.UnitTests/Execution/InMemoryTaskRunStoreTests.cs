@@ -57,4 +57,18 @@ public class InMemoryTaskRunStoreTests
 
         store.GetAll().Count.ShouldBe(2);
     }
+
+    [Fact]
+    public void ClearForTasks_RemovesOnlyMatchingTaskIds()
+    {
+        var store = new InMemoryTaskRunStore();
+        var runA = NewRun("task-a");
+        var runB = NewRun("task-b");
+        store.Add(runA);
+        store.Add(runB);
+
+        store.ClearForTasks(["task-a"]);
+
+        store.GetAll().ShouldBe([runB]);
+    }
 }

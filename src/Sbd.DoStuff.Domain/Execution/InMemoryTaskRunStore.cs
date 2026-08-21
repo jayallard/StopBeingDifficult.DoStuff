@@ -18,4 +18,13 @@ internal sealed class InMemoryTaskRunStore : ITaskRunStore
             .ToList();
 
     public IReadOnlyList<TaskRun> GetAll() => _runs.Values.OrderByDescending(r => r.StartedAt).ToList();
+
+    public void ClearForTasks(IEnumerable<string> taskIds)
+    {
+        var ids = new HashSet<string>(taskIds);
+        foreach (var run in _runs.Values.Where(r => ids.Contains(r.TaskId)))
+        {
+            _runs.TryRemove(run.RunId, out _);
+        }
+    }
 }
