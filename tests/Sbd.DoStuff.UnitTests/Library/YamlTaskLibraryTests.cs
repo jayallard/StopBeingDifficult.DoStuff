@@ -171,6 +171,41 @@ public class YamlTaskLibraryTests : IDisposable
     }
 
     [Fact]
+    public void UseWindowsPowerShell_LoadsFromYaml()
+    {
+        WriteFile("a.yaml", """
+            - id: task-a
+              name: Task A
+              type: powershell
+              command: echo a
+              useWindowsPowerShell: true
+            """);
+
+        var library = CreateLibrary([_directory], [_artifactsDirectory]);
+
+        library.Find("task-a")!.UseWindowsPowerShell.ShouldBe(true);
+    }
+
+    [Fact]
+    public void DerivedDefinition_AlsoSettingUseWindowsPowerShell_Throws()
+    {
+        WriteFile("a.yaml", """
+            - id: base
+              name: Base
+              type: powershell
+              command: echo base
+            """);
+        WriteFile("b.yaml", """
+            - id: derived
+              name: Derived
+              baseTaskId: base
+              useWindowsPowerShell: true
+            """);
+
+        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_artifactsDirectory]));
+    }
+
+    [Fact]
     public void MultipleDirectories_LoadsFromAll()
     {
         var secondDirectory = Directory.CreateTempSubdirectory("dostuff-tasklibrary-2-").FullName;

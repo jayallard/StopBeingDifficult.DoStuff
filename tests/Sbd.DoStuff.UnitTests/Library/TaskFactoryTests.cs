@@ -8,9 +8,10 @@ namespace Sbd.DoStuff.UnitTests.Library;
 public class TaskFactoryTests
 {
     private static EffectiveTaskDefinition Effective(
-        string? command, string? scriptPath = null, string? workingDirectory = null, IReadOnlyDictionary<string, string>? environmentVariables = null) =>
+        string? command, string? scriptPath = null, string? workingDirectory = null,
+        IReadOnlyDictionary<string, string>? environmentVariables = null, bool useWindowsPowerShell = false) =>
         new("task", "Task", null, "powershell", command, scriptPath, workingDirectory, environmentVariables, [],
-            new Dictionary<string, string>(), new HashSet<string>());
+            new Dictionary<string, string>(), new HashSet<string>(), useWindowsPowerShell);
 
     [Fact]
     public void PrependsVariableAssignment_ForEachParameter()
@@ -96,6 +97,17 @@ public class TaskFactoryTests
         var effective = Effective(command: null);
 
         Should.Throw<InvalidOperationException>(() => factory.Create(effective, new Dictionary<string, string>()));
+    }
+
+    [Fact]
+    public void UseWindowsPowerShell_PropagatesToCreatedTask()
+    {
+        var factory = new TaskFactory();
+        var effective = Effective("npm run build", useWindowsPowerShell: true);
+
+        var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string>());
+
+        task.UseWindowsPowerShell.ShouldBeTrue();
     }
 
     [Fact]

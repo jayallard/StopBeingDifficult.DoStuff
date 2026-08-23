@@ -70,12 +70,12 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
 
         if (definition.Type is not null || definition.Command is not null || definition.ScriptPath is not null
             || definition.WorkingDirectory is not null || definition.EnvironmentVariables is not null
-            || definition.Parameters is not null)
+            || definition.Parameters is not null || definition.UseWindowsPowerShell is not null)
         {
             throw new InvalidOperationException(
                 $"Task definition '{definition.Id}' (in '{file}') sets BaseTaskId and also sets " +
-                "Type/Command/ScriptPath/WorkingDirectory/EnvironmentVariables/Parameters — a derived definition " +
-                "must inherit all of these from its base, not specify them directly.");
+                "Type/Command/ScriptPath/WorkingDirectory/EnvironmentVariables/Parameters/UseWindowsPowerShell — " +
+                "a derived definition must inherit all of these from its base, not specify them directly.");
         }
     }
 

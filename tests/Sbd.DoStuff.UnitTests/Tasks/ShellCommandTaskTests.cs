@@ -39,6 +39,18 @@ public class ShellCommandTaskTests
     }
 
     [Fact]
+    public async Task UseWindowsPowerShell_IsForwardedToProcessRunRequest()
+    {
+        var runner = new FakeProcessRunner();
+        var task = new ShellCommandTask("id", "Name", "command", null, null, null, useWindowsPowerShell: true);
+        var context = new FakeTaskExecutionContext(runner);
+
+        await task.RunAsync(context, CancellationToken.None);
+
+        runner.LastRequest!.UseWindowsPowerShell.ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task Completion_SetsResult_FromProcessExitCode()
     {
         var runner = new FakeProcessRunner { Result = new ProcessRunResult(0, WasCancelled: false) };

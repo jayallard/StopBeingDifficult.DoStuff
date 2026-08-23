@@ -8,7 +8,8 @@ public sealed class ShellCommandTask(
     string command,
     string? workingDirectory,
     IReadOnlyDictionary<string, string>? environmentVariables,
-    string? description) : ITask
+    string? description,
+    bool useWindowsPowerShell = false) : ITask
 {
     public string Id { get; } = id;
     public string Name { get; } = name;
@@ -17,6 +18,7 @@ public sealed class ShellCommandTask(
     public string? WorkingDirectory { get; } = workingDirectory;
     public IReadOnlyDictionary<string, string> EnvironmentVariables { get; } =
         environmentVariables ?? new Dictionary<string, string>();
+    public bool UseWindowsPowerShell { get; } = useWindowsPowerShell;
 
     public async Task RunAsync(ITaskExecutionContext context, CancellationToken cancellationToken)
     {
@@ -24,7 +26,7 @@ public sealed class ShellCommandTask(
         context.Log(string.Empty);
         context.Log(Command);
 
-        var request = new ProcessRunRequest(Command, WorkingDirectory, EnvironmentVariables);
+        var request = new ProcessRunRequest(Command, WorkingDirectory, EnvironmentVariables, UseWindowsPowerShell);
         var result = await context.ProcessRunner.RunAsync(request, context.Report, cancellationToken);
 
         context.SetResult(

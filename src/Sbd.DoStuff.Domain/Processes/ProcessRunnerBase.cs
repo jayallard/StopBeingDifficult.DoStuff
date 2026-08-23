@@ -5,14 +5,14 @@ namespace Sbd.DoStuff.Domain.Processes;
 
 public abstract class ProcessRunnerBase : IProcessRunner
 {
-    protected abstract (string FileName, string Arguments) BuildShellInvocation(string command);
+    protected abstract (string FileName, string Arguments) BuildShellInvocation(string command, bool useWindowsPowerShell);
 
     public async Task<ProcessRunResult> RunAsync(
         ProcessRunRequest request,
         Action<TaskOutputLine> onOutputLine,
         CancellationToken cancellationToken)
     {
-        var (fileName, arguments) = BuildShellInvocation(request.Command);
+        var (fileName, arguments) = BuildShellInvocation(request.Command, request.UseWindowsPowerShell);
 
         var startInfo = new ProcessStartInfo
         {

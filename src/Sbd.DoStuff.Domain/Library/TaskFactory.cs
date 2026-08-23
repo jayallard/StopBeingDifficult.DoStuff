@@ -28,7 +28,8 @@ internal sealed class TaskFactory : ITaskFactory
             kvp => kvp.Key, kvp => ParameterTemplate.Substitute(kvp.Value, values));
 
         return new ShellCommandTask(
-            effective.Id, effective.Name, command, workingDirectory, environmentVariables, effective.Description);
+            effective.Id, effective.Name, command, workingDirectory, environmentVariables, effective.Description,
+            effective.UseWindowsPowerShell);
     }
 
     private static string PrependParameterAssignments(string command, IReadOnlyDictionary<string, string> values)

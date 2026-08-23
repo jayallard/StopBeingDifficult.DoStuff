@@ -117,6 +117,31 @@ public class TaskDefinitionResolverTests
     }
 
     [Fact]
+    public void UseWindowsPowerShell_DefaultsToFalse_WhenUnspecified()
+    {
+        var baseDef = ShellTask("delete-folder");
+        var library = new FakeTaskLibrary(baseDef);
+
+        var effective = TaskDefinitionResolver.Resolve(baseDef, library);
+
+        effective.UseWindowsPowerShell.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void UseWindowsPowerShell_TakenFromRoot_ThroughInheritanceChain()
+    {
+        var baseDef = new TaskDefinition(
+            "delete-folder", "delete-folder", null, null, null, "powershell", "echo hi", null, null, null, [],
+            UseWindowsPowerShell: true);
+        var derived = Derived("delete-temp-folder", "delete-folder", new Dictionary<string, string>());
+        var library = new FakeTaskLibrary(baseDef, derived);
+
+        var effective = TaskDefinitionResolver.Resolve(derived, library);
+
+        effective.UseWindowsPowerShell.ShouldBeTrue();
+    }
+
+    [Fact]
     public void MoreDerivedLevel_CannotReenable_ParameterLockedFalseByBase()
     {
         var baseDef = ShellTask("delete-folder", new TaskParameterDefinition("FolderName", null, true, null, CanOverride: false));

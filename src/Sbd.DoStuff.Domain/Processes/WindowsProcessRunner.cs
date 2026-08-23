@@ -33,10 +33,24 @@ internal sealed class WindowsProcessRunner : ProcessRunnerBase
         exit 0
         """;
 
-    protected override (string FileName, string Arguments) BuildShellInvocation(string command)
+    private readonly Lazy<bool> _pwshIsOnPath = new(() => IsOnPath("pwsh.exe"));
+
+    protected override (string FileName, string Arguments) BuildShellInvocation(string command, bool useWindowsPowerShell)
     {
         var script = ScriptTemplate.Replace("__COMMAND__", command);
         var encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        return ("powershell.exe", $"-NoProfile -NonInteractive -EncodedCommand {encodedCommand}");
+        var fileName = !useWindowsPowerShell && _pwshIsOnPath.Value ? "pwsh.exe" : "powershell.exe";
+        return (fileName, $"-NoProfile -NonInteractive -EncodedCommand {encodedCommand}");
+    }
+
+    // PowerShell 7 isn't installed on every Windows machine (Windows PowerShell 5.1 is the
+    // built-in default), so the pwsh.exe preference silently falls back to powershell.exe
+    // rather than failing every task on machines that don't have it.
+    private static bool IsOnPath(string fileName)
+    {
+        var pathEnvironmentVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        return pathEnvironmentVariable
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Any(directory => File.Exists(Path.Combine(directory, fileName)));
     }
 }
