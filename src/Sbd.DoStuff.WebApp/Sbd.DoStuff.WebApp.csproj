@@ -21,6 +21,10 @@
         </None>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Data\Artifacts\" />
+    </ItemGroup>
+
     <Target Name="TailwindBuild" BeforeTargets="Build">
         <PropertyGroup>
             <TailwindCli Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(MSBuildThisFileDirectory)..\..\.tools\tailwindcss.exe</TailwindCli>

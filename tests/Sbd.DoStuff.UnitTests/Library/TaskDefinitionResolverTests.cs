@@ -7,14 +7,14 @@ namespace Sbd.DoStuff.UnitTests.Library;
 public class TaskDefinitionResolverTests
 {
     private static TaskDefinition ShellTask(string id, params TaskParameterDefinition[] parameters) =>
-        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, parameters);
+        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, null, parameters);
 
     private static TaskDefinition Derived(string id, string baseTaskId, IReadOnlyDictionary<string, string> pinned) =>
-        new(id, id, null, baseTaskId, pinned, null, null, null, null, null);
+        new(id, id, null, baseTaskId, pinned, null, null, null, null, null, null);
 
     private static TaskDefinition Derived(
         string id, string baseTaskId, IReadOnlyDictionary<string, string> pinned, IReadOnlyDictionary<string, bool> canOverride) =>
-        new(id, id, null, baseTaskId, pinned, null, null, null, null, null, canOverride);
+        new(id, id, null, baseTaskId, pinned, null, null, null, null, null, null, canOverride);
 
     [Fact]
     public void SingleLevelInheritance_PinsParameter_ButKeepsItInParametersList()
@@ -48,10 +48,10 @@ public class TaskDefinitionResolverTests
     [Fact]
     public void LeafNameAndDescription_WinOverBase()
     {
-        var baseDef = new TaskDefinition("base", "Base Name", "Base Description", null, null, "powershell", "echo hi", null, null, []);
+        var baseDef = new TaskDefinition("base", "Base Name", "Base Description", null, null, "powershell", "echo hi", null, null, null, []);
         var derived = new TaskDefinition(
             "derived", "Derived Name", "Derived Description", "base", new Dictionary<string, string>(),
-            null, null, null, null, null);
+            null, null, null, null, null, null);
         var library = new FakeTaskLibrary(baseDef, derived);
 
         var effective = TaskDefinitionResolver.Resolve(derived, library);

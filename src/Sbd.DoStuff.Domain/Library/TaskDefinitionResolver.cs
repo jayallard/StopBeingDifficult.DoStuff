@@ -56,6 +56,7 @@ public static class TaskDefinitionResolver
             definition.Description,
             current.Type,
             current.Command,
+            current.ScriptPath,
             current.WorkingDirectory,
             current.EnvironmentVariables,
             current.Parameters ?? Array.Empty<TaskParameterDefinition>(),

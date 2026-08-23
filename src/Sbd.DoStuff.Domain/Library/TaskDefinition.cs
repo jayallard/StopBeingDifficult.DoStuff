@@ -20,6 +20,7 @@ public sealed record TaskDefinition(
     IReadOnlyDictionary<string, string>? ParameterValues,
     string? Type,
     string? Command,
+    string? ScriptPath,
     string? WorkingDirectory,
     IReadOnlyDictionary<string, string>? EnvironmentVariables,
     IReadOnlyList<TaskParameterDefinition>? Parameters,

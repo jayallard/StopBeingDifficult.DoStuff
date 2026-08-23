@@ -12,6 +12,7 @@ public sealed record EffectiveTaskDefinition(
     string? Description,
     string Type,
     string? Command,
+    string? ScriptPath,
     string? WorkingDirectory,
     IReadOnlyDictionary<string, string>? EnvironmentVariables,
     IReadOnlyList<TaskParameterDefinition> Parameters,

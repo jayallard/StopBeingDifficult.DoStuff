@@ -9,7 +9,7 @@ namespace Sbd.DoStuff.UnitTests.Validation;
 public class TaskListValidationTests
 {
     private static TaskDefinition ShellTask(string id, params TaskParameterDefinition[] parameters) =>
-        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, parameters);
+        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, null, parameters);
 
     [Fact]
     public async Task ValidLibraryAndLists_DoesNotThrow()
@@ -46,8 +46,8 @@ public class TaskListValidationTests
     [Fact]
     public async Task LibraryWithBaseChainCycle_Throws()
     {
-        var a = new TaskDefinition("a", "A", null, "b", new Dictionary<string, string>(), null, null, null, null, null);
-        var b = new TaskDefinition("b", "B", null, "a", new Dictionary<string, string>(), null, null, null, null, null);
+        var a = new TaskDefinition("a", "A", null, "b", new Dictionary<string, string>(), null, null, null, null, null, null);
+        var b = new TaskDefinition("b", "B", null, "a", new Dictionary<string, string>(), null, null, null, null, null, null);
         var library = new FakeTaskLibrary(a, b);
         var service = new TaskListValidationHostedService(new FakeTaskListRepository(), library);
 

@@ -7,8 +7,9 @@ namespace Sbd.DoStuff.UnitTests.Library;
 
 public class TaskFactoryTests
 {
-    private static EffectiveTaskDefinition Effective(string command, string? workingDirectory = null, IReadOnlyDictionary<string, string>? environmentVariables = null) =>
-        new("task", "Task", null, "powershell", command, workingDirectory, environmentVariables, [],
+    private static EffectiveTaskDefinition Effective(
+        string? command, string? scriptPath = null, string? workingDirectory = null, IReadOnlyDictionary<string, string>? environmentVariables = null) =>
+        new("task", "Task", null, "powershell", command, scriptPath, workingDirectory, environmentVariables, [],
             new Dictionary<string, string>(), new HashSet<string>());
 
     [Fact]
@@ -53,6 +54,48 @@ public class TaskFactoryTests
         var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string>());
 
         task.Command.ShouldBe("npm run build");
+    }
+
+    [Fact]
+    public void ScriptPath_BuildsCallOperatorInvocation_WithNamedArguments()
+    {
+        var factory = new TaskFactory();
+        var effective = Effective(command: null, scriptPath: @"C:\scripts\cleanup.ps1");
+
+        var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string> { ["FolderName"] = @"C:\temp" });
+
+        task.Command.ShouldBe(@"& 'C:\scripts\cleanup.ps1' -FolderName 'C:\temp'");
+    }
+
+    [Fact]
+    public void ScriptPath_EscapesSingleQuotes_InArgumentValues()
+    {
+        var factory = new TaskFactory();
+        var effective = Effective(command: null, scriptPath: @"C:\scripts\greet.ps1");
+
+        var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string> { ["Message"] = "it's a test" });
+
+        task.Command.ShouldBe(@"& 'C:\scripts\greet.ps1' -Message 'it''s a test'");
+    }
+
+    [Fact]
+    public void ScriptPath_NoParameters_HasNoTrailingArguments()
+    {
+        var factory = new TaskFactory();
+        var effective = Effective(command: null, scriptPath: @"C:\scripts\cleanup.ps1");
+
+        var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string>());
+
+        task.Command.ShouldBe(@"& 'C:\scripts\cleanup.ps1'");
+    }
+
+    [Fact]
+    public void NeitherCommandNorScriptPath_Throws()
+    {
+        var factory = new TaskFactory();
+        var effective = Effective(command: null);
+
+        Should.Throw<InvalidOperationException>(() => factory.Create(effective, new Dictionary<string, string>()));
     }
 
     [Fact]

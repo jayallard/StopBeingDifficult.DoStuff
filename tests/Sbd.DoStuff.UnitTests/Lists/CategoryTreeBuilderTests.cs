@@ -8,7 +8,7 @@ namespace Sbd.DoStuff.UnitTests.Lists;
 public class CategoryTreeBuilderTests
 {
     private static TaskDefinition ShellTask(string id, params TaskParameterDefinition[] parameters) =>
-        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, parameters);
+        new(id, id, null, null, null, "powershell", $"echo {id}", null, null, null, parameters);
 
     [Fact]
     public void NestedPath_CreatesRightNodeChain()
@@ -57,7 +57,7 @@ public class CategoryTreeBuilderTests
         var baseDef = ShellTask("delete-folder", new TaskParameterDefinition("FolderName", null, true, null));
         var derived = new TaskDefinition(
             "delete-temp-folder", "Delete Temp Folder", null, "delete-folder",
-            new Dictionary<string, string> { ["FolderName"] = "C:\\temp" }, null, null, null, null, null);
+            new Dictionary<string, string> { ["FolderName"] = "C:\\temp" }, null, null, null, null, null, null);
         var library = new FakeTaskLibrary(baseDef, derived);
         var entries = new[] { new TaskListEntry("delete-temp-folder", ["cleanup"], new Dictionary<string, string>()) };
 
@@ -72,7 +72,7 @@ public class CategoryTreeBuilderTests
         var baseDef = ShellTask("delete-folder", new TaskParameterDefinition("FolderName", null, true, null));
         var derived = new TaskDefinition(
             "delete-temp-folder", "Delete Temp Folder", null, "delete-folder",
-            new Dictionary<string, string> { ["FolderName"] = "C:\\temp" }, null, null, null, null, null);
+            new Dictionary<string, string> { ["FolderName"] = "C:\\temp" }, null, null, null, null, null, null);
         var library = new FakeTaskLibrary(baseDef, derived);
         var entries = new[]
         {

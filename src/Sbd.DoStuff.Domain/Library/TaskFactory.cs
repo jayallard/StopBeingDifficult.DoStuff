@@ -14,12 +14,13 @@ internal sealed class TaskFactory : ITaskFactory
     private static ShellCommandTask CreateShellCommandTask(
         EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> values)
     {
-        if (effective.Command is null)
+        var command = (effective.Command, effective.ScriptPath) switch
         {
-            throw new InvalidOperationException($"Shell task '{effective.Id}' has no Command.");
-        }
-
-        var command = PrependParameterAssignments(effective.Command, values);
+            (not null, _) => PrependParameterAssignments(effective.Command, values),
+            (null, not null) => BuildScriptFileInvocation(effective.ScriptPath, values),
+            (null, null) => throw new InvalidOperationException(
+                $"Shell task '{effective.Id}' has no Command or ScriptPath."),
+        };
         var workingDirectory = effective.WorkingDirectory is null
             ? null
             : ParameterTemplate.Substitute(effective.WorkingDirectory, values);
@@ -39,6 +40,16 @@ internal sealed class TaskFactory : ITaskFactory
 
         var assignments = values.Select(kvp => $"${kvp.Key} = {ToPowerShellStringLiteral(kvp.Value)}");
         return $"# --- Parameters ---\n{string.Join('\n', assignments)}\n# --- End Parameters ---\n{command}";
+    }
+
+    // Invoked with the call operator, not dot-sourced: the script gets its own scope and must
+    // declare a matching `param(...)` block to receive these, since dot-sourcing would run the
+    // script's own param block after these lines and clobber any values set beforehand.
+    private static string BuildScriptFileInvocation(string scriptPath, IReadOnlyDictionary<string, string> values)
+    {
+        var arguments = values.Select(kvp => $"-{kvp.Key} {ToPowerShellStringLiteral(kvp.Value)}");
+        var argumentList = values.Count == 0 ? string.Empty : " " + string.Join(' ', arguments);
+        return $"& {ToPowerShellStringLiteral(scriptPath)}{argumentList}";
     }
 
     private static string ToPowerShellStringLiteral(string value) => $"'{value.Replace("'", "''")}'";

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Sbd.DoStuff.Domain.Serialization;
 using YamlDotNet.Serialization;
 
@@ -13,22 +14,37 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
 
     private readonly Dictionary<string, TaskDefinition> _definitions = new();
 
-    public YamlTaskLibrary(string directory)
+    public YamlTaskLibrary(IEnumerable<string> directories, IEnumerable<string> artifactsDirectories, ILogger<YamlTaskLibrary> logger)
     {
-        foreach (var file in Directory.EnumerateFiles(directory, "*.yaml", new EnumerationOptions{RecurseSubdirectories = true}))
+        var artifactsDirectoryList = artifactsDirectories.ToList();
+
+        foreach (var directory in directories)
         {
-            var yaml = File.ReadAllText(file);
-            var definitions = Deserializer.Deserialize<TaskDefinition[]>(yaml)
-                ?? throw new InvalidOperationException($"Task library file '{file}' did not deserialize to an array.");
-
-            foreach (var definition in definitions)
+            if (!Directory.Exists(directory))
             {
-                Validate(definition, file);
+                logger.LogWarning("Task library directory '{Directory}' does not exist; skipping.", directory);
+                continue;
+            }
 
-                if (!_definitions.TryAdd(definition.Id, definition))
+            foreach (var file in Directory.EnumerateFiles(directory, "*.yaml", new EnumerationOptions{RecurseSubdirectories = true}))
+            {
+                var yaml = File.ReadAllText(file);
+                var definitions = Deserializer.Deserialize<TaskDefinition[]>(yaml)
+                    ?? throw new InvalidOperationException($"Task library file '{file}' did not deserialize to an array.");
+
+                foreach (var definition in definitions)
                 {
-                    throw new InvalidOperationException(
-                        $"Duplicate task definition id '{definition.Id}' (found in '{file}').");
+                    Validate(definition, file);
+
+                    var resolved = definition.ScriptPath is null
+                        ? definition
+                        : definition with { ScriptPath = ResolveScriptPath(definition, artifactsDirectoryList, file) };
+
+                    if (!_definitions.TryAdd(resolved.Id, resolved))
+                    {
+                        throw new InvalidOperationException(
+                            $"Duplicate task definition id '{resolved.Id}' (found in '{file}').");
+                    }
                 }
             }
         }
@@ -42,16 +58,54 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
     {
         if (definition.BaseTaskId is null)
         {
+            if (definition.Command is not null && definition.ScriptPath is not null)
+            {
+                throw new InvalidOperationException(
+                    $"Task definition '{definition.Id}' (in '{file}') sets both Command and ScriptPath — " +
+                    "a task's script must come from exactly one of them.");
+            }
+
             return;
         }
 
-        if (definition.Type is not null || definition.Command is not null || definition.WorkingDirectory is not null
-            || definition.EnvironmentVariables is not null || definition.Parameters is not null)
+        if (definition.Type is not null || definition.Command is not null || definition.ScriptPath is not null
+            || definition.WorkingDirectory is not null || definition.EnvironmentVariables is not null
+            || definition.Parameters is not null)
         {
             throw new InvalidOperationException(
                 $"Task definition '{definition.Id}' (in '{file}') sets BaseTaskId and also sets " +
-                "Type/Command/WorkingDirectory/EnvironmentVariables/Parameters — a derived definition must " +
-                "inherit all of these from its base, not specify them directly.");
+                "Type/Command/ScriptPath/WorkingDirectory/EnvironmentVariables/Parameters — a derived definition " +
+                "must inherit all of these from its base, not specify them directly.");
         }
+    }
+
+    private static string ResolveScriptPath(TaskDefinition definition, IReadOnlyList<string> artifactsDirectories, string file)
+    {
+        if (Path.IsPathRooted(definition.ScriptPath))
+        {
+            var resolved = definition.ScriptPath!;
+            if (!File.Exists(resolved))
+            {
+                throw new InvalidOperationException(
+                    $"Task definition '{definition.Id}' (in '{file}') has ScriptPath '{definition.ScriptPath}', " +
+                    $"which does not resolve to an existing file ('{resolved}').");
+            }
+
+            return resolved;
+        }
+
+        foreach (var artifactsDirectory in artifactsDirectories)
+        {
+            var candidate = Path.GetFullPath(Path.Combine(artifactsDirectory, definition.ScriptPath!));
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"Task definition '{definition.Id}' (in '{file}') has ScriptPath '{definition.ScriptPath}', " +
+            $"which does not resolve to an existing file in any artifacts directory " +
+            $"({string.Join(", ", artifactsDirectories)}).");
     }
 }

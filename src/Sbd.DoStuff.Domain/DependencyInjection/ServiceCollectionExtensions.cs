@@ -20,7 +20,10 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<ITaskFactory, Library.TaskFactory>();
 
-        services.AddSingleton<ITaskLibrary>(_ => new YamlTaskLibrary(RequireDirectory(configuration, "TaskLibrary:Directory")));
+        services.AddSingleton<ITaskLibrary>(provider => new YamlTaskLibrary(
+            RequireDirectories(configuration, "TaskLibrary:Directories").Select(ExpandHomeDirectory),
+            RequireDirectories(configuration, "Artifacts:Directories").Select(ExpandHomeDirectory),
+            provider.GetRequiredService<ILogger<YamlTaskLibrary>>()));
         services.AddSingleton<ITaskListRepository>(provider => new YamlTaskListRepository(
             RequireDirectories(configuration, "TaskLists:Directories").Select(ExpandHomeDirectory),
             provider.GetRequiredService<ILogger<YamlTaskListRepository>>()));
@@ -32,9 +35,6 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
-    private static string RequireDirectory(IConfiguration configuration, string key) =>
-        configuration[key] ?? throw new InvalidOperationException($"Configuration value '{key}' is not set.");
 
     private static string[] RequireDirectories(IConfiguration configuration, string key)
     {
