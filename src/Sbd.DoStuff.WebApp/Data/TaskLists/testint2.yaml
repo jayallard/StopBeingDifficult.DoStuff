@@ -44,3 +44,6 @@ entries:
   - taskId: install-iis
     categories:
       - prerequisites.iis
+  - taskId: remove-iis
+    categories:
+      - prerequisites.iis

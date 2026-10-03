@@ -120,6 +120,55 @@ function Install-Iis {
     $global:LASTEXITCODE = 0
 }
 
+function Uninstall-Iis {
+    <#
+    .SYNOPSIS
+    Completely uninstalls IIS along with every IIS feature (module) enabled on the machine.
+    .DESCRIPTION
+    Disables every enabled optional feature named IIS-* (including any added after the initial install,
+    such as ASP.NET, CGI or URL Rewrite-style add-ons shipped as Windows features) plus the Windows
+    Process Activation Service (WAS-*) that IIS depends on. Content under inetpub is left untouched.
+    Requires an elevated session. Sets $LASTEXITCODE to 0 on success or if IIS isn't installed (a pending
+    reboot is reported but still counts as success).
+    #>
+    [CmdletBinding()]
+    param()
+
+    $enabled = @(Get-CimInstance Win32_OptionalFeature -Filter "InstallState = $OptionalFeatureEnabled" |
+        Where-Object { $_.Name -like 'IIS-*' -or $_.Name -like 'WAS-*' } |
+        ForEach-Object { $_.Name } |
+        Sort-Object)
+
+    if ($enabled.Count -eq 0) {
+        Write-Output ":IIS is not installed; nothing to remove"
+        $global:LASTEXITCODE = 0
+        return
+    }
+
+    if (-not (Test-IsElevated)) {
+        Write-Output "!Removing IIS requires running as Administrator. Enabled: $($enabled -join ', ')"
+        $global:LASTEXITCODE = 5
+        return
+    }
+
+    Write-Output ":Disabling: $($enabled -join ', ')"
+    $dismArgs = @('/Online', '/Disable-Feature', '/NoRestart', '/Quiet') +
+        @($enabled | ForEach-Object { "/FeatureName:$_" })
+    dism.exe @dismArgs
+
+    if ($LASTEXITCODE -eq $DismRebootRequired) {
+        Write-Output ":A restart is required to finish removing IIS"
+        $global:LASTEXITCODE = 0
+    }
+    elseif ($LASTEXITCODE -ne 0) {
+        Write-Output "!dism failed with exit code $LASTEXITCODE"
+        return
+    }
+
+    Write-Output ":IIS has been removed ($($enabled.Count) features disabled)"
+    $global:LASTEXITCODE = 0
+}
+
 function Test-IisVersion {
     <#
     .SYNOPSIS
@@ -150,4 +199,4 @@ function Test-IisVersion {
     $global:LASTEXITCODE = 0
 }
 
-Export-ModuleMember -Function Install-Iis, Test-IisVersion
+Export-ModuleMember -Function Install-Iis, Uninstall-Iis, Test-IisVersion

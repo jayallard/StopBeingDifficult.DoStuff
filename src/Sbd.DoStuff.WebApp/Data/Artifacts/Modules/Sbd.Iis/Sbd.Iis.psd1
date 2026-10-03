@@ -6,7 +6,7 @@
     Description          = 'IIS install/update and version checks for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Install-Iis', 'Test-IisVersion')
+    FunctionsToExport    = @('Install-Iis', 'Uninstall-Iis', 'Test-IisVersion')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

@@ -22,3 +22,10 @@
   command: |-
     Import-Module Sbd.Iis
     Install-Iis -Feature $Features
+- id: remove-iis
+  name: Remove IIS
+  description: Completely uninstalls IIS and every IIS feature (including any added since it was installed) and the Windows Process Activation Service. Site content under inetpub is not deleted. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Uninstall-Iis
