@@ -29,9 +29,21 @@ public static class ServiceCollectionExtensions
             RequireDirectories(configuration, "TaskLibrary:Directories").Select(ExpandHomeDirectory),
             RequireDirectories(configuration, "Artifacts:Directories").Select(ExpandHomeDirectory),
             provider.GetRequiredService<ILogger<YamlTaskLibrary>>()));
-        services.AddSingleton<ITaskListRepository>(provider => new YamlTaskListRepository(
-            RequireDirectories(configuration, "TaskLists:Directories").Select(ExpandHomeDirectory),
-            provider.GetRequiredService<ILogger<YamlTaskListRepository>>()));
+        services.AddSingleton<ITaskListRepository>(provider =>
+        {
+            var directories = RequireDirectories(configuration, "TaskLists:Directories").Select(ExpandHomeDirectory).ToArray();
+            var storage = new TaskListStorageOptions(
+                PublicDirectory: ExpandHomeDirectory(configuration["TaskLists:PublicDirectory"] ?? directories[0]),
+                PrivateDirectory: ExpandHomeDirectory(configuration["TaskLists:PrivateDirectory"] ?? "~/.sbd.dostuff/TaskLists"));
+
+            // Make sure lists saved to the write directories are also loaded on the next start.
+            var loadDirectories = directories
+                .Concat([storage.PublicDirectory, storage.PrivateDirectory])
+                .DistinctBy(d => Path.GetFullPath(d), StringComparer.OrdinalIgnoreCase);
+
+            return new YamlTaskListRepository(
+                loadDirectories, provider.GetRequiredService<ILogger<YamlTaskListRepository>>(), storage);
+        });
 
         services.AddSingleton<ITaskRunStore>(_ => CreateTaskRunStore(configuration));
         services.AddSingleton<ITaskExecutionEngine, TaskExecutionEngine>();

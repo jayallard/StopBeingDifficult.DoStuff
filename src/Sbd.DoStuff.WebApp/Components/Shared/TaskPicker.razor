@@ -1,0 +1,42 @@
+@inject ITaskLibrary Library
+
+<div class="relative">
+    <input type="text"
+           class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+           placeholder="Search all tasks to add…"
+           autocomplete="off"
+           value="@_query"
+           @oninput="OnInput"
+           @onfocus="() => _open = true"/>
+
+    @if (_open)
+    {
+        <div class="absolute z-20 mt-1 max-h-80 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg">
+            @foreach (var task in Matches)
+            {
+                <button type="button"
+                        class="block w-full border-b border-slate-100 px-3 py-2 text-left last:border-0 hover:bg-indigo-50"
+                        @onclick="() => Pick(task)">
+                    <span class="text-sm font-medium text-slate-900">@task.Name</span>
+                    <span class="ml-2 text-xs text-slate-400">@task.Id</span>
+                    @if (task.BaseTaskId is not null)
+                    {
+                        <span class="ml-1 text-xs text-slate-400">(from @task.BaseTaskId)</span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(task.Description))
+                    {
+                        <span class="block truncate text-xs text-slate-500">@task.Description</span>
+                    }
+                </button>
+            }
+            @if (!Matches.Any())
+            {
+                <p class="px-3 py-2 text-sm text-slate-500">No matching tasks.</p>
+            }
+            <button type="button" class="block w-full bg-slate-50 px-3 py-1.5 text-right text-xs text-slate-500 hover:text-slate-800"
+                    @onclick="() => _open = false">
+                Close
+            </button>
+        </div>
+    }
+</div>

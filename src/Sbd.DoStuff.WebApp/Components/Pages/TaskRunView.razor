@@ -14,7 +14,7 @@ else
     <div class="mb-4 flex items-start justify-between">
         <div>
             <h1 class="text-2xl font-semibold text-slate-900">@_run.TaskName</h1>
-            <p class="text-sm text-slate-500">Status: <span class="@StatusClass(_run.Status)">@_run.Status</span></p>
+            <p class="text-sm text-slate-500">Status: <span class="@RunOutput.StatusClass(_run.Status)">@_run.Status</span></p>
         </div>
 
         <div class="flex flex-col items-end gap-2">
@@ -37,23 +37,5 @@ else
         </div>
     </div>
 
-    @if (_run.ResultCode is not null)
-    {
-        <div class="@ResultBadgeClass(_run.ResultCode.Value) mb-4 rounded-md px-3 py-2 text-sm">
-            @_run.ResultCode: @_run.ResultMessage
-        </div>
-    }
-
-    @if (MessageLines.Any())
-    {
-        <div class="mb-4 space-y-1 rounded-lg border border-slate-200 bg-white p-3">
-            @foreach (var line in MessageLines)
-            {
-                <div class="text-sm @(line.Text.StartsWith('!') ? "text-red-600 font-medium" : "text-slate-700")">@line.Text[1..]</div>
-            }
-        </div>
-    }
-
-    <pre class="max-h-[32rem] overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 shadow-inner">@foreach (var line in _run.OutputLines)
-{<div class="@LineClass(line)">@LineText(line)</div>}</pre>
+    <RunOutput Run="_run"/>
 }

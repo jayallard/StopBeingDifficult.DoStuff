@@ -1,0 +1,23 @@
+@if (_creating)
+{
+    <div class="flex items-center gap-1">
+        <input type="text"
+               class="@InputClass"
+               placeholder="e.g. cleanup.temp"
+               value="@Value"
+               @oninput="OnTyped"/>
+        <button type="button" class="text-xs text-slate-400 hover:text-slate-700" title="Choose an existing category"
+                @onclick="BackToList">list</button>
+    </div>
+}
+else
+{
+    <select class="@InputClass" @onchange="OnSelected">
+        <option value="" selected="@string.IsNullOrEmpty(Value)">@Placeholder</option>
+        @foreach (var category in Categories)
+        {
+            <option value="@category" selected="@string.Equals(category, Value, StringComparison.OrdinalIgnoreCase)">@category</option>
+        }
+        <option value="@NewMarker">＋ New category…</option>
+    </select>
+}

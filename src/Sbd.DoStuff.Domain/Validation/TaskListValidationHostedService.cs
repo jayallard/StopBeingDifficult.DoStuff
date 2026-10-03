@@ -30,21 +30,10 @@ internal sealed class TaskListValidationHostedService(ITaskListRepository lists,
         {
             foreach (var entry in list.Entries)
             {
-                var definition = library.Find(entry.TaskId);
-                if (definition is null)
+                var error = TaskListValidator.ValidateEntry(entry, library);
+                if (error is not null)
                 {
-                    errors.Add($"Task list '{list.Id}' references unknown task id '{entry.TaskId}'.");
-                    continue;
-                }
-
-                try
-                {
-                    var effective = TaskDefinitionResolver.Resolve(definition, library);
-                    TaskParameterResolver.Resolve(effective, entry.ParameterValues);
-                }
-                catch (Exception ex)
-                {
-                    errors.Add($"Task list '{list.Id}', task '{entry.TaskId}': {ex.Message}");
+                    errors.Add($"Task list '{list.Id}', task '{entry.TaskId}': {error}");
                 }
             }
         }
