@@ -3,10 +3,5 @@
   description: fails if VsCode is not installed.
   type: powershell
   command: |-
-    if (Get-Command code -ErrorAction SilentlyContinue) {
-      Write-Output ":VS Code is installed."
-      exit 0
-    }
-    
-    Write-Output "!VS Code is NOT installed."
-    exit 1
+    Import-Module Sbd.VsCode
+    Test-VsCodeInstalled

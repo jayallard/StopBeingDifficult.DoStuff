@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "webapp",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "src/Sbd.DoStuff.WebApp"],
+      "port": 5096
+    }
+  ]
+}

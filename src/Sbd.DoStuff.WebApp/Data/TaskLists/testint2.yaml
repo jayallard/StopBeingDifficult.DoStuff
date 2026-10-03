@@ -9,3 +9,38 @@ entries:
   - taskId: get-git-version
     categories:
       - prerequisites   
+  - taskId: build-frontend
+    categories:
+      - demo.build
+  - taskId: delete-folder
+    categories:
+      - demo.cleanup
+    parameterValues:
+      FolderName: 'C:\temp\sbd-dostuff-demo'
+  - taskId: delete-temp-folder
+    categories:
+      - demo.cleanup
+  - taskId: install-git
+    categories:
+      - prerequisites.git
+  - taskId: install-powershell
+    categories:
+      - prerequisites.powershell
+  - taskId: get-powershell-version
+    categories:
+      - prerequisites.powershell
+  - taskId: is-vscode-installed
+    categories:
+      - prerequisites.vscode
+  - taskId: get-winget-version
+    categories:
+      - prerequisites.winget
+  - taskId: install-winget
+    categories:
+      - prerequisites.winget
+  - taskId: get-iis-version
+    categories:
+      - prerequisites.iis
+  - taskId: install-iis
+    categories:
+      - prerequisites.iis

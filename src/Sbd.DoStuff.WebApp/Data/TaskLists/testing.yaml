@@ -20,3 +20,10 @@ entries:
   - taskId: is-vscode-installed
     categories:
       - prerequisites.vscode
+
+  - taskId: get-powershell-version
+    categories:
+      - prerequisites.powershell
+  - taskId: install-powershell
+    categories:
+      - prerequisites.powershell

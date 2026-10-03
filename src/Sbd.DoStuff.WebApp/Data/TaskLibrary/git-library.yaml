@@ -3,14 +3,8 @@
   description: Install git, if it isn't already installed.
   type: powershell
   command: |-
-    winget install --id Git.Git -e --source winget
-    $error = $LASTEXITCODE
-    if ($error -eq -1978335189) {
-      Write-Output ":Git is already installed and is up to date"
-      exit 0
-    }
-    
-    exit $error
+    Import-Module Sbd.Git
+    Install-Git
 - id: get-git-version
   name: Get Git CLI Version
   description: Prints the version of git
@@ -21,22 +15,5 @@
       required: true
       canOverride: true
   command: |-
-    $gitVersion = git --version
-    $min = [version]$MinVersion
-
-    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-      Write-Output "!Git is not installed."
-      exit 2
-    }
-  
-    if ($gitVersion -match '\b(\d+\.\d+\.\d+)\b') {
-      $v = [version]$Matches[1];
-      Write-Output ":Git Version: $v"
-      if ($v -lt $min) {
-        Write-Output "!Git Version validation failed. $v < $min"
-        exit 1
-      }
-    }
-    
-    Write-Output ":Passed: $v >= $min"
-    exit 0  
+    Import-Module Sbd.Git
+    Test-GitVersion -MinVersion $MinVersion

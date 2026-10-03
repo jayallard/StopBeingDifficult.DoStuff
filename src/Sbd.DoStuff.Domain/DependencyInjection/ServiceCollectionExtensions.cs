@@ -14,9 +14,14 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDoStuffDomain(this IServiceCollection services, IConfiguration configuration)
     {
+        // Each artifacts directory's Modules folder goes on PSModulePath, so task commands can
+        // `Import-Module <Name>` the same modules a user can import directly in PowerShell.
+        var moduleDirectories = RequireDirectories(configuration, "Artifacts:Directories")
+            .Select(directory => Path.GetFullPath(Path.Combine(ExpandHomeDirectory(directory), "Modules")))
+            .ToArray();
         services.AddSingleton<IProcessRunner>(_ => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? new WindowsProcessRunner()
-            : new UnixProcessRunner());
+            ? new WindowsProcessRunner(moduleDirectories)
+            : new UnixProcessRunner(moduleDirectories));
 
         services.AddSingleton<ITaskFactory, Library.TaskFactory>();
 

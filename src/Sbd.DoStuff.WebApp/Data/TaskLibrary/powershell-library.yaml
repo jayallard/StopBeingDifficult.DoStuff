@@ -1,0 +1,19 @@
+- id: install-powershell
+  name: Install or Update PowerShell
+  description: Installs PowerShell 7+, or updates it if it's already installed. Runs under PowerShell 7 if present, otherwise Windows PowerShell 5.1.
+  type: powershell
+  command: |-
+    Import-Module Sbd.PowerShell
+    Install-PowerShell
+- id: get-powershell-version
+  name: Get PowerShell Version
+  description: Prints the version of PowerShell 7+ (pwsh)
+  type: powershell
+  parameters:
+    - name: MinVersion
+      defaultValue: 7.5.0
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.PowerShell
+    Test-PowerShellVersion -MinVersion $MinVersion

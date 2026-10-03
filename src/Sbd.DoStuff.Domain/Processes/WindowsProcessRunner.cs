@@ -2,7 +2,8 @@ using System.Text;
 
 namespace Sbd.DoStuff.Domain.Processes;
 
-internal sealed class WindowsProcessRunner : ProcessRunnerBase
+internal sealed class WindowsProcessRunner(IEnumerable<string>? moduleDirectories = null)
+    : ProcessRunnerBase(moduleDirectories)
 {
     // powershell.exe serializes the error/warning/verbose/etc. streams to CLIXML instead of
     // plain text whenever its native stderr handle is redirected (as it always is here) — so
@@ -40,7 +41,9 @@ internal sealed class WindowsProcessRunner : ProcessRunnerBase
         var script = ScriptTemplate.Replace("__COMMAND__", command);
         var encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
         var fileName = !useWindowsPowerShell && _pwshIsOnPath.Value ? "pwsh.exe" : "powershell.exe";
-        return (fileName, $"-NoProfile -NonInteractive -EncodedCommand {encodedCommand}");
+        // Bypass (process scope only) so tasks can load .ps1 scripts and .psm1 modules from the
+        // artifacts directories even under Windows PowerShell's default 'Restricted' policy.
+        return (fileName, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}");
     }
 
     // PowerShell 7 isn't installed on every Windows machine (Windows PowerShell 5.1 is the

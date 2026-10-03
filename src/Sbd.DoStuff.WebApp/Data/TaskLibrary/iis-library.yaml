@@ -1,0 +1,24 @@
+- id: get-iis-version
+  name: Get IIS Version
+  description: Prints the version of IIS, if it's installed
+  type: powershell
+  parameters:
+    - name: MinVersion
+      defaultValue: 10.0
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Iis
+    Test-IisVersion -MinVersion $MinVersion
+- id: install-iis
+  name: Install or Update IIS
+  description: Installs IIS, or enables any missing IIS features if it's already installed. Requires running as Administrator. IIS itself is updated through Windows Update.
+  type: powershell
+  parameters:
+    - name: Features
+      defaultValue: IIS-WebServerRole,IIS-WebServer,IIS-CommonHttpFeatures,IIS-StaticContent,IIS-DefaultDocument,IIS-HttpErrors,IIS-HealthAndDiagnostics,IIS-HttpLogging,IIS-Security,IIS-RequestFiltering,IIS-Performance,IIS-HttpCompressionStatic,IIS-WebServerManagementTools,IIS-ManagementConsole
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Iis
+    Install-Iis -Feature $Features
