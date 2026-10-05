@@ -4,4 +4,5 @@ namespace Sbd.DoStuff.Domain.Lists;
 
 public sealed record TaskListEntryView(
     EffectiveTaskDefinition Definition,
-    IReadOnlyDictionary<string, string> ParameterValues);
+    IReadOnlyDictionary<string, string> ParameterValues,
+    string? Notes = null);

@@ -5,6 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <TargetFramework>net10.0</TargetFramework>
         <LangVersion>14.0</LangVersion>
+        <UserSecretsId>sbd-dostuff-webapp</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>

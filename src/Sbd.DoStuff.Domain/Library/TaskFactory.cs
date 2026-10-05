@@ -1,8 +1,9 @@
+using Microsoft.Extensions.Configuration;
 using Sbd.DoStuff.Domain.Tasks;
 
 namespace Sbd.DoStuff.Domain.Library;
 
-internal sealed class TaskFactory : ITaskFactory
+internal sealed class TaskFactory(IConfiguration? configuration = null) : ITaskFactory
 {
     public ITask Create(EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> allParameterValues) =>
         effective.Type switch
@@ -11,7 +12,7 @@ internal sealed class TaskFactory : ITaskFactory
             _ => throw new InvalidOperationException($"Unknown task type '{effective.Type}' for task '{effective.Id}'."),
         };
 
-    private static ShellCommandTask CreateShellCommandTask(
+    private ShellCommandTask CreateShellCommandTask(
         EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> values)
     {
         var command = (effective.Command, effective.ScriptPath) switch
@@ -25,11 +26,35 @@ internal sealed class TaskFactory : ITaskFactory
             ? null
             : ParameterTemplate.Substitute(effective.WorkingDirectory, values);
         var environmentVariables = effective.EnvironmentVariables?.ToDictionary(
-            kvp => kvp.Key, kvp => ParameterTemplate.Substitute(kvp.Value, values));
+            kvp => kvp.Key, kvp => ParameterTemplate.Substitute(kvp.Value, values))
+            ?? [];
+        AddConfigurationSettings(effective, values, environmentVariables);
 
         return new ShellCommandTask(
             effective.Id, effective.Name, command, workingDirectory, environmentVariables, effective.Description,
             effective.UseWindowsPowerShell);
+    }
+
+    // A configuration-setting parameter holds the setting's *name*; the resolved value (which may be
+    // a secret) goes to the child process only as an environment variable named after the setting
+    // with ':' written as '__' (the .NET convention), never into the command text or run history.
+    private void AddConfigurationSettings(
+        EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> values,
+        Dictionary<string, string> environmentVariables)
+    {
+        foreach (var parameter in effective.Parameters.Where(p => p.ConfigurationSetting))
+        {
+            if (!values.TryGetValue(parameter.Name, out var settingName) || settingName.Length == 0)
+            {
+                continue;
+            }
+
+            var variableName = settingName.Replace(":", "__");
+            environmentVariables[variableName] = configuration?[settingName]
+                ?? throw new InvalidOperationException(
+                    $"Configuration setting '{settingName}' (parameter '{parameter.Name}' of task '{effective.Id}') is not set. " +
+                    $"Set it as an environment variable ('{variableName}'), in appsettings.json, or in user secrets.");
+        }
     }
 
     private static string PrependParameterAssignments(string command, IReadOnlyDictionary<string, string> values)

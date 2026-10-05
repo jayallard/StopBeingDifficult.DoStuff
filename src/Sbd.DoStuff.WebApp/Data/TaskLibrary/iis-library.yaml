@@ -29,3 +29,87 @@
   command: |-
     Import-Module Sbd.Iis
     Uninstall-Iis
+- id: check-url-rewrite
+  name: Check IIS URL Rewrite
+  description: Checks whether IIS URL Rewrite is installed (exit code 0 = installed, 2 = not installed).
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Test-IisUrlRewrite
+- id: install-url-rewrite
+  name: Install IIS URL Rewrite
+  description: Installs IIS URL Rewrite, if it isn't already installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Install-IisUrlRewrite
+- id: uninstall-url-rewrite
+  name: Uninstall IIS URL Rewrite
+  description: Uninstalls IIS URL Rewrite. Succeeds if it isn't installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Uninstall-IisUrlRewrite
+- id: check-request-routing
+  name: Check IIS Request Routing (ARR)
+  description: Checks whether IIS Request Routing (ARR) is installed (exit code 0 = installed, 2 = not installed).
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Test-IisRequestRouting
+- id: install-request-routing
+  name: Install IIS Request Routing (ARR)
+  description: Installs IIS Request Routing (ARR), if it isn't already installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Install-IisRequestRouting
+- id: uninstall-request-routing
+  name: Uninstall IIS Request Routing (ARR)
+  description: Uninstalls IIS Request Routing (ARR). Succeeds if it isn't installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Uninstall-IisRequestRouting
+- id: check-dotnet-6-hosting-bundle
+  name: Check .NET 6 Hosting Bundle
+  description: Checks whether .NET 6 Hosting Bundle is installed (exit code 0 = installed, 2 = not installed).
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Test-AspNetCoreHostingBundle -Version '6.0'
+- id: install-dotnet-6-hosting-bundle
+  name: Install .NET 6 Hosting Bundle
+  description: Installs .NET 6 Hosting Bundle, if it isn't already installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Install-AspNetCoreHostingBundle -Version '6.0'
+- id: uninstall-dotnet-6-hosting-bundle
+  name: Uninstall .NET 6 Hosting Bundle
+  description: Uninstalls .NET 6 Hosting Bundle. Succeeds if it isn't installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Uninstall-AspNetCoreHostingBundle -Version '6.0'
+- id: check-aspnetcore-2-2-hosting-bundle
+  name: Check ASP.NET Core 2.2 Hosting Bundle
+  description: Checks whether ASP.NET Core 2.2 Hosting Bundle is installed (exit code 0 = installed, 2 = not installed).
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Test-AspNetCoreHostingBundle -Version '2.2'
+- id: install-aspnetcore-2-2-hosting-bundle
+  name: Install ASP.NET Core 2.2 Hosting Bundle
+  description: Installs ASP.NET Core 2.2 Hosting Bundle, if it isn't already installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Install-AspNetCoreHostingBundle -Version '2.2'
+- id: uninstall-aspnetcore-2-2-hosting-bundle
+  name: Uninstall ASP.NET Core 2.2 Hosting Bundle
+  description: Uninstalls ASP.NET Core 2.2 Hosting Bundle. Succeeds if it isn't installed. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Uninstall-AspNetCoreHostingBundle -Version '2.2'

@@ -78,6 +78,17 @@ public partial class ListEdit
         await InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>A category dropped on the tree background (not on another category) becomes top-level.</summary>
+    private void OnDropTopLevel()
+    {
+        var dragged = _model.DraggedCategory;
+        _model.DraggedCategory = null;
+        if (dragged is not null)
+        {
+            _model.MoveCategory(dragged, "");
+        }
+    }
+
     // With a category chosen in the drop-down the task is added straight away; otherwise it becomes the
     // selected task, to be filed with a category's + Add button.
     private void AddTask(string taskId)

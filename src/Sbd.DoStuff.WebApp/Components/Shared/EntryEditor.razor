@@ -23,6 +23,10 @@
             {
                 <span class="block text-xs text-red-600">@_loadError</span>
             }
+            @if (!Entry.Expanded && !string.IsNullOrWhiteSpace(Entry.Notes))
+            {
+                <span class="block truncate text-xs italic text-slate-500" title="@Entry.Notes">@Entry.Notes</span>
+            }
         </div>
 
         <button type="button"
@@ -47,6 +51,17 @@
     @if (Entry.Expanded)
     {
         <div class="space-y-3 border-t border-slate-100 px-3 py-3">
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="notes-@Entry.Key">
+                    Notes <span class="text-xs font-normal text-slate-400">optional — why this task is in the list</span>
+                </label>
+                <textarea id="notes-@Entry.Key"
+                          rows="2"
+                          class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+                          @bind="Entry.Notes"
+                          @bind:event="onchange"></textarea>
+            </div>
+
             @if (_effective is not null)
             {
                 @if (_effective.Parameters.Count == 0)
@@ -80,12 +95,23 @@
                         {
                             <p class="text-xs text-slate-500">@parameter.Description</p>
                         }
-                        <input type="text"
-                               class="@InputClass(locked, parameter, value)"
-                               value="@value"
-                               disabled="@locked"
-                               readonly="@locked"
-                               @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)"/>
+                        @if (parameter.Type == TaskParameterType.MultilineText)
+                        {
+                            <textarea rows="6"
+                                      class="@InputClass(locked, parameter, value) resize-y font-mono"
+                                      disabled="@locked"
+                                      readonly="@locked"
+                                      @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)">@value</textarea>
+                        }
+                        else
+                        {
+                            <input type="text"
+                                   class="@InputClass(locked, parameter, value)"
+                                   value="@value"
+                                   disabled="@locked"
+                                   readonly="@locked"
+                                   @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)"/>
+                        }
                     </div>
                 }
             }

@@ -1,5 +1,10 @@
-<div class="ml-2 border-l border-slate-200 pl-3">
-    <div class="flex items-center gap-2 py-1">
+<div class="@("ml-2 border-l pl-3 " + (_dropHover ? "border-indigo-500 bg-indigo-50/40" : "border-slate-200"))"
+     @ondragover="OnDragOver" @ondragover:preventDefault="@CanDrop" @ondragover:stopPropagation
+     @ondragleave="() => _dropHover = false"
+     @ondrop="OnDrop" @ondrop:preventDefault @ondrop:stopPropagation>
+    <div class="flex items-center gap-2 py-1"
+         draggable="@(_renaming ? "false" : "true")"
+         @ondragstart="OnDragStart" @ondragend="OnDragEnd">
         @if (_renaming)
         {
             <input type="text" @ref="_renameInput"
@@ -15,6 +20,7 @@
         }
         else
         {
+            <span class="cursor-grab select-none text-slate-300" title="Drag onto another category to nest it">⠿</span>
             <h3 class="font-medium text-slate-800">@Node.Segment</h3>
             <span class="text-xs text-slate-400">@Node.Path</span>
             <button type="button" class="text-xs text-slate-400 hover:text-slate-700" @onclick="StartRename">rename</button>

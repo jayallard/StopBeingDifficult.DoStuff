@@ -85,7 +85,10 @@ else
         </button>
     </div>
 
-    <div @ref="_treeRoot" class="mb-6 space-y-3">
+    <div @ref="_treeRoot" class="mb-6 space-y-3"
+         @ondragover:preventDefault="@(_model.DraggedCategory is not null)"
+         @ondragover="() => { }"
+         @ondrop="OnDropTopLevel" @ondrop:preventDefault>
         @foreach (var child in tree.Children.Values)
         {
             <EditorCategoryNode @key="child.Path" Node="child" Model="_model" OnChanged="StateHasChanged"

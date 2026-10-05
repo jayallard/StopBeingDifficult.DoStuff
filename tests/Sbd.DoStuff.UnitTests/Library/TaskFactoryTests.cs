@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Sbd.DoStuff.Domain.Library;
 using Sbd.DoStuff.Domain.Tasks;
 using Shouldly;
@@ -33,6 +34,17 @@ public class TaskFactoryTests
         var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string> { ["Message"] = "it's a test" });
 
         task.Command.ShouldBe("# --- Parameters ---\n$Message = 'it''s a test'\n# --- End Parameters ---\nWrite-Output $Message");
+    }
+
+    [Fact]
+    public void MultilineValue_IsKeptInsideSingleQuotedString()
+    {
+        var factory = new TaskFactory();
+        var effective = Effective("Write-Output $Repositories");
+
+        var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string> { ["Repositories"] = "a\nb's" });
+
+        task.Command.ShouldBe("# --- Parameters ---\n$Repositories = 'a\nb''s'\n# --- End Parameters ---\nWrite-Output $Repositories");
     }
 
     [Fact]
@@ -124,5 +136,38 @@ public class TaskFactoryTests
 
         task.WorkingDirectory.ShouldBe(@"C:\repo/frontend");
         task.EnvironmentVariables["TARGET"].ShouldBe("prod");
+    }
+
+    private static EffectiveTaskDefinition WithSettingParameter() =>
+        Effective("Invoke-Thing -Setting $Setting") with
+        {
+            Parameters = [new TaskParameterDefinition("Setting", null, true, null, ConfigurationSetting: true)],
+        };
+
+    [Fact]
+    public void ConfigurationSettingParameter_PassesResolvedValue_AsEnvironmentVariable_NotInCommand()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Main"] = "Server=secret" })
+            .Build();
+        var factory = new TaskFactory(configuration);
+
+        var task = (ShellCommandTask)factory.Create(
+            WithSettingParameter(), new Dictionary<string, string> { ["Setting"] = "ConnectionStrings:Main" });
+
+        task.EnvironmentVariables["ConnectionStrings__Main"].ShouldBe("Server=secret");
+        task.Command.ShouldContain("$Setting = 'ConnectionStrings:Main'");
+        task.Command.ShouldNotContain("secret");
+    }
+
+    [Fact]
+    public void ConfigurationSettingParameter_Throws_WhenSettingIsNotConfigured()
+    {
+        var factory = new TaskFactory(new ConfigurationBuilder().Build());
+
+        var ex = Should.Throw<InvalidOperationException>(() => factory.Create(
+            WithSettingParameter(), new Dictionary<string, string> { ["Setting"] = "ConnectionStrings:Missing" }));
+
+        ex.Message.ShouldContain("ConnectionStrings:Missing");
     }
 }

@@ -6,7 +6,7 @@
     Description          = 'Git install and version checks for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Install-Git', 'Test-GitVersion')
+    FunctionsToExport    = @('Install-Git', 'Test-GitVersion', 'Copy-GitRepository')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

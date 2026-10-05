@@ -1,0 +1,19 @@
+- id: check-fnm-version
+  name: Check fnm Version
+  description: Checks that fnm (Fast Node Manager) is installed and at least MinVersion (exit code 0 = passed, 1 = too old, 2 = not installed).
+  type: powershell
+  parameters:
+    - name: MinVersion
+      defaultValue: 1.38.1
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Fnm
+    Test-FnmVersion -MinVersion $MinVersion
+- id: install-fnm
+  name: Install fnm
+  description: Installs fnm (Fast Node Manager) via winget, if it isn't already installed.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Fnm
+    Install-Fnm

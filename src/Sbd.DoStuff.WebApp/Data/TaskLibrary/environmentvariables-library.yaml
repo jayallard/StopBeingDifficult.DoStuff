@@ -1,0 +1,33 @@
+- id: set-environment-variable
+  name: Set Environment Variable
+  description: Persistently sets a Windows environment variable. Type is User or Machine (Machine requires running as Administrator). Windows only.
+  type: powershell
+  parameters:
+    - name: Name
+      required: true
+      canOverride: true
+    - name: Value
+      required: true
+      canOverride: true
+    - name: Type
+      defaultValue: User
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.EnvironmentVariables
+    Set-EnvironmentVariable -Name $Name -Value $Value -Type $Type
+- id: get-environment-variable
+  name: Get Environment Variable
+  description: Displays the persisted value of a Windows environment variable (exit code 0 = set, 2 = not set). Type is User or Machine. Windows only.
+  type: powershell
+  parameters:
+    - name: Name
+      required: true
+      canOverride: true
+    - name: Type
+      defaultValue: User
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.EnvironmentVariables
+    Get-EnvironmentVariable -Name $Name -Type $Type

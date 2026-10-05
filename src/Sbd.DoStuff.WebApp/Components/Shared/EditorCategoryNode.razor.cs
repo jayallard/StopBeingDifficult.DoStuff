@@ -32,6 +32,33 @@ public partial class EditorCategoryNode
         }
     }
 
+    private bool _dropHover;
+
+    private bool CanDrop => Model.DraggedCategory is { } dragged
+        && !Node.Path.Equals(dragged, StringComparison.OrdinalIgnoreCase)
+        && !Node.Path.StartsWith(dragged + ".", StringComparison.OrdinalIgnoreCase);
+
+    private void OnDragStart(DragEventArgs e)
+    {
+        Model.DraggedCategory = Node.Path;
+        e.DataTransfer.EffectAllowed = "move";
+    }
+
+    private void OnDragEnd() => Model.DraggedCategory = null;
+
+    private void OnDragOver() => _dropHover = CanDrop;
+
+    private async Task OnDrop()
+    {
+        _dropHover = false;
+        var dragged = Model.DraggedCategory;
+        Model.DraggedCategory = null;
+        if (dragged is not null && Model.MoveCategory(dragged, Node.Path))
+        {
+            await OnChanged.InvokeAsync();
+        }
+    }
+
     private void StartRename()
     {
         _renameText = Node.Path;

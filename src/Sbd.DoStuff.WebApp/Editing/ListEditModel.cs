@@ -19,7 +19,7 @@ public sealed class ListEditModel
         var model = new ListEditModel { Id = list.Id, Name = list.Name, Description = list.Description, Scope = scope };
         foreach (var entry in list.Entries)
         {
-            model.Entries.Add(new EntryEditModel(entry.TaskId, entry.Categories, entry.ParameterValues));
+            model.Entries.Add(new EntryEditModel(entry.TaskId, entry.Categories, entry.ParameterValues, entry.Notes));
         }
 
         return model;
@@ -32,7 +32,8 @@ public sealed class ListEditModel
         Entries.Select(e => new TaskListEntry(
             e.TaskId,
             e.Categories.ToList(),
-            e.Values.Count == 0 ? null : new Dictionary<string, string>(e.Values))).ToList());
+            e.Values.Count == 0 ? null : new Dictionary<string, string>(e.Values),
+            string.IsNullOrWhiteSpace(e.Notes) ? null : e.Notes.Trim())).ToList());
 
     public IEnumerable<string> AllCategories =>
         Entries.SelectMany(e => e.Categories).Concat(EmptyCategories).Distinct(StringComparer.OrdinalIgnoreCase).Order();
@@ -105,6 +106,29 @@ public sealed class ListEditModel
         {
             EmptyCategories.Add(category);
         }
+    }
+
+    /// <summary>The category currently being dragged in the editor, if any. UI state only.</summary>
+    public string? DraggedCategory { get; set; }
+
+    /// <summary>
+    /// Moves a category (and everything beneath it) under <paramref name="newParent"/>; an empty parent makes it top-level.
+    /// Returns false when the move is a no-op or would put a category inside itself.
+    /// </summary>
+    public bool MoveCategory(string path, string newParent)
+    {
+        var segment = path[(path.LastIndexOf('.') + 1)..];
+        var newPath = newParent.Length == 0 ? segment : $"{newParent}.{segment}";
+
+        if (newPath.Equals(path, StringComparison.OrdinalIgnoreCase)
+            || newParent.Equals(path, StringComparison.OrdinalIgnoreCase)
+            || newParent.StartsWith(path + ".", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        RenameCategory(path, newPath);
+        return true;
     }
 
     /// <summary>

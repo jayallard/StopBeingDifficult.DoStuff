@@ -17,3 +17,20 @@
   command: |-
     Import-Module Sbd.Git
     Test-GitVersion -MinVersion $MinVersion
+- id: git-clone
+  name: Git Clone
+  description: Clones each listed repository into the work directory. Repositories that already exist are reported and skipped; a failed clone is an error.
+  type: powershell
+  parameters:
+    - name: WorkDirectory
+      description: The directory to clone the repositories into.
+      required: true
+      canOverride: true
+    - name: Repositories
+      type: multilineText
+      description: The repositories to clone, one URL per line.
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Git
+    Copy-GitRepository -WorkDirectory $WorkDirectory -Repositories $Repositories

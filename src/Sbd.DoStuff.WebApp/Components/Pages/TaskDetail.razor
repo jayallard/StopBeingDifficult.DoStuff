@@ -29,6 +29,10 @@ else
             <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2">
                 <div>
                     <div class="text-sm text-slate-500">@string.Join(", ", entry.Entry.Categories)</div>
+                    @if (!string.IsNullOrWhiteSpace(entry.Entry.Notes))
+                    {
+                        <p class="mt-1 whitespace-pre-line text-sm text-slate-600">@entry.Entry.Notes</p>
+                    }
                     @if (entry.View.ParameterValues.Count > 0)
                     {
                         <dl class="mt-2 space-y-1">
@@ -36,7 +40,7 @@ else
                             {
                                 <div class="flex items-baseline gap-2 text-xs">
                                     <dt class="font-medium text-slate-500">@name</dt>
-                                    <dd class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@value</dd>
+                                    <dd class="whitespace-pre-wrap rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@value</dd>
                                 </div>
                             }
                         </dl>

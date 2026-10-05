@@ -30,6 +30,10 @@ else
                         <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
                             @task.Definition.Name
                         </a>
+                        @if (!string.IsNullOrWhiteSpace(task.Notes))
+                        {
+                            <p class="mt-0.5 whitespace-pre-line text-sm text-slate-500">@task.Notes</p>
+                        }
                         @if (task.ParameterValues.Count > 0)
                         {
                             <div class="mt-1 flex flex-wrap gap-1.5">

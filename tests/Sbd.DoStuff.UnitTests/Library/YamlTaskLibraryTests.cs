@@ -26,6 +26,26 @@ public class YamlTaskLibraryTests : IDisposable
     }
 
     [Fact]
+    public void ParameterType_DefaultsToText_AndParsesMultilineText()
+    {
+        WriteFile("a.yaml", """
+            - id: task-a
+              name: Task A
+              type: powershell
+              parameters:
+                - name: One
+                - name: Many
+                  type: multilineText
+              command: echo a
+            """);
+
+        var parameters = CreateLibrary([_directory], [_artifactsDirectory]).Find("task-a")!.Parameters!;
+
+        parameters.Single(p => p.Name == "One").Type.ShouldBe(TaskParameterType.Text);
+        parameters.Single(p => p.Name == "Many").Type.ShouldBe(TaskParameterType.MultilineText);
+    }
+
+    [Fact]
     public void MultiItemArrayFile_LoadsAllDefinitions()
     {
         WriteFile("a.yaml", """

@@ -47,3 +47,74 @@ entries:
   - taskId: remove-iis
     categories:
       - prerequisites.iis
+  - taskId: check-url-rewrite
+    categories:
+      - prerequisites.iis
+  - taskId: install-url-rewrite
+    categories:
+      - prerequisites.iis
+  - taskId: uninstall-url-rewrite
+    categories:
+      - prerequisites.iis
+  - taskId: check-request-routing
+    categories:
+      - prerequisites.iis
+  - taskId: install-request-routing
+    categories:
+      - prerequisites.iis
+  - taskId: uninstall-request-routing
+    categories:
+      - prerequisites.iis
+  - taskId: check-dotnet-6-hosting-bundle
+    categories:
+      - prerequisites.iis
+  - taskId: install-dotnet-6-hosting-bundle
+    categories:
+      - prerequisites.iis
+  - taskId: uninstall-dotnet-6-hosting-bundle
+    categories:
+      - prerequisites.iis
+  - taskId: check-aspnetcore-2-2-hosting-bundle
+    categories:
+      - prerequisites.iis
+  - taskId: install-aspnetcore-2-2-hosting-bundle
+    categories:
+      - prerequisites.iis
+  - taskId: uninstall-aspnetcore-2-2-hosting-bundle
+    categories:
+      - prerequisites.iis
+  - taskId: set-environment-variable
+    categories:
+      - demo.environment
+    parameterValues:
+      Name: SBD_DOSTUFF_DEMO
+      Value: demo
+  - taskId: get-environment-variable
+    categories:
+      - demo.environment
+    parameterValues:
+      Name: SBD_DOSTUFF_DEMO
+  - taskId: check-fnm-version
+    categories:
+      - prerequisites.fnm
+  - taskId: install-fnm
+    categories:
+      - prerequisites.fnm
+  - taskId: git-clone
+    categories:
+      - demo.git
+    parameterValues:
+      WorkDirectory: 'C:\temp\sbd-dostuff-demo\repos'
+      Repositories: 'https://github.com/octocat/Hello-World.git'
+  - taskId: execute-sql-script
+    categories:
+      - demo.sql
+    parameterValues:
+      ConnectionStringSetting: ConnectionStrings:DoStuffDemo
+      Script: |-
+        PRINT 'hello from sql';
+        SELECT 1 AS Id, N'one' AS Name UNION ALL SELECT 2, N'two';
+        GO
+        CREATE TABLE #t (Id int);
+        INSERT #t VALUES (1), (2), (3);
+        UPDATE #t SET Id = Id + 1 WHERE Id > 1;

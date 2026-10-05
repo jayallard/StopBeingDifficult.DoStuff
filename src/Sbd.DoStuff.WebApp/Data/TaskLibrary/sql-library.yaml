@@ -1,0 +1,23 @@
+- id: execute-sql-script
+  name: Execute SQL Script
+  description: Runs a SQL Server script as a single transaction. The script is split into batches on GO lines; each batch is echoed followed by its result grid(s), rows affected and server messages. If any batch fails everything is rolled back, otherwise it is committed.
+  type: powershell
+  parameters:
+    - name: ConnectionStringSetting
+      description: Name of the configuration setting holding the connection string, e.g. ConnectionStrings:Main. Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__Main).
+      required: true
+      canOverride: true
+      configurationSetting: true
+    - name: Script
+      type: multilineText
+      required: true
+      canOverride: true
+    - name: InitialCatalog
+      description: Optional database name (Initial Catalog); overrides the one in the connection string.
+      canOverride: true
+    - name: CommandTimeout
+      defaultValue: '300'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $Script -InitialCatalog $InitialCatalog -CommandTimeout ([int]$CommandTimeout)
