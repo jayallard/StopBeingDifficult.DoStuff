@@ -100,6 +100,21 @@ entries:
   - taskId: install-fnm
     categories:
       - prerequisites.fnm
+  - taskId: check-rancher-version
+    categories:
+      - prerequisites.rancher
+  - taskId: install-rancher
+    categories:
+      - prerequisites.rancher
+  - taskId: check-wsl-version
+    categories:
+      - prerequisites.wsl
+  - taskId: install-wsl
+    categories:
+      - prerequisites.wsl
+  - taskId: enable-virtual-machine-platform
+    categories:
+      - prerequisites.wsl
   - taskId: git-clone
     categories:
       - demo.git

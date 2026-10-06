@@ -97,7 +97,7 @@
                         }
                         @if (parameter.Type == TaskParameterType.MultilineText)
                         {
-                            <textarea rows="6"
+                            <textarea rows="6" wrap="off"
                                       class="@InputClass(locked, parameter, value) resize-y font-mono"
                                       disabled="@locked"
                                       readonly="@locked"

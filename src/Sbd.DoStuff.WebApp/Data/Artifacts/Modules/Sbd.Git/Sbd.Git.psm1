@@ -68,7 +68,7 @@ function Copy-GitRepository {
     and skipped, not treated as an error. Every repository is attempted even if an earlier clone fails.
     Sets $LASTEXITCODE to 0 if all repositories were cloned or already existed, or 1 if any clone failed.
     .PARAMETER Repositories
-    Repository URLs (or paths), one per line.
+    Repository URLs (or paths), one per line. Lines are trimmed; blank lines and lines starting with # are ignored.
     #>
     [CmdletBinding()]
     param(
@@ -84,7 +84,7 @@ function Copy-GitRepository {
         return
     }
 
-    $urls = @($Repositories -split '[\r\n]+' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $urls = @($Repositories -split '[\r\n]+' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
     if ($urls.Count -eq 0) {
         Write-Output "!No repositories were specified."
         $global:LASTEXITCODE = 1

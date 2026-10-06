@@ -1,0 +1,19 @@
+- id: check-rancher-version
+  name: Check Rancher Desktop Version
+  description: Checks that Rancher Desktop is installed and at least MinVersion (exit code 0 = passed, 1 = too old, 2 = not installed).
+  type: powershell
+  parameters:
+    - name: MinVersion
+      defaultValue: 1.0.0
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Rancher
+    Test-RancherVersion -MinVersion $MinVersion
+- id: install-rancher
+  name: Install Rancher Desktop
+  description: Installs Rancher Desktop via winget, if it isn't already installed, using the moby container engine and starting automatically with Windows.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Rancher
+    Install-Rancher
