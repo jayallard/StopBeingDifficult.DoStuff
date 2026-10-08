@@ -8,7 +8,7 @@
 
         <div class="min-w-0 flex-1">
             <button type="button" class="text-left text-sm font-medium text-slate-900 hover:text-indigo-700" @onclick="ToggleExpanded">
-                @(_effective?.Name ?? Entry.TaskId)
+                @(string.IsNullOrWhiteSpace(Entry.Name) ? _effective?.Name ?? Entry.TaskId : Entry.Name)
             </button>
             <span class="ml-1 text-xs text-slate-400">@Entry.TaskId</span>
             @foreach (var category in Entry.Categories.Where(c => !string.Equals(c, CategoryPath, StringComparison.OrdinalIgnoreCase)))
@@ -51,6 +51,18 @@
     @if (Entry.Expanded)
     {
         <div class="space-y-3 border-t border-slate-100 px-3 py-3">
+            <div>
+                <label class="text-sm font-medium text-slate-700" for="name-@Entry.Key">
+                    Name <span class="text-xs font-normal text-slate-400">optional — defaults to "@(_effective?.Name ?? Entry.TaskId)"</span>
+                </label>
+                <input id="name-@Entry.Key"
+                       type="text"
+                       class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+                       placeholder="@(_effective?.Name ?? Entry.TaskId)"
+                       @bind="Entry.Name"
+                       @bind:event="onchange"/>
+            </div>
+
             <div>
                 <label class="text-sm font-medium text-slate-700" for="notes-@Entry.Key">
                     Notes <span class="text-xs font-normal text-slate-400">optional — why this task is in the list</span>
@@ -102,6 +114,13 @@
                                       disabled="@locked"
                                       readonly="@locked"
                                       @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)">@value</textarea>
+                        }
+                        else if (parameter.Type == TaskParameterType.FilePath)
+                        {
+                            <FilePathInput Value="@value"
+                                           ValueChanged="v => SetValue(parameter, v)"
+                                           InputClass="@InputClass(locked, parameter, value)"
+                                           Disabled="@locked"/>
                         }
                         else
                         {

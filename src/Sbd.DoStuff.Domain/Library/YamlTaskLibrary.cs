@@ -13,6 +13,7 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
     private static readonly IDeserializer Deserializer = YamlDeserializerFactory.Create();
 
     private readonly Dictionary<string, TaskDefinition> _definitions = new();
+    private readonly List<TaskLibraryGroup> _groups = [];
 
     public YamlTaskLibrary(IEnumerable<string> directories, IEnumerable<string> artifactsDirectories, ILogger<YamlTaskLibrary> logger)
     {
@@ -32,6 +33,8 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
                 var definitions = Deserializer.Deserialize<TaskDefinition[]>(yaml)
                     ?? throw new InvalidOperationException($"Task library file '{file}' did not deserialize to an array.");
 
+                var fileDefinitions = new List<TaskDefinition>();
+
                 foreach (var definition in definitions)
                 {
                     Validate(definition, file);
@@ -45,12 +48,44 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
                         throw new InvalidOperationException(
                             $"Duplicate task definition id '{resolved.Id}' (found in '{file}').");
                     }
+
+                    fileDefinitions.Add(resolved);
                 }
+
+                var baseId = Path.GetFileNameWithoutExtension(file);
+                var id = baseId;
+                for (var suffix = 2; _groups.Any(g => g.Id == id); suffix++)
+                {
+                    id = $"{baseId}-{suffix}";
+                }
+
+                _groups.Add(new TaskLibraryGroup(id, FormatName(baseId), fileDefinitions));
             }
         }
+
+        _groups.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
     }
 
     public IReadOnlyList<TaskDefinition> GetAll() => _definitions.Values.ToList();
+
+    public IReadOnlyList<TaskLibraryGroup> GetGroups() => _groups;
+
+    // "git-library" -> "Git"; "vscode-libary" (sic) -> "Vscode".
+    private static string FormatName(string fileName)
+    {
+        var name = fileName;
+        foreach (var suffix in new[] { "-library", "-libary", ".library" })
+        {
+            if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) && name.Length > suffix.Length)
+            {
+                name = name[..^suffix.Length];
+                break;
+            }
+        }
+
+        name = name.Replace('-', ' ').Replace('_', ' ');
+        return name.Length == 0 ? fileName : char.ToUpperInvariant(name[0]) + name[1..];
+    }
 
     public TaskDefinition? Find(string taskId) => _definitions.GetValueOrDefault(taskId);
 

@@ -3,6 +3,7 @@
 # starting with ':' are status messages and '!' are errors (the Sbd.DoStuff app's conventions).
 
 $WinGetNoApplicableUpgrade = -1978335189
+$WinGetNoPackageFound = -1978335212
 
 function Update-SessionPath {
     # winget updates the persisted PATH, but this process keeps the PATH it started with, so a
@@ -62,6 +63,30 @@ function Install-Rancher {
     $global:LASTEXITCODE = 0
 }
 
+function Uninstall-Rancher {
+    <#
+    .SYNOPSIS
+    Uninstalls Rancher Desktop via winget.
+    .DESCRIPTION
+    Shuts down Rancher Desktop if it is running, then uninstalls it. Succeeds if it isn't installed.
+    Sets $LASTEXITCODE to 0 on success.
+    #>
+    [CmdletBinding()]
+    param()
+
+    $rdctl = Get-RdCtl
+    if ($rdctl) {
+        Write-Output ":Shutting down Rancher Desktop"
+        & $rdctl shutdown
+    }
+
+    winget uninstall --id SUSE.RancherDesktop -e --source winget
+    if ($LASTEXITCODE -eq $WinGetNoPackageFound) {
+        Write-Output ":Rancher Desktop is not installed"
+        $global:LASTEXITCODE = 0
+    }
+}
+
 function Test-RancherVersion {
     <#
     .SYNOPSIS
@@ -101,4 +126,4 @@ function Test-RancherVersion {
     $global:LASTEXITCODE = 0
 }
 
-Export-ModuleMember -Function Install-Rancher, Test-RancherVersion
+Export-ModuleMember -Function Install-Rancher, Uninstall-Rancher, Test-RancherVersion

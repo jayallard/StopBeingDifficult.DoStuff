@@ -12,6 +12,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddDoStuffDomain(builder.Configuration);
+builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.IFilePicker, Sbd.DoStuff.WebApp.Services.WindowsFilePicker>();
 
 var app = builder.Build();
 

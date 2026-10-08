@@ -1,0 +1,12 @@
+- id: get-visual-studio-versions
+  name: Get Visual Studio Versions
+  description: Lists every installed version of Visual Studio (including previews) with its version number and install path. Fails if no version at least MinVersion is installed (17.0 = Visual Studio 2022).
+  type: powershell
+  parameters:
+    - name: MinVersion
+      defaultValue: 17.0
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.VisualStudio
+    Get-VisualStudioVersions -MinVersion $MinVersion

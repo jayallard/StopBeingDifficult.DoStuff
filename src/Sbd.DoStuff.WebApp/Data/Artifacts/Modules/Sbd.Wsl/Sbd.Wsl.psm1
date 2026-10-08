@@ -18,6 +18,34 @@ function Invoke-Wsl {
     ($output -replace "`0", '').Trim()
 }
 
+function Stop-Wsl {
+    <#
+    .SYNOPSIS
+    Shuts down WSL: terminates every running distribution and the WSL 2 virtual machine.
+    .DESCRIPTION
+    Runs `wsl --shutdown`. Anything running inside a distribution (including container engines such as
+    Podman or Rancher Desktop) is stopped, and the next WSL command starts the VM afresh. Succeeds if WSL
+    isn't running. Sets $LASTEXITCODE to 0 on success.
+    #>
+    [CmdletBinding()]
+    param()
+
+    if (-not (Get-Command wsl.exe -ErrorAction SilentlyContinue)) {
+        Write-Output "!WSL is not installed."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $output = Invoke-Wsl -Arguments '--shutdown'
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!wsl --shutdown failed with exit code ${LASTEXITCODE}: $output"
+        return
+    }
+
+    Write-Output ":WSL has been shut down"
+    $global:LASTEXITCODE = 0
+}
+
 function Install-Wsl {
     <#
     .SYNOPSIS
@@ -147,4 +175,4 @@ function Test-WslVersion {
     $global:LASTEXITCODE = 0
 }
 
-Export-ModuleMember -Function Install-Wsl, Enable-VirtualMachinePlatform, Test-WslVersion
+Export-ModuleMember -Function Stop-Wsl, Install-Wsl, Enable-VirtualMachinePlatform, Test-WslVersion

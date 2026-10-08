@@ -9,6 +9,7 @@ public partial class TaskDetail
     [Parameter] public string ListId { get; set; } = "";
     [Parameter] public string TaskId { get; set; } = "";
 
+    private string? _runError;
     private TaskListDefinition? _list;
     private EffectiveTaskDefinition? _definition;
     private List<(TaskListEntry Entry, TaskListEntryView View)> _entries = [];
@@ -35,14 +36,23 @@ public partial class TaskDetail
             var effective = TaskDefinitionResolver.Resolve(definition, Library);
             var values = TaskParameterResolver.Resolve(effective, entry.ParameterValues);
             _definition = effective;
-            _entries.Add((entry, new TaskListEntryView(effective, values, entry.Notes)));
+            _entries.Add((entry, new TaskListEntryView(effective, values, entry.Notes, entry.Name)));
         }
     }
 
     private void Run(TaskListEntryView view)
     {
-        var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-        var run = Engine.StartRun(task, ListId);
-        Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+        _runError = null;
+
+        try
+        {
+            var task = TaskFactory.Create(view.Definition, view.ParameterValues);
+            var run = Engine.StartRun(task, ListId);
+            Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+        }
+        catch (Exception ex)
+        {
+            _runError = ex.Message;
+        }
     }
 }

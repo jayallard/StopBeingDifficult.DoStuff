@@ -29,6 +29,14 @@ entries:
   - taskId: get-powershell-version
     categories:
       - prerequisites.powershell
+  - taskId: run-powershell-script
+    categories:
+      - demo.powershell
+    parameterValues:
+      ScriptPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Artifacts\Demo\hello.ps1'
+      Arguments: |-
+        Jay
+        Claude
   - taskId: is-vscode-installed
     categories:
       - prerequisites.vscode
@@ -115,6 +123,9 @@ entries:
   - taskId: enable-virtual-machine-platform
     categories:
       - prerequisites.wsl
+  - taskId: shutdown-wsl
+    categories:
+      - prerequisites.wsl
   - taskId: git-clone
     categories:
       - demo.git
@@ -133,3 +144,45 @@ entries:
         CREATE TABLE #t (Id int);
         INSERT #t VALUES (1), (2), (3);
         UPDATE #t SET Id = Id + 1 WHERE Id > 1;
+  - taskId: install-podman
+    categories:
+      - prerequisites.podman
+  - taskId: install-podman-compose
+    categories:
+      - prerequisites.podman
+  - taskId: uninstall-podman
+    categories:
+      - prerequisites.podman
+  - taskId: uninstall-rancher
+    categories:
+      - prerequisites.rancher
+  - taskId: check-podman-version
+    categories:
+      - prerequisites.podman
+  - taskId: get-visual-studio-versions
+    categories:
+      - prerequisites.visualstudio
+  - taskId: execute-sql-file
+    categories:
+      - demo.sql
+    parameterValues:
+      ConnectionStringSetting: ConnectionStrings:DoStuffDemo
+      ScriptPath: Data/Artifacts/Sql/demo.sql
+  - taskId: install-ssms
+    categories:
+      - prerequisites.sql
+  - taskId: install-sql-server-developer
+    categories:
+      - prerequisites.sql
+  - taskId: enable-sql-server-mixed-mode
+    categories:
+      - prerequisites.sql
+  - taskId: list-dotnet-sdks
+    categories:
+      - prerequisites.dotnet
+  - taskId: install-dotnet-8
+    categories:
+      - prerequisites.dotnet
+  - taskId: install-dotnet-11
+    categories:
+      - prerequisites.dotnet

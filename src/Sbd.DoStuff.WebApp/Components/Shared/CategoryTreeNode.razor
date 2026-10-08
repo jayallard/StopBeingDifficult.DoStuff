@@ -28,11 +28,15 @@ else
                 <div class="@RowClass(task)">
                     <div>
                         <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
-                            @task.Definition.Name
+                            @(task.Name ?? task.Definition.Name)
                         </a>
                         @if (!string.IsNullOrWhiteSpace(task.Notes))
                         {
                             <p class="mt-0.5 whitespace-pre-line text-sm text-slate-500">@task.Notes</p>
+                        }
+                        @if (_runErrors.TryGetValue(task.Definition.Id, out var runError))
+                        {
+                            <p class="mt-0.5 text-sm text-red-600">@runError</p>
                         }
                         @if (task.ParameterValues.Count > 0)
                         {

@@ -6,7 +6,7 @@
     Description          = 'Run SQL Server scripts in a single transaction for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Invoke-SqlScript')
+    FunctionsToExport    = @('Invoke-SqlScript', 'Invoke-SqlFile', 'Install-Ssms', 'Install-SqlServerDeveloper', 'Enable-SqlServerMixedMode')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

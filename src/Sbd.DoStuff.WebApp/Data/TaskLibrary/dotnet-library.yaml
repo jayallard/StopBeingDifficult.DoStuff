@@ -1,0 +1,28 @@
+- id: list-dotnet-sdks
+  name: List .NET SDKs
+  description: Lists the installed .NET SDKs (exit code 0 = at least one found, 1 = none).
+  type: powershell
+  command: |-
+    Import-Module Sbd.Dotnet
+    Get-DotnetSdks
+- id: install-dotnet-sdk
+  name: Install .NET SDK
+  description: Installs the given major version of the .NET SDK via winget, if it isn't already installed.
+  type: powershell
+  parameters:
+    - name: Major
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Dotnet
+    Install-DotnetSdk -Major $Major
+- id: install-dotnet-8
+  name: Install .NET 8
+  baseTaskId: install-dotnet-sdk
+  parameterValues:
+    Major: 8
+- id: install-dotnet-11
+  name: Install .NET 11
+  baseTaskId: install-dotnet-sdk
+  parameterValues:
+    Major: 11

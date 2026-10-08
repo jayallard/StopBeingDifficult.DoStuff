@@ -4,4 +4,5 @@ public sealed record TaskListEntry(
     string TaskId,
     IReadOnlyList<string> Categories,
     IReadOnlyDictionary<string, string>? ParameterValues,
-    string? Notes = null);
+    string? Notes = null,
+    string? Name = null);

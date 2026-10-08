@@ -24,3 +24,10 @@
   command: |-
     Import-Module Sbd.Wsl
     Enable-VirtualMachinePlatform
+- id: shutdown-wsl
+  name: Shut Down WSL
+  description: Runs `wsl --shutdown`, stopping every running WSL distribution (including Podman and Rancher Desktop) and the WSL 2 virtual machine. Useful when WSL is in a bad state. Succeeds if WSL isn't running.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Wsl
+    Stop-Wsl

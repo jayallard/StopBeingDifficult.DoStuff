@@ -37,12 +37,12 @@ Tasks are defined in YAML and loaded at startup from the directories configured 
 
 | Setting                  | Contents                                   | Defaults                                         |
 |--------------------------|--------------------------------------------|--------------------------------------------------|
-| `TaskLibrary:Directories` | Task definitions (reusable templates)      | `Data/TaskLibrary`, `~/.sbd.dostuff/TaskLibrary` |
-| `TaskLists:Directories`   | Task lists (categorized entries that reference definitions) | `Data/TaskLists`, `~/.sbd.dostuff/TaskLists` |
-| `Artifacts:Directories`   | `.ps1` scripts referenced by a definition's `scriptPath`, and PowerShell modules under `Modules/` | `Data/Artifacts`, `~/.sbd.dostuff/Artifacts` |
-| `TaskRunStore`            | `memory` or `yaml` run history             | `yaml` → `~/.sbd.dostuff/TaskRuns.yaml`          |
+| `TaskLibrary:Directories` | Task definitions (reusable templates)      | `Data/TaskLibrary`, `D:/git/readytimesetup/tasks/TaskLibrary` |
+| `TaskLists:Directories`   | Task lists (categorized entries that reference definitions) | `Data/TaskLists`, `D:/git/readytimesetup/tasks/TaskLists` |
+| `Artifacts:Directories`   | `.ps1` scripts referenced by a definition's `scriptPath`, and PowerShell modules under `Modules/` | `Data/Artifacts`, `D:/git/readytimesetup/tasks/Artifacts` |
+| `TaskRunStore`            | `memory` or `yaml` run history             | `yaml` → `D:/git/readytimesetup/tasks/TaskRuns.yaml`          |
 
-The `Data/...` folders in the repo hold sample data. Put your own tasks and lists under `~/.sbd.dostuff/`. Missing directories are skipped with a warning. That folder lives outside the repo, so **copy it yourself when moving to another machine**.
+The `Data/...` folders in the repo hold sample data. Put your own tasks and lists under `D:/git/readytimesetup/tasks/`. Missing directories are skipped with a warning. That folder lives outside the repo, so **copy it yourself when moving to another machine**.
 
 Broken definitions fail at startup with a clear error rather than when you click Run. Examples: a missing base task, an inheritance cycle, a missing required parameter, or a `scriptPath` that doesn't exist.
 

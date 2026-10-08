@@ -1,0 +1,25 @@
+@using Sbd.DoStuff.WebApp.Services
+@inject IFilePicker FilePicker
+
+<div class="flex items-stretch gap-2">
+    <input type="text"
+           class="@InputClass"
+           value="@Value"
+           disabled="@Disabled"
+           readonly="@Disabled"
+           @onchange="OnTyped"/>
+    @if (FilePicker.IsSupported && !Disabled)
+    {
+        <button type="button"
+                class="mt-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-600 hover:border-slate-400 disabled:opacity-50"
+                disabled="@_browsing"
+                title="Choose a file on this machine"
+                @onclick="Browse">
+            @(_browsing ? "Choosing…" : "Browse…")
+        </button>
+    }
+</div>
+@if (_error is not null)
+{
+    <p class="mt-1 text-xs text-red-600">@_error</p>
+}

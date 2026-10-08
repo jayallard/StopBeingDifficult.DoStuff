@@ -8,5 +8,8 @@ internal sealed class FakeTaskLibrary(params TaskDefinition[] definitions) : ITa
 
     public IReadOnlyList<TaskDefinition> GetAll() => _definitions.Values.ToList();
 
+    public IReadOnlyList<TaskLibraryGroup> GetGroups() =>
+        [new TaskLibraryGroup("fake", "Fake", _definitions.Values.ToList())];
+
     public TaskDefinition? Find(string taskId) => _definitions.GetValueOrDefault(taskId);
 }

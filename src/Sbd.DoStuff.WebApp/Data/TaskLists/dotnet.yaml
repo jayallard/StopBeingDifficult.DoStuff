@@ -1,0 +1,13 @@
+id: dotnet
+name: .NET
+description: List and install .NET SDKs
+entries:
+  - taskId: list-dotnet-sdks
+    categories:
+      - dotnet
+  - taskId: install-dotnet-8
+    categories:
+      - dotnet.install
+  - taskId: install-dotnet-11
+    categories:
+      - dotnet.install

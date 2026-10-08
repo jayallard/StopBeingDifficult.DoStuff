@@ -21,3 +21,74 @@
   command: |-
     Import-Module Sbd.Sql
     Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $Script -InitialCatalog $InitialCatalog -CommandTimeout ([int]$CommandTimeout)
+- id: execute-sql-file
+  name: Execute SQL File
+  description: Runs a SQL Server script file exactly like Execute SQL Script (batches split on GO, one transaction, rolled back on any failure). Fails if the file doesn't exist.
+  type: powershell
+  parameters:
+    - name: ConnectionStringSetting
+      description: Name of the configuration setting holding the connection string, e.g. ConnectionStrings:Main. Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__Main).
+      required: true
+      canOverride: true
+      configurationSetting: true
+    - name: ScriptPath
+      type: filePath
+      description: Path to the .sql file to run.
+      required: true
+      canOverride: true
+    - name: InitialCatalog
+      description: Optional database name (Initial Catalog); overrides the one in the connection string.
+      canOverride: true
+    - name: CommandTimeout
+      defaultValue: '300'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Invoke-SqlFile -ConnectionStringSetting $ConnectionStringSetting -ScriptPath $ScriptPath -InitialCatalog $InitialCatalog -CommandTimeout ([int]$CommandTimeout)
+- id: install-ssms
+  name: Install SSMS
+  description: Installs SQL Server Management Studio via winget, if it isn't already installed. The installer may ask for administrator approval.
+  type: powershell
+  parameters:
+    - name: PackageId
+      description: The winget package id. Each major SSMS version has its own, e.g. Microsoft.SQLServerManagementStudio.21.
+      defaultValue: Microsoft.SQLServerManagementStudio.22
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Install-Ssms -PackageId $PackageId
+- id: install-sql-server-developer
+  name: Install SQL Server Developer
+  description: Installs SQL Server 2025 Developer Edition via winget, if the default instance isn't already installed. (The SQL Server 2022 installer is outdated and Microsoft's setup now refuses to run it.) The installer may ask for administrator approval and can take several minutes. After installing, waits for the SQL Server service to be running.
+  type: powershell
+  parameters:
+    - name: PackageId
+      description: The winget package id, e.g. Microsoft.SQLServer.2025.Developer.
+      defaultValue: Microsoft.SQLServer.2025.Developer
+      required: true
+      canOverride: true
+    - name: StartTimeoutSeconds
+      description: How long to wait for the SQL Server service to be running after the install before failing.
+      defaultValue: '600'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Install-SqlServerDeveloper -PackageId $PackageId -StartTimeoutSeconds ([int]$StartTimeoutSeconds)
+- id: enable-sql-server-mixed-mode
+  name: Enable SQL Server Mixed Mode
+  description: Allows both Windows and SQL Server logins on the local default SQL Server instance, enables the sa login and gives it a new random password, which is shown in the output of this run (and kept in the run history). Restarts the SQL Server service, so any open connections are dropped. Every run generates a new sa password. Needs to run as a sysadmin on the instance, as the account that installed SQL Server is; the restart may ask for administrator approval.
+  type: powershell
+  parameters:
+    - name: ServerInstance
+      description: The instance to configure; the local default instance unless changed.
+      defaultValue: localhost
+      required: true
+      canOverride: true
+    - name: StartTimeoutSeconds
+      description: How long to wait for SQL Server to accept connections after the restart before failing.
+      defaultValue: '300'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Enable-SqlServerMixedMode -ServerInstance $ServerInstance -StartTimeoutSeconds ([int]$StartTimeoutSeconds)

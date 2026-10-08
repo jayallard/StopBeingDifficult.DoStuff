@@ -17,3 +17,10 @@
   command: |-
     Import-Module Sbd.Rancher
     Install-Rancher
+- id: uninstall-rancher
+  name: Uninstall Rancher Desktop
+  description: Shuts down and uninstalls Rancher Desktop via winget. Succeeds if it isn't installed.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Rancher
+    Uninstall-Rancher

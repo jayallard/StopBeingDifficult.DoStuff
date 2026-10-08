@@ -6,7 +6,7 @@
     Description          = 'Windows Subsystem for Linux install and version checks for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Test-WslVersion', 'Install-Wsl', 'Enable-VirtualMachinePlatform')
+    FunctionsToExport    = @('Test-WslVersion', 'Stop-Wsl','Install-Wsl', 'Enable-VirtualMachinePlatform')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

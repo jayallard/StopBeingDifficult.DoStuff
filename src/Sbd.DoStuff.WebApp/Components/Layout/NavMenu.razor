@@ -1,3 +1,6 @@
+@inject ITaskLibrary Library
+@inject NavigationManager Navigation
+
 <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:hidden">
     <a href="" class="text-base font-semibold text-slate-900">DoStuff</a>
     <label for="nav-toggle" class="cursor-pointer rounded-md p-2 text-slate-500 hover:bg-slate-100">
@@ -9,7 +12,7 @@
 
 <input type="checkbox" id="nav-toggle" class="peer hidden"/>
 
-<nav class="hidden w-full shrink-0 border-b border-slate-200 bg-white peer-checked:block sm:sticky sm:top-0 sm:block sm:h-screen sm:w-60 sm:border-b-0 sm:border-r">
+<nav class="hidden w-full shrink-0 border-b border-slate-200 bg-white peer-checked:block sm:sticky sm:top-0 sm:block sm:h-screen sm:w-60 sm:overflow-y-auto sm:border-b-0 sm:border-r">
     <div class="hidden px-6 py-6 sm:block">
         <a href="" class="text-lg font-semibold tracking-tight text-slate-900">DoStuff</a>
         <p class="text-xs text-slate-400">local task runner</p>
@@ -22,5 +25,29 @@
             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>
             Lists
         </NavLink>
+    </div>
+
+    <div class="px-3 pb-4">
+        <h2 class="px-3 pb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Task libraries</h2>
+        @foreach (var group in Library.GetGroups())
+        {
+            <details class="group" open="@IsCurrent(group)">
+                <summary class="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
+                    @group.Name
+                    <span class="text-xs text-slate-400">@group.Tasks.Count</span>
+                </summary>
+                <div class="ml-3 border-l border-slate-200 pl-2">
+                    @foreach (var task in group.Tasks)
+                    {
+                        <NavLink href="@($"library/{group.Id}/{task.Id}")"
+                                 class="block truncate rounded-md px-3 py-1 text-sm text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                                 ActiveClass="bg-indigo-50 text-indigo-700"
+                                 title="@task.Name">
+                            @task.Name
+                        </NavLink>
+                    }
+                </div>
+            </details>
+        }
     </div>
 </nav>

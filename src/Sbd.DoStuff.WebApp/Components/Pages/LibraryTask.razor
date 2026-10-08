@@ -1,0 +1,99 @@
+@page "/library/{LibraryId}/{TaskId}"
+@implements IDisposable
+@inject ITaskLibrary Library
+@inject ITaskFactory TaskFactory
+@inject ITaskExecutionEngine Engine
+
+<PageTitle>@(_effective?.Name ?? "Task not found")</PageTitle>
+
+@if (_effective is null)
+{
+    <p class="text-slate-500">@(_loadError ?? "Task not found.")</p>
+}
+else
+{
+    <p class="text-xs uppercase tracking-wide text-slate-400">@_libraryName library</p>
+    <h1 class="mb-1 text-2xl font-semibold text-slate-900">@_effective.Name</h1>
+    <p class="mb-1 text-xs text-slate-400">@_effective.Id</p>
+    @if (!string.IsNullOrWhiteSpace(_effective.Description))
+    {
+        <p class="mb-4 text-slate-500">@_effective.Description</p>
+    }
+
+    <div class="mb-4 space-y-3 rounded-md border border-slate-200 bg-white px-3 py-3 shadow-sm">
+        @if (_effective.Parameters.Count == 0)
+        {
+            <p class="text-sm text-slate-500">This task has no parameters.</p>
+        }
+
+        @foreach (var parameter in _effective.Parameters)
+        {
+            var locked = _effective.NonOverridableParameterNames.Contains(parameter.Name);
+            var value = CurrentValue(parameter);
+            <div>
+                <label class="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    @parameter.Name
+                    @if (parameter.Required)
+                    {
+                        <span class="text-xs font-normal text-red-500">required</span>
+                    }
+                    @if (locked)
+                    {
+                        <span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-normal text-amber-700">locked</span>
+                    }
+                </label>
+                @if (!string.IsNullOrWhiteSpace(parameter.Description))
+                {
+                    <p class="text-xs text-slate-500">@parameter.Description</p>
+                }
+                @if (parameter.Type == TaskParameterType.MultilineText)
+                {
+                    <textarea rows="6" wrap="off"
+                              class="@InputClass(locked, parameter, value) resize-y font-mono"
+                              disabled="@locked"
+                              @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)">@value</textarea>
+                }
+                else if (parameter.Type == TaskParameterType.FilePath)
+                {
+                    <FilePathInput Value="@value"
+                                   ValueChanged="v => SetValue(parameter, v)"
+                                   InputClass="@InputClass(locked, parameter, value)"
+                                   Disabled="@locked"/>
+                }
+                else
+                {
+                    <input type="text"
+                           class="@InputClass(locked, parameter, value)"
+                           value="@value"
+                           disabled="@locked"
+                           @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)"/>
+                }
+            </div>
+        }
+
+        <div class="flex items-center gap-2">
+            <button type="button"
+                    class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+                    @onclick="Run">
+                Run
+            </button>
+            @if (_run?.Status == TaskRunStatus.Running)
+            {
+                <button type="button"
+                        class="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-red-500"
+                        @onclick="Cancel">
+                    Cancel
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (_runError is not null)
+    {
+        <p class="text-sm text-red-600">@_runError</p>
+    }
+    else if (_run is not null)
+    {
+        <RunOutput @key="_run.RunId" Run="_run" ShowStatus="true"/>
+    }
+}

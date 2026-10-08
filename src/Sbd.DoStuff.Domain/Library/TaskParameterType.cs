@@ -4,5 +4,7 @@ namespace Sbd.DoStuff.Domain.Library;
 public enum TaskParameterType
 {
     Text,
-    MultilineText
+    MultilineText,
+    /// <summary>A path to a file; the UI offers a Browse button (typing a path still works).</summary>
+    FilePath
 }

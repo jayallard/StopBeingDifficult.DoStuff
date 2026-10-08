@@ -23,11 +23,19 @@ else
     <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-500">
         In this list
     </h2>
+    @if (_runError is not null)
+    {
+        <p class="mb-2 text-sm text-red-600">@_runError</p>
+    }
     <div class="mb-6 space-y-2">
         @foreach (var entry in _entries)
         {
             <div class="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2">
                 <div>
+                    @if (!string.IsNullOrWhiteSpace(entry.Entry.Name))
+                    {
+                        <div class="text-sm font-medium text-slate-900">@entry.Entry.Name</div>
+                    }
                     <div class="text-sm text-slate-500">@string.Join(", ", entry.Entry.Categories)</div>
                     @if (!string.IsNullOrWhiteSpace(entry.Entry.Notes))
                     {

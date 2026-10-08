@@ -36,6 +36,8 @@ public class YamlTaskLibraryTests : IDisposable
                 - name: One
                 - name: Many
                   type: multilineText
+                - name: Path
+                  type: filePath
               command: echo a
             """);
 
@@ -43,6 +45,7 @@ public class YamlTaskLibraryTests : IDisposable
 
         parameters.Single(p => p.Name == "One").Type.ShouldBe(TaskParameterType.Text);
         parameters.Single(p => p.Name == "Many").Type.ShouldBe(TaskParameterType.MultilineText);
+        parameters.Single(p => p.Name == "Path").Type.ShouldBe(TaskParameterType.FilePath);
     }
 
     [Fact]

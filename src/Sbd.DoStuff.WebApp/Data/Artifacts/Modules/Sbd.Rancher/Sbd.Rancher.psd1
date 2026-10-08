@@ -6,7 +6,7 @@
     Description          = 'Rancher Desktop install and version checks for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Test-RancherVersion', 'Install-Rancher')
+    FunctionsToExport    = @('Test-RancherVersion', 'Install-Rancher', 'Uninstall-Rancher')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

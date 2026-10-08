@@ -1,0 +1,33 @@
+- id: install-podman
+  name: Install Podman
+  description: Installs Podman via winget, if it isn't already installed, and creates and starts the default Podman machine.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Podman
+    Install-Podman
+- id: install-podman-compose
+  name: Install Podman Compose
+  description: Adds the compose component to Podman by installing Docker Compose (the provider used by `podman compose`) via winget. Requires Podman.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Podman
+    Install-PodmanCompose
+- id: uninstall-podman
+  name: Uninstall Podman
+  description: Deletes every Podman machine (including all containers and images in them) and uninstalls Podman via winget. Succeeds if it isn't installed.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Podman
+    Uninstall-Podman
+- id: check-podman-version
+  name: Check Podman Version
+  description: Checks that Podman is installed and at least MinVersion (exit code 0 = passed, 1 = too old, 2 = not installed).
+  type: powershell
+  parameters:
+    - name: MinVersion
+      defaultValue: 5.8.3
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Podman
+    Test-PodmanVersion -MinVersion $MinVersion

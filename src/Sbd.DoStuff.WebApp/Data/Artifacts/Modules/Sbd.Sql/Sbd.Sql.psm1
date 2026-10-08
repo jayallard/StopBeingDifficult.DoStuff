@@ -132,7 +132,7 @@ function Invoke-SqlScript {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$ConnectionStringSetting,
-        [Parameter(Mandatory)][string]$Script,
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Script,
         [string]$InitialCatalog,
         [int]$CommandTimeout = 300
     )
@@ -220,4 +220,237 @@ function Invoke-SqlScript {
     finally {
         $connection.Dispose()
     }
+}
+
+function Invoke-SqlFile {
+    <#
+    .SYNOPSIS
+    Runs a SQL script file exactly as Invoke-SqlScript runs a script given as text.
+    .DESCRIPTION
+    Fails (sets $LASTEXITCODE to 1) if the file doesn't exist. The file's encoding is detected from its
+    byte-order mark, defaulting to UTF-8.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$ConnectionStringSetting,
+        [Parameter(Mandatory)][string]$ScriptPath,
+        [string]$InitialCatalog,
+        [int]$CommandTimeout = 300
+    )
+
+    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+        Write-Output "!SQL script file not found: $ScriptPath"
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $fullPath = (Resolve-Path -LiteralPath $ScriptPath).ProviderPath
+    Write-Output ":Script file: $fullPath"
+    $script = [System.IO.File]::ReadAllText($fullPath)
+    Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $script `
+        -InitialCatalog $InitialCatalog -CommandTimeout $CommandTimeout
+}
+
+$WinGetNoApplicableUpgrade = -1978335189
+
+function Install-Ssms {
+    <#
+    .SYNOPSIS
+    Installs SQL Server Management Studio via winget, if it isn't already installed.
+    .DESCRIPTION
+    Sets $LASTEXITCODE to winget's exit code, or 0 if SSMS is already installed and up to date.
+    The installer may ask for administrator approval.
+    .PARAMETER PackageId
+    The winget package id; each major SSMS version has its own (e.g. Microsoft.SQLServerManagementStudio.21).
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$PackageId = 'Microsoft.SQLServerManagementStudio.22'
+    )
+
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Output "!WinGet is not installed."
+        $global:LASTEXITCODE = 2
+        return
+    }
+
+    winget install --id $PackageId -e --source winget --accept-package-agreements --accept-source-agreements
+    if ($LASTEXITCODE -eq $WinGetNoApplicableUpgrade) {
+        Write-Output ":SSMS ($PackageId) is already installed and is up to date"
+        $global:LASTEXITCODE = 0
+    }
+}
+
+function Install-SqlServerDeveloper {
+    <#
+    .SYNOPSIS
+    Installs SQL Server Developer Edition via winget, if the default instance isn't already installed.
+    .DESCRIPTION
+    Defaults to SQL Server 2025: the SQL Server 2022 installer published by Microsoft (and in winget) is
+    from 2022 and now refuses to run as "no longer supported". Sets $LASTEXITCODE to winget's exit code,
+    or 0 if the default instance (MSSQLSERVER) already exists or the package is already up to date.
+    The installer may ask for administrator approval.
+    .PARAMETER PackageId
+    The winget package id.
+    .PARAMETER StartTimeoutSeconds
+    How long to wait for the service to be running after the install; fails if it isn't by then.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$PackageId = 'Microsoft.SQLServer.2025.Developer',
+        [int]$StartTimeoutSeconds = 600
+    )
+
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Output "!WinGet is not installed."
+        $global:LASTEXITCODE = 2
+        return
+    }
+
+    if (Get-Service -Name MSSQLSERVER -ErrorAction SilentlyContinue) {
+        Write-Output ':SQL Server default instance (MSSQLSERVER) is already installed'
+        $global:LASTEXITCODE = 0
+        return
+    }
+
+    winget install --id $PackageId -e --source winget --accept-package-agreements --accept-source-agreements
+    if ($LASTEXITCODE -eq $WinGetNoApplicableUpgrade) {
+        Write-Output ":SQL Server ($PackageId) is already installed and is up to date"
+        $global:LASTEXITCODE = 0
+    }
+    if ($LASTEXITCODE -ne 0) { return }
+
+    # The first start after an install can take minutes while the system databases are created.
+    $deadline = (Get-Date).AddSeconds($StartTimeoutSeconds)
+    $service = Get-Service -Name MSSQLSERVER -ErrorAction SilentlyContinue
+    if (-not $service) {
+        Write-Output '!Install finished but the SQL Server service (MSSQLSERVER) was not found.'
+        $global:LASTEXITCODE = 1
+        return
+    }
+    Write-Output ':Waiting for SQL Server to start'
+    while ($service.Status -ne 'Running' -and (Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 5
+        $service.Refresh()
+    }
+    if ($service.Status -eq 'Running') {
+        Write-Output ':SQL Server is running'
+    }
+    else {
+        Write-Output "!SQL Server did not start within $StartTimeoutSeconds seconds (service status: $($service.Status))."
+        $global:LASTEXITCODE = 1
+    }
+}
+
+function New-RandomSqlPassword {
+    # Letters and digits only (so it needs no escaping in T-SQL or PowerShell), guaranteed to contain
+    # upper case, lower case and a digit to satisfy the Windows password policy.
+    param([int]$Length = 24)
+
+    $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; $lower = 'abcdefghijkmnopqrstuvwxyz'; $digits = '23456789'
+    $all = $upper + $lower + $digits
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $pick = {
+            param([string]$Chars)
+            $bytes = New-Object byte[] 4
+            $rng.GetBytes($bytes)
+            $Chars[[int]([BitConverter]::ToUInt32($bytes, 0) % $Chars.Length)]
+        }
+        $chars = @((& $pick $upper), (& $pick $lower), (& $pick $digits))
+        while ($chars.Count -lt $Length) { $chars += (& $pick $all) }
+        # Shuffle so the guaranteed characters aren't always first.
+        $order = $chars | ForEach-Object { $b = New-Object byte[] 4; $rng.GetBytes($b); [pscustomobject]@{ Key = [BitConverter]::ToUInt32($b, 0); Char = $_ } } | Sort-Object Key
+        return -join ($order | ForEach-Object { $_.Char })
+    }
+    finally { $rng.Dispose() }
+}
+
+function Enable-SqlServerMixedMode {
+    <#
+    .SYNOPSIS
+    Enables SQL Server authentication (mixed mode) on the default local instance and enables the sa login
+    with a new random password, which is reported in the output.
+    .DESCRIPTION
+    Connects with Windows authentication as the current user (who must be a sysadmin, as the account that
+    installed SQL Server is), sets the instance's LoginMode to mixed, enables sa and sets its password,
+    then restarts the service (the login mode only takes effect after a restart), waits for it to be
+    running and checks that sa can log in. Every run generates a new sa password. Sets $LASTEXITCODE to
+    0 on success, 1 otherwise.
+    .PARAMETER ServerInstance
+    The instance to connect to; defaults to the local default instance.
+    .PARAMETER StartTimeoutSeconds
+    How long to wait for the service to restart and accept connections.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$ServerInstance = 'localhost',
+        [int]$StartTimeoutSeconds = 300
+    )
+
+    $global:LASTEXITCODE = 1
+
+    $service = Get-Service -Name MSSQLSERVER -ErrorAction SilentlyContinue
+    if (-not $service) {
+        Write-Output '!The SQL Server default instance (MSSQLSERVER) is not installed.'
+        return
+    }
+    if ($service.Status -ne 'Running') {
+        Write-Output "!The SQL Server service is not running (status: $($service.Status))."
+        return
+    }
+
+    $password = New-RandomSqlPassword
+    $windows = "Data Source=$ServerInstance;Integrated Security=True;TrustServerCertificate=True;Connect Timeout=30"
+    $connection = New-Object System.Data.SqlClient.SqlConnection $windows
+    try {
+        $connection.Open()
+        $command = $connection.CreateCommand()
+        # xp_instance_regwrite resolves the instance's registry path, whatever the SQL Server version.
+        $command.CommandText = @"
+EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2;
+ALTER LOGIN [sa] ENABLE;
+ALTER LOGIN [sa] WITH PASSWORD = N'$password', CHECK_POLICY = OFF;
+"@
+        [void]$command.ExecuteNonQuery()
+        Write-Output ':Set login mode to SQL Server and Windows Authentication, and enabled sa'
+    }
+    catch {
+        Write-Output "!Could not configure SQL Server: $($_.Exception.Message)"
+        return
+    }
+    finally { $connection.Dispose() }
+
+    Write-Output ':Restarting SQL Server (required for the login mode to take effect)'
+    try { Restart-Service -Name MSSQLSERVER -Force -ErrorAction Stop }
+    catch {
+        Write-Output ':Restart needs administrator approval'
+        try {
+            Start-Process -FilePath (Get-Process -Id $PID).Path -Verb RunAs -Wait -ErrorAction Stop `
+                -ArgumentList '-NoProfile', '-NonInteractive', '-Command', 'Restart-Service -Name MSSQLSERVER -Force'
+        }
+        catch {
+            Write-Output "!Could not restart the SQL Server service: $($_.Exception.Message) Restart it manually to finish enabling mixed mode."
+            return
+        }
+    }
+
+    # The service reports Running before it accepts connections, so verify by logging in as sa.
+    $sa = "Data Source=$ServerInstance;User ID=sa;Password=$password;TrustServerCertificate=True;Connect Timeout=5"
+    $deadline = (Get-Date).AddSeconds($StartTimeoutSeconds)
+    $loggedIn = $false
+    while (-not $loggedIn -and (Get-Date) -lt $deadline) {
+        $test = New-Object System.Data.SqlClient.SqlConnection $sa
+        try { $test.Open(); $loggedIn = $true }
+        catch { Start-Sleep -Seconds 5 }
+        finally { $test.Dispose() }
+    }
+    if (-not $loggedIn) {
+        Write-Output "!SQL Server did not accept an sa login within $StartTimeoutSeconds seconds of the restart."
+        return
+    }
+
+    Write-Output ':SQL Server is running and the sa login works'
+    Write-Output ":sa password: $password"
+    $global:LASTEXITCODE = 0
 }

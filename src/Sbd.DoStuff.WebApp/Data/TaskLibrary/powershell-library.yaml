@@ -17,3 +17,24 @@
   command: |-
     Import-Module Sbd.PowerShell
     Test-PowerShellVersion -MinVersion $MinVersion
+- id: run-powershell-script
+  name: Run PowerShell Script
+  description: Runs a PowerShell script file. The script's exit code becomes the task's result.
+  type: powershell
+  parameters:
+    - name: ScriptPath
+      description: Full path to the .ps1 file to run.
+      required: true
+      canOverride: true
+    - name: Arguments
+      type: multilineText
+      description: Optional arguments passed to the script, one per line. Blank lines are ignored.
+      defaultValue: ''
+      canOverride: true
+  command: |-
+    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+        Write-Error "Script not found: $ScriptPath"
+        exit 2
+    }
+    $scriptArguments = @($Arguments -split '\r?\n' | Where-Object { $_.Trim() })
+    & $ScriptPath @scriptArguments

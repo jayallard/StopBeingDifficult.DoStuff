@@ -10,6 +10,7 @@ public partial class CategoryTreeNode : IDisposable
     [Parameter, EditorRequired] public string ListId { get; set; } = "";
 
     private readonly Dictionary<string, TaskRun> _lastRuns = new();
+    private readonly Dictionary<string, string> _runErrors = new();
 
     protected override void OnInitialized()
     {
@@ -36,9 +37,18 @@ public partial class CategoryTreeNode : IDisposable
 
     private void Run(TaskListEntryView view)
     {
-        var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-        var run = Engine.StartRun(task, ListId);
-        Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+        _runErrors.Remove(view.Definition.Id);
+
+        try
+        {
+            var task = TaskFactory.Create(view.Definition, view.ParameterValues);
+            var run = Engine.StartRun(task, ListId);
+            Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+        }
+        catch (Exception ex)
+        {
+            _runErrors[view.Definition.Id] = ex.Message;
+        }
     }
 
     private string RowClass(TaskListEntryView view)
