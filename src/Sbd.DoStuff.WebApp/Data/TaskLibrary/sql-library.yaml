@@ -16,11 +16,16 @@
       description: Optional database name (Initial Catalog); overrides the one in the connection string.
       canOverride: true
     - name: CommandTimeout
+      description: Seconds each batch may run before it is cancelled; 0 means no limit (use it for long restores).
       defaultValue: '300'
+      canOverride: true
+    - name: UseTransaction
+      description: 'true (default) runs the whole script in one transaction and rolls it all back on any failure. Set to false for scripts with statements that cannot run in a transaction (ALTER DATABASE, RESTORE DATABASE, CREATE DATABASE, ...): each batch then commits as it runs and the first failure stops the script without undoing earlier batches.'
+      defaultValue: 'true'
       canOverride: true
   command: |-
     Import-Module Sbd.Sql
-    Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $Script -InitialCatalog $InitialCatalog -CommandTimeout ([int]$CommandTimeout)
+    Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $Script -InitialCatalog $InitialCatalog -CommandTimeout ([int]$CommandTimeout) -UseTransaction ($UseTransaction -ne 'false')
 - id: execute-sql-file
   name: Execute SQL File
   description: Runs a SQL Server script file exactly like Execute SQL Script (batches split on GO, one transaction, rolled back on any failure). Fails if the file doesn't exist.
@@ -40,11 +45,16 @@
       description: Optional database name (Initial Catalog); overrides the one in the connection string.
       canOverride: true
     - name: CommandTimeout
+      description: Seconds each batch may run before it is cancelled; 0 means no limit (use it for long restores).
       defaultValue: '300'
+      canOverride: true
+    - name: UseTransaction
+      description: 'true (default) runs the whole script in one transaction and rolls it all back on any failure. Set to false for scripts with statements that cannot run in a transaction (ALTER DATABASE, RESTORE DATABASE, CREATE DATABASE, ...): each batch then commits as it runs and the first failure stops the script without undoing earlier batches.'
+      defaultValue: 'true'
       canOverride: true
   command: |-
     Import-Module Sbd.Sql
-    Invoke-SqlFile -ConnectionStringSetting $ConnectionStringSetting -ScriptPath $ScriptPath -InitialCatalog $InitialCatalog -CommandTimeout ([int]$CommandTimeout)
+    Invoke-SqlFile -ConnectionStringSetting $ConnectionStringSetting -ScriptPath $ScriptPath -InitialCatalog $InitialCatalog -CommandTimeout ([int]$CommandTimeout) -UseTransaction ($UseTransaction -ne 'false')
 - id: install-ssms
   name: Install SSMS
   description: Installs SQL Server Management Studio via winget, if it isn't already installed. The installer may ask for administrator approval.
@@ -77,18 +87,18 @@
     Install-SqlServerDeveloper -PackageId $PackageId -StartTimeoutSeconds ([int]$StartTimeoutSeconds)
 - id: enable-sql-server-mixed-mode
   name: Enable SQL Server Mixed Mode
-  description: Allows both Windows and SQL Server logins on the local default SQL Server instance, enables the sa login and gives it a new random password, which is shown in the output of this run (and kept in the run history). Restarts the SQL Server service, so any open connections are dropped. Every run generates a new sa password. Needs to run as a sysadmin on the instance, as the account that installed SQL Server is; the restart may ask for administrator approval.
+  description: Allows both Windows and SQL Server logins on the local default SQL Server instance, enables the sa login and gives it a new random password, which is shown in the output of this run (and kept in the run history). Does nothing, and reports success, if mixed mode and the sa login are already enabled. Otherwise restarts the SQL Server service, so any open connections are dropped, and generates a new sa password. Connects with the connection string named by ConnectionStringSetting, whose login must be a sysadmin on the instance (the account that installed SQL Server is); the restart may ask for administrator approval.
   type: powershell
   parameters:
-    - name: ServerInstance
-      description: The instance to configure; the local default instance unless changed.
-      defaultValue: localhost
+    - name: ConnectionStringSetting
+      description: Name of the configuration setting holding the connection string, e.g. ConnectionStrings:LocalSqlServer. Its login must be a sysadmin on the local default instance (Windows authentication as the installing account works). Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__LocalSqlServer).
       required: true
       canOverride: true
+      configurationSetting: true
     - name: StartTimeoutSeconds
       description: How long to wait for SQL Server to accept connections after the restart before failing.
       defaultValue: '300'
       canOverride: true
   command: |-
     Import-Module Sbd.Sql
-    Enable-SqlServerMixedMode -ServerInstance $ServerInstance -StartTimeoutSeconds ([int]$StartTimeoutSeconds)
+    Enable-SqlServerMixedMode -ConnectionStringSetting $ConnectionStringSetting -StartTimeoutSeconds ([int]$StartTimeoutSeconds)

@@ -2,6 +2,7 @@
 @inject ITaskListRepository ListRepository
 @inject ITaskLibrary Library
 @inject ITaskRunStore RunStore
+@inject IJSRuntime JS
 
 <PageTitle>@(_list?.Name ?? "List not found")</PageTitle>
 
@@ -12,6 +13,18 @@
 else
 {
     <nav class="mb-4 flex items-center justify-end gap-2 border-b border-slate-200 pb-3">
+        <div class="mr-auto inline-flex overflow-hidden rounded-md border border-slate-300 text-sm font-medium" role="group" aria-label="View mode">
+            <button type="button" aria-pressed="@(_tabbed ? "false" : "true")"
+                    class="@("px-3 py-1.5 " + (_tabbed ? "bg-white text-slate-600 hover:text-slate-900" : "bg-indigo-600 text-white"))"
+                    @onclick="() => SetTabbed(false)">
+                LIST
+            </button>
+            <button type="button" aria-pressed="@(_tabbed ? "true" : "false")"
+                    class="@("border-l border-slate-300 px-3 py-1.5 " + (_tabbed ? "bg-indigo-600 text-white" : "bg-white text-slate-600 hover:text-slate-900"))"
+                    @onclick="() => SetTabbed(true)">
+                TABBED
+            </button>
+        </div>
         <a href="@($"lists/{ListId}/edit")"
            class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900">
             Edit
@@ -29,5 +42,32 @@ else
         <p class="mb-4 text-slate-500">@_list.Description</p>
     }
 
-    <CategoryTreeNode @key="_resetVersion" Node="_root!" ListId="@ListId"/>
+    @if (_tabbed)
+    {
+        var tabs = _root!.Children.Values.OrderBy(c => c.Segment).ToList();
+        var active = ActiveTab(tabs);
+
+        <div class="mb-3 flex flex-wrap gap-1 border-b border-slate-200" role="tablist">
+            @foreach (var tab in tabs)
+            {
+                var isActive = ReferenceEquals(tab, active);
+                <button type="button" role="tab" aria-selected="@(isActive ? "true" : "false")"
+                        class="@("-mb-px rounded-t-md border px-3 py-1.5 text-sm font-medium " + (isActive
+                                   ? "border-slate-200 border-b-slate-50 bg-white text-indigo-700"
+                                   : "border-transparent text-slate-500 hover:text-slate-800"))"
+                        @onclick="() => SelectTab(tab.Segment)">
+                    @tab.Segment
+                </button>
+            }
+        </div>
+
+        @if (active is not null)
+        {
+            <CategoryTreeNode @key="@($"{_resetVersion}:{active.Segment}")" Node="active" ListId="@ListId"/>
+        }
+    }
+    else
+    {
+        <CategoryTreeNode @key="_resetVersion" Node="_root!" ListId="@ListId"/>
+    }
 }

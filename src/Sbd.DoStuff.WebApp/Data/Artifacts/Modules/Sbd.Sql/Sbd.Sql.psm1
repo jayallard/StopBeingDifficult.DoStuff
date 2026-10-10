@@ -116,6 +116,23 @@ function Format-SqlGrid {
     "($($rows.Count) row$(if ($rows.Count -ne 1) { 's' }))"
 }
 
+function Get-SqlConnectionString {
+    # The connection string is never a task parameter: the app resolves the named setting from its
+    # configuration (appsettings, user secrets, environment, ...) and passes it as an environment
+    # variable named like a .NET configuration key with ':' written as '__'. Returns $null if it isn't
+    # set (the caller reports that with Get-MissingConnectionStringMessage, so this function's output is
+    # only ever the value).
+    param([Parameter(Mandatory)][string]$Setting)
+
+    [Environment]::GetEnvironmentVariable(($Setting -replace ':', '__'))
+}
+
+function Get-MissingConnectionStringMessage {
+    param([Parameter(Mandatory)][string]$Setting)
+
+    "!No connection string found: set configuration setting '$Setting' (environment variable '$($Setting -replace ':', '__')')."
+}
+
 function Invoke-SqlScript {
     <#
     .SYNOPSIS
@@ -123,29 +140,30 @@ function Invoke-SqlScript {
     .DESCRIPTION
     The script is split into batches on GO lines (a script without GO is one batch). Each batch is
     echoed, then run; result sets are rendered as text grids, other batches report rows affected,
-    and server messages (PRINT, RAISERROR, ...) are shown. Everything shares one session and
-    transaction: if any batch fails the transaction is rolled back, otherwise it is committed.
+    and server messages (PRINT, RAISERROR, ...) are shown. Everything shares one session and, by default,
+    one transaction: if any batch fails the transaction is rolled back, otherwise it is committed.
+    With -UseTransaction $false there is no transaction: each batch commits as it runs and the first
+    failure stops the script, leaving earlier batches applied. That is needed for statements SQL Server
+    won't run inside a transaction, such as ALTER DATABASE, RESTORE DATABASE and CREATE DATABASE.
     ConnectionStringSetting names the configuration key (e.g. ConnectionStrings:Main) whose value is the
     connection string; InitialCatalog, if given, overrides the database in it. The value is read from the environment variable of the same name (':' as '__').
-    Sets $LASTEXITCODE to 0 on commit, or 1 if the script failed and was rolled back.
+    Sets $LASTEXITCODE to 0 on commit (or on completion without a transaction), or 1 if the script
+    failed (and was rolled back, if it used a transaction).
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$ConnectionStringSetting,
         [Parameter(Mandatory)][AllowEmptyString()][string]$Script,
         [string]$InitialCatalog,
-        [int]$CommandTimeout = 300
+        [int]$CommandTimeout = 300,
+        [bool]$UseTransaction = $true
     )
 
     $global:LASTEXITCODE = 1
 
-    # The connection string is never a task parameter: the app resolves the named setting from its
-    # configuration (appsettings, user secrets, environment, ...) and passes it as an environment
-    # variable named like a .NET configuration key with ':' written as '__'.
-    $variableName = $ConnectionStringSetting -replace ':', '__'
-    $ConnectionString = [Environment]::GetEnvironmentVariable($variableName)
+    $ConnectionString = Get-SqlConnectionString -Setting $ConnectionStringSetting
     if (-not $ConnectionString) {
-        Write-Output "!No connection string found: set configuration setting '$ConnectionStringSetting' (environment variable '$variableName')."
+        Write-Output (Get-MissingConnectionStringMessage -Setting $ConnectionStringSetting)
         return
     }
 
@@ -156,7 +174,6 @@ function Invoke-SqlScript {
         return
     }
 
-    $messages = New-Object System.Collections.Generic.List[string]
     if ($InitialCatalog) {
         $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder $ConnectionString
         $builder['Initial Catalog'] = $InitialCatalog
@@ -166,9 +183,17 @@ function Invoke-SqlScript {
     $transaction = $null
     $executed = 0
     try {
-        $connection.add_InfoMessage({ param($sender, $e) $messages.Add($e.Message) })
+        # Server messages are written straight to stdout the moment they arrive, not collected into the
+        # pipeline: Write-Output inside an event handler doesn't reach the pipeline, and a long RESTORE
+        # or a RAISERROR ... WITH NOWAIT progress line should be visible while the batch is still running.
+        $connection.add_InfoMessage({
+            param($sender, $e)
+            [Console]::Out.WriteLine($e.Message)
+            [Console]::Out.Flush()
+        })
         $connection.Open()
-        $transaction = $connection.BeginTransaction()
+        if ($UseTransaction) { $transaction = $connection.BeginTransaction() }
+        else { Write-Output ':Running without a transaction: each batch is committed as it runs and is not rolled back if a later one fails.' }
 
         foreach ($batch in $batches) {
             Write-Output ''
@@ -192,20 +217,20 @@ function Invoke-SqlScript {
             }
             finally { $reader.Dispose() }
 
-            foreach ($message in $messages) { Write-Output $message }
-            $messages.Clear()
             if ($affected -ge 0) { Write-Output "($affected row$(if ($affected -ne 1) { 's' }) affected)" }
             $executed++
         }
 
-        $transaction.Commit()
-        $transaction = $null
         Write-Output ''
-        Write-Output ":Committed $executed batch$(if ($executed -ne 1) { 'es' })."
+        if ($transaction) {
+            $transaction.Commit()
+            $transaction = $null
+            Write-Output ":Committed $executed batch$(if ($executed -ne 1) { 'es' })."
+        }
+        else { Write-Output ":Completed $executed batch$(if ($executed -ne 1) { 'es' }) (no transaction)." }
         $global:LASTEXITCODE = 0
     }
     catch {
-        foreach ($message in $messages) { Write-Output $message }
         $failure = if ($_.Exception.InnerException -is [System.Data.SqlClient.SqlException]) { $_.Exception.InnerException } else { $_.Exception }
         Write-Output "!$($failure.Message)"
         if ($failure -is [System.Data.SqlClient.SqlException]) {
@@ -214,6 +239,9 @@ function Invoke-SqlScript {
         if ($transaction -and $transaction.Connection) {
             try { $transaction.Rollback(); Write-Output ':Rolled back.' }
             catch { Write-Output "!Rollback failed: $($_.Exception.Message)" }
+        }
+        elseif (-not $UseTransaction -and $executed -gt 0) {
+            Write-Output "!Stopped at batch $($executed + 1). $executed batch$(if ($executed -ne 1) { 'es' }) already ran without a transaction and cannot be rolled back."
         }
         $global:LASTEXITCODE = 1
     }
@@ -235,7 +263,8 @@ function Invoke-SqlFile {
         [Parameter(Mandatory)][string]$ConnectionStringSetting,
         [Parameter(Mandatory)][string]$ScriptPath,
         [string]$InitialCatalog,
-        [int]$CommandTimeout = 300
+        [int]$CommandTimeout = 300,
+        [bool]$UseTransaction = $true
     )
 
     if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
@@ -248,7 +277,7 @@ function Invoke-SqlFile {
     Write-Output ":Script file: $fullPath"
     $script = [System.IO.File]::ReadAllText($fullPath)
     Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $script `
-        -InitialCatalog $InitialCatalog -CommandTimeout $CommandTimeout
+        -InitialCatalog $InitialCatalog -CommandTimeout $CommandTimeout -UseTransaction $UseTransaction
 }
 
 $WinGetNoApplicableUpgrade = -1978335189
@@ -366,29 +395,78 @@ function New-RandomSqlPassword {
     finally { $rng.Dispose() }
 }
 
+function Get-SqlServerLoginState {
+    # Read-only: reports whether the instance accepts SQL Server logins and whether sa is enabled.
+    param([Parameter(Mandatory)][string]$ConnectionString)
+
+    $connection = New-Object System.Data.SqlClient.SqlConnection $ConnectionString
+    try {
+        $connection.Open()
+        $command = $connection.CreateCommand()
+        $command.CommandText = @"
+SELECT CAST(SERVERPROPERTY('IsIntegratedSecurityOnly') AS int) AS WindowsOnly,
+       (SELECT CAST(is_disabled AS int) FROM sys.server_principals WHERE name = N'sa') AS SaDisabled
+"@
+        $reader = $command.ExecuteReader()
+        try {
+            [void]$reader.Read()
+            $windowsOnly = $reader['WindowsOnly']
+            $saDisabled = $reader['SaDisabled']
+        }
+        finally { $reader.Dispose() }
+    }
+    finally { $connection.Dispose() }
+
+    [pscustomobject]@{
+        MixedMode = ($windowsOnly -is [int] -and $windowsOnly -eq 0)
+        SaEnabled = ($saDisabled -is [int] -and $saDisabled -eq 0)
+    }
+}
+
 function Enable-SqlServerMixedMode {
     <#
     .SYNOPSIS
     Enables SQL Server authentication (mixed mode) on the default local instance and enables the sa login
-    with a new random password, which is reported in the output.
+    with a new random password, which is reported in the output. Does nothing if both are already enabled.
     .DESCRIPTION
-    Connects with Windows authentication as the current user (who must be a sysadmin, as the account that
-    installed SQL Server is), sets the instance's LoginMode to mixed, enables sa and sets its password,
-    then restarts the service (the login mode only takes effect after a restart), waits for it to be
-    running and checks that sa can log in. Every run generates a new sa password. Sets $LASTEXITCODE to
+    Connects with the given connection string (whose login must be a sysadmin, e.g. Windows authentication as
+    the account that installed SQL Server). If the instance already accepts SQL Server logins and sa is
+    enabled it reports success and changes nothing. Otherwise it sets the instance's LoginMode to mixed,
+    enables sa and sets its password, then restarts the service (the login mode only takes effect after a
+    restart; skipped when mixed mode was already on and only sa needed enabling), waits for it to be
+    running and checks that sa can log in. Each change generates a new sa password. Sets $LASTEXITCODE to
     0 on success, 1 otherwise.
-    .PARAMETER ServerInstance
-    The instance to connect to; defaults to the local default instance.
+    .PARAMETER ConnectionStringSetting
+    Name of the configuration setting holding the connection string (see Invoke-SqlScript). It must point
+    at the local default instance, since the service restart is local.
     .PARAMETER StartTimeoutSeconds
     How long to wait for the service to restart and accept connections.
     #>
     [CmdletBinding()]
     param(
-        [string]$ServerInstance = 'localhost',
+        [Parameter(Mandatory)][string]$ConnectionStringSetting,
         [int]$StartTimeoutSeconds = 300
     )
 
     $global:LASTEXITCODE = 1
+
+    $adminConnectionString = Get-SqlConnectionString -Setting $ConnectionStringSetting
+    if (-not $adminConnectionString) {
+        Write-Output (Get-MissingConnectionStringMessage -Setting $ConnectionStringSetting)
+        return
+    }
+    try { $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder $adminConnectionString }
+    catch {
+        Write-Output "!The connection string in '$ConnectionStringSetting' is not valid: $($_.Exception.Message)"
+        return
+    }
+
+    # The restart below is of this machine's default instance, so the connection must target it.
+    $server = ($builder.DataSource -replace '^(tcp|np|lpc):', '' -split ',')[0]
+    if ($server -notmatch '^(\.|\(local\)|localhost|127\.0\.0\.1|::1|' + [regex]::Escape($env:COMPUTERNAME) + ')(\\MSSQLSERVER)?$') {
+        Write-Output "!Connection string '$ConnectionStringSetting' targets '$($builder.DataSource)', but this task can only configure the local default instance."
+        return
+    }
 
     $service = Get-Service -Name MSSQLSERVER -ErrorAction SilentlyContinue
     if (-not $service) {
@@ -400,20 +478,36 @@ function Enable-SqlServerMixedMode {
         return
     }
 
+    # Read-only check first: if mixed mode is already on and sa is usable there is nothing to do, and
+    # in particular no restart and no new sa password.
+    try { $state = Get-SqlServerLoginState -ConnectionString $adminConnectionString }
+    catch {
+        Write-Output "!Could not check the SQL Server login mode: $($_.Exception.Message)"
+        return
+    }
+    if ($state.MixedMode -and $state.SaEnabled) {
+        Write-Output ':Mixed mode (SQL Server and Windows Authentication) and the sa login are already enabled; nothing to do'
+        $global:LASTEXITCODE = 0
+        return
+    }
+
     $password = New-RandomSqlPassword
-    $windows = "Data Source=$ServerInstance;Integrated Security=True;TrustServerCertificate=True;Connect Timeout=30"
-    $connection = New-Object System.Data.SqlClient.SqlConnection $windows
+    $connection = New-Object System.Data.SqlClient.SqlConnection $adminConnectionString
     try {
         $connection.Open()
         $command = $connection.CreateCommand()
         # xp_instance_regwrite resolves the instance's registry path, whatever the SQL Server version.
+        $loginModeStatement = if ($state.MixedMode) { '' } else {
+            "EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2;"
+        }
         $command.CommandText = @"
-EXEC xp_instance_regwrite N'HKEY_LOCAL_MACHINE', N'Software\Microsoft\MSSQLServer\MSSQLServer', N'LoginMode', REG_DWORD, 2;
+$loginModeStatement
 ALTER LOGIN [sa] ENABLE;
 ALTER LOGIN [sa] WITH PASSWORD = N'$password', CHECK_POLICY = OFF;
 "@
         [void]$command.ExecuteNonQuery()
-        Write-Output ':Set login mode to SQL Server and Windows Authentication, and enabled sa'
+        if ($state.MixedMode) { Write-Output ':Enabled sa (mixed mode was already on)' }
+        else { Write-Output ':Set login mode to SQL Server and Windows Authentication, and enabled sa' }
     }
     catch {
         Write-Output "!Could not configure SQL Server: $($_.Exception.Message)"
@@ -421,22 +515,30 @@ ALTER LOGIN [sa] WITH PASSWORD = N'$password', CHECK_POLICY = OFF;
     }
     finally { $connection.Dispose() }
 
-    Write-Output ':Restarting SQL Server (required for the login mode to take effect)'
-    try { Restart-Service -Name MSSQLSERVER -Force -ErrorAction Stop }
-    catch {
-        Write-Output ':Restart needs administrator approval'
-        try {
-            Start-Process -FilePath (Get-Process -Id $PID).Path -Verb RunAs -Wait -ErrorAction Stop `
-                -ArgumentList '-NoProfile', '-NonInteractive', '-Command', 'Restart-Service -Name MSSQLSERVER -Force'
-        }
+    # The login mode only takes effect after a restart; enabling sa on its own does not need one.
+    if (-not $state.MixedMode) {
+        Write-Output ':Restarting SQL Server (required for the login mode to take effect)'
+        try { Restart-Service -Name MSSQLSERVER -Force -ErrorAction Stop }
         catch {
-            Write-Output "!Could not restart the SQL Server service: $($_.Exception.Message) Restart it manually to finish enabling mixed mode."
-            return
+            Write-Output ':Restart needs administrator approval'
+            try {
+                Start-Process -FilePath (Get-Process -Id $PID).Path -Verb RunAs -Wait -ErrorAction Stop `
+                    -ArgumentList '-NoProfile', '-NonInteractive', '-Command', 'Restart-Service -Name MSSQLSERVER -Force'
+            }
+            catch {
+                Write-Output "!Could not restart the SQL Server service: $($_.Exception.Message) Restart it manually to finish enabling mixed mode."
+                return
+            }
         }
     }
 
     # The service reports Running before it accepts connections, so verify by logging in as sa.
-    $sa = "Data Source=$ServerInstance;User ID=sa;Password=$password;TrustServerCertificate=True;Connect Timeout=5"
+    $saBuilder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder $adminConnectionString
+    $saBuilder['Integrated Security'] = $false
+    $saBuilder['User ID'] = 'sa'
+    $saBuilder['Password'] = $password
+    $saBuilder['Connect Timeout'] = 5
+    $sa = $saBuilder.ConnectionString
     $deadline = (Get-Date).AddSeconds($StartTimeoutSeconds)
     $loggedIn = $false
     while (-not $loggedIn -and (Get-Date) -lt $deadline) {

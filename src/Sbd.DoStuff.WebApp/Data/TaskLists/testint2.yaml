@@ -177,10 +177,15 @@ entries:
   - taskId: enable-sql-server-mixed-mode
     categories:
       - prerequisites.sql
+    parameterValues:
+      ConnectionStringSetting: ConnectionStrings:LocalSqlServer
   - taskId: list-dotnet-sdks
     categories:
       - prerequisites.dotnet
   - taskId: install-dotnet-8
+    categories:
+      - prerequisites.dotnet
+  - taskId: install-dotnet-10
     categories:
       - prerequisites.dotnet
   - taskId: install-dotnet-11

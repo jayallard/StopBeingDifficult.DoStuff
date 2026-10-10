@@ -15,6 +15,7 @@
 else
 {
     var tree = _model.BuildTree();
+    var activeNode = ActiveNode(tree);
 
     <h1 class="mb-4 text-2xl font-semibold text-slate-900">@(IsNew ? "New task list" : "Edit task list")</h1>
 
@@ -85,16 +86,34 @@ else
         </button>
     </div>
 
+    @if (tree.Children.Count > 0)
+    {
+        <div class="mb-3 flex flex-wrap gap-1 border-b border-slate-200" role="tablist">
+            @foreach (var child in tree.Children.Values)
+            {
+                var active = ReferenceEquals(child, activeNode);
+                <button type="button" role="tab" aria-selected="@(active ? "true" : "false")"
+                        class="@("-mb-px rounded-t-md border px-3 py-1.5 text-sm font-medium " + (active
+                                   ? "border-slate-200 border-b-slate-50 bg-white text-indigo-700"
+                                   : "border-transparent text-slate-500 hover:text-slate-800"))"
+                        @onclick="() => _activeCategory = child.Path">
+                    @child.Segment
+                    <span class="ml-1 text-xs text-slate-400">@CountEntries(child)</span>
+                </button>
+            }
+        </div>
+    }
+
     <div @ref="_treeRoot" class="mb-6 space-y-3"
          @ondragover:preventDefault="@(_model.DraggedCategory is not null)"
          @ondragover="() => { }"
          @ondrop="OnDropTopLevel" @ondrop:preventDefault>
-        @foreach (var child in tree.Children.Values)
+        @if (activeNode is not null)
         {
-            <EditorCategoryNode @key="child.Path" Node="child" Model="_model" OnChanged="StateHasChanged"
+            <EditorCategoryNode @key="activeNode.Path" Node="activeNode" Model="_model" OnChanged="StateHasChanged"
                                 SelectedTaskId="@_selectedTaskId" SelectedTaskName="@SelectedTaskName" OnAddSelected="AddSelectedTo"/>
         }
-        @if (tree.Children.Count == 0)
+        else
         {
             <p class="text-sm text-slate-500">No tasks yet. Search above to add one.</p>
         }

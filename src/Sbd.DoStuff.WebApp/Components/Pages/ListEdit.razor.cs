@@ -23,6 +23,20 @@ public partial class ListEdit
     private IJSObjectReference? _sortable;
     private DotNetObjectReference<ListEdit>? _self;
 
+    /// <summary>Path of the top-level category currently being edited; the editor shows one at a time.</summary>
+    private string? _activeCategory;
+
+    // Falls back to the first top-level category when none is chosen or the chosen one no longer exists (e.g. renamed).
+    private EditCategoryNode? ActiveNode(EditCategoryNode tree) =>
+        _activeCategory is not null && tree.Children.TryGetValue(_activeCategory, out var node)
+            ? node
+            : tree.Children.Values.FirstOrDefault();
+
+    private static int CountEntries(EditCategoryNode node) =>
+        node.Entries.Count + node.Children.Values.Sum(CountEntries);
+
+    private void ShowCategoryOf(string category) => _activeCategory = category.Split('.')[0];
+
     private bool IsNew => ListId is null;
     private string? SelectedTaskName => _selectedTaskId is null ? null : Library.Find(_selectedTaskId)?.Name ?? _selectedTaskId;
     private string CancelHref => IsNew ? "" : $"lists/{ListId}";
@@ -108,6 +122,7 @@ public partial class ListEdit
         }
 
         _model.AddEntry(taskId, category);
+        ShowCategoryOf(category);
     }
 
     private void AddSelectedTo(string category)
@@ -128,6 +143,7 @@ public partial class ListEdit
         }
 
         _model.AddCategory(category);
+        ShowCategoryOf(category);
         _newCategory = "";
     }
 

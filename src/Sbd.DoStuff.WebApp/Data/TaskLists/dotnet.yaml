@@ -8,6 +8,9 @@ entries:
   - taskId: install-dotnet-8
     categories:
       - dotnet.install
+  - taskId: install-dotnet-10
+    categories:
+      - dotnet.install
   - taskId: install-dotnet-11
     categories:
       - dotnet.install

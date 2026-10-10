@@ -21,6 +21,11 @@
   baseTaskId: install-dotnet-sdk
   parameterValues:
     Major: 8
+- id: install-dotnet-10
+  name: Install .NET 10
+  baseTaskId: install-dotnet-sdk
+  parameterValues:
+    Major: 10
 - id: install-dotnet-11
   name: Install .NET 11
   baseTaskId: install-dotnet-sdk
