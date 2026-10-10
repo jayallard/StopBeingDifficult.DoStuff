@@ -15,6 +15,10 @@ public sealed class TaskRun
     public required string ListId { get; init; }
     public required string TaskId { get; init; }
     public required string TaskName { get; init; }
+
+    /// <summary>Which Task List entry started this run (see <see cref="TaskRunKey"/>); null for runs not started from a list entry.</summary>
+    public string? EntryKey { get; init; }
+
     public TaskRunStatus Status { get; internal set; } = TaskRunStatus.Pending;
     public required DateTimeOffset StartedAt { get; init; }
     public DateTimeOffset? CompletedAt { get; internal set; }

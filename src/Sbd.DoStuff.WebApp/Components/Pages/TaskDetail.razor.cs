@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Sbd.DoStuff.Domain.Execution;
 using Sbd.DoStuff.Domain.Library;
 using Sbd.DoStuff.Domain.Lists;
 
@@ -47,7 +48,7 @@ public partial class TaskDetail
         try
         {
             var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-            var run = Engine.StartRun(task, ListId);
+            var run = Engine.StartRun(task, ListId, TaskRunKey.For(view.Definition.Id, view.ParameterValues));
             Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
         }
         catch (Exception ex)

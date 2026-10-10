@@ -16,10 +16,15 @@ public partial class CategoryTreeNode : IDisposable
     {
         foreach (var task in Node.Tasks)
         {
-            var lastRun = RunStore.GetRecentForTask(ListId, task.Definition.Id, 1).FirstOrDefault();
+            // A list can hold the same definition several times with different parameter values, so the
+            // last run is tracked per entry, not per definition id. Runs made before entries were keyed
+            // have no EntryKey and are ignored.
+            var key = KeyOf(task);
+            var lastRun = RunStore.GetRecentForTask(ListId, task.Definition.Id, int.MaxValue)
+                .FirstOrDefault(r => r.EntryKey == key);
             if (lastRun is not null)
             {
-                _lastRuns[task.Definition.Id] = lastRun;
+                _lastRuns[key] = lastRun;
             }
         }
 
@@ -28,9 +33,9 @@ public partial class CategoryTreeNode : IDisposable
 
     private void OnRunChanged(TaskRun run)
     {
-        if (run.ListId == ListId && Node.Tasks.Any(t => t.Definition.Id == run.TaskId))
+        if (run.ListId == ListId && run.EntryKey is not null && Node.Tasks.Any(t => KeyOf(t) == run.EntryKey))
         {
-            _lastRuns[run.TaskId] = run;
+            _lastRuns[run.EntryKey] = run;
             InvokeAsync(StateHasChanged);
         }
     }
@@ -42,7 +47,7 @@ public partial class CategoryTreeNode : IDisposable
         try
         {
             var task = TaskFactory.Create(view.Definition, view.ParameterValues);
-            var run = Engine.StartRun(task, ListId);
+            var run = Engine.StartRun(task, ListId, KeyOf(view));
             Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
         }
         catch (Exception ex)
@@ -51,11 +56,13 @@ public partial class CategoryTreeNode : IDisposable
         }
     }
 
+    private static string KeyOf(TaskListEntryView view) => TaskRunKey.For(view.Definition.Id, view.ParameterValues);
+
     private string RowClass(TaskListEntryView view)
     {
         const string baseClass = "flex items-center justify-between rounded border px-3 py-2 transition";
 
-        if (!_lastRuns.TryGetValue(view.Definition.Id, out var lastRun) || lastRun.Status != TaskRunStatus.Succeeded && lastRun.Status != TaskRunStatus.Failed)
+        if (!_lastRuns.TryGetValue(KeyOf(view), out var lastRun) || lastRun.Status != TaskRunStatus.Succeeded && lastRun.Status != TaskRunStatus.Failed)
         {
             return $"{baseClass} border-slate-200 bg-white hover:border-indigo-300";
         }

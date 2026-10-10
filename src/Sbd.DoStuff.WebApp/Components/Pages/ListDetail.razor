@@ -44,7 +44,7 @@ else
 
     @if (_tabbed)
     {
-        var tabs = _root!.Children.Values.OrderBy(c => c.Segment).ToList();
+        var tabs = _root!.Children.Values.ToList();
         var active = ActiveTab(tabs);
 
         <div class="mb-3 flex flex-wrap gap-1 border-b border-slate-200" role="tablist">

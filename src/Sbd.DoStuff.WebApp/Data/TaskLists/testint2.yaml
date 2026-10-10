@@ -191,3 +191,15 @@ entries:
   - taskId: install-dotnet-11
     categories:
       - prerequisites.dotnet
+  - taskId: list-sql-databases
+    categories:
+      - demo.sql
+    parameterValues:
+      ConnectionStringSetting: ConnectionStrings:DoStuffDemo
+  - taskId: drop-sql-users
+    categories:
+      - demo.sql
+    parameterValues:
+      ConnectionStringSetting: ConnectionStrings:DoStuffDemo
+      UserNames: ReadyTime, ReadyTimeService, EPayEntry
+      DatabaseNames: ProliantConfiguration, ReadyTime, ReadyTimeDataSync

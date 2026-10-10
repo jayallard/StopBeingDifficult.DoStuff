@@ -556,3 +556,275 @@ ALTER LOGIN [sa] WITH PASSWORD = N'$password', CHECK_POLICY = OFF;
     Write-Output ":sa password: $password"
     $global:LASTEXITCODE = 0
 }
+
+function Get-SqlDatabaseSize {
+    <#
+    .SYNOPSIS
+    Lists every database on the instance with the disk space its data and log files take.
+    .DESCRIPTION
+    Sizes are the files' current allocated size from sys.master_files (not the space used inside them),
+    in MB, largest first, followed by the total across all databases. Output is rendered by
+    Invoke-SqlScript. Sets $LASTEXITCODE to 0 on success, 1 otherwise.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$ConnectionStringSetting,
+        [int]$CommandTimeout = 300
+    )
+
+    $query = @'
+SELECT d.name AS [Database],
+       d.state_desc AS [State],
+       CAST(SUM(CASE WHEN f.type = 0 THEN f.size ELSE 0 END) * 8.0 / 1024 AS decimal(18, 1)) AS [Data MB],
+       CAST(SUM(CASE WHEN f.type = 1 THEN f.size ELSE 0 END) * 8.0 / 1024 AS decimal(18, 1)) AS [Log MB],
+       CAST(SUM(f.size) * 8.0 / 1024 AS decimal(18, 1)) AS [Total MB]
+FROM sys.databases AS d
+LEFT JOIN sys.master_files AS f ON f.database_id = d.database_id
+GROUP BY d.name, d.state_desc
+ORDER BY [Total MB] DESC, d.name;
+
+SELECT COUNT(DISTINCT database_id) AS [Databases],
+       CAST(SUM(size) * 8.0 / 1024 AS decimal(18, 1)) AS [All databases MB]
+FROM sys.master_files;
+'@
+
+    Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $query -CommandTimeout $CommandTimeout
+}
+
+function Remove-SqlUser {
+    <#
+    .SYNOPSIS
+    Drops database users, and server logins with the same names, from a SQL Server instance.
+    .DESCRIPTION
+    For each name in -UserNames, drops the matching user (SQL user, Windows user or Windows group) from
+    each database in -DatabaseNames, then drops the server login of the same name if there is one.
+    Names and databases may be separated by commas, semicolons or new lines. Before a user is dropped,
+    any schema it owns is handed to dbo (the schema itself is kept), since a user that owns a schema
+    can't be dropped. Before a login is dropped, its open sessions are killed. 'sa' and the login
+    this task connects with are never dropped, and databases that are missing, offline or read-only
+    are reported and skipped.
+    Reports on every user in every database and on every login: dropped (or, in a dry run, would be
+    dropped), not done and why (no such user, database not found, built-in principal, ...), or failed
+    with the server's error. Each statement is run on its own so a failure does not stop the rest. By default
+    this is a dry run: nothing is changed, the report just says what would be done. Pass -DryRun $false to run them.
+    Users in databases that are not listed are left behind as orphans, and a login that owns a
+    database or SQL Agent jobs can't be dropped until those are reassigned.
+    Sets $LASTEXITCODE to 0 if everything succeeded, or 1 if any statement failed or any listed
+    database was skipped.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$ConnectionStringSetting,
+        [Parameter(Mandatory)][string[]]$UserNames,
+        [Parameter(Mandatory)][string[]]$DatabaseNames,
+        [bool]$DryRun = $true,
+        [int]$CommandTimeout = 300
+    )
+
+    $global:LASTEXITCODE = 1
+
+    $split = {
+        param($values)
+        @($values | ForEach-Object { $_ -split '[,;\r\n]+' } | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Sort-Object -Unique)
+    }
+    $literals = {
+        param($values)
+        ($values | ForEach-Object { "(N'" + ($_ -replace "'", "''") + "')" }) -join ', '
+    }
+
+    $users = & $split $UserNames
+    $databases = & $split $DatabaseNames
+    if ($users.Count -eq 0) { Write-Output '!No user names were given.'; return }
+    if ($databases.Count -eq 0) { Write-Output '!No database names were given.'; return }
+
+    $template = @'
+SET NOCOUNT ON;
+
+DECLARE @DryRun bit = {{DRYRUN}};
+DECLARE @Db sysname, @Target sysname, @Stmt nvarchar(max), @Skip nvarchar(400), @Problem bit,
+        @Sessions int, @Exec nvarchar(300), @Subject nvarchar(400), @Note nvarchar(200);
+DECLARE @Done int = 0, @NotDone int = 0, @Failed int = 0;
+
+CREATE TABLE #Targets (Name sysname NOT NULL PRIMARY KEY);
+INSERT INTO #Targets (Name) VALUES {{USERS}};
+
+CREATE TABLE #Databases (Name sysname NOT NULL PRIMARY KEY);
+INSERT INTO #Databases (Name) VALUES {{DATABASES}};
+
+-- One row per user per database, plus one per login (DbName NULL). A row either has a statement to
+-- run, or a reason it can't be done (Problem = 1 if that is something the caller should look at,
+-- 0 if it is just that the user or login doesn't exist).
+CREATE TABLE #Plan (
+    Id int IDENTITY(1, 1) PRIMARY KEY,
+    Target sysname NOT NULL,
+    DbName sysname NULL,
+    Stmt nvarchar(max) NULL,
+    Sessions int NOT NULL DEFAULT 0,
+    Skip nvarchar(400) NULL,
+    Problem bit NOT NULL DEFAULT 0);
+
+IF @DryRun = 1 PRINT N':DRY RUN - nothing is changed. Run again with DryRun set to false to apply.';
+
+-- Users: every target in every listed database
+INSERT INTO #Plan (Target, DbName, Skip, Problem)
+SELECT t.Name,
+       ISNULL(sd.name, d.Name),
+       CASE WHEN sd.database_id IS NULL THEN N'the database was not found'
+            WHEN sd.state_desc <> N'ONLINE' THEN N'the database is ' + LOWER(sd.state_desc)
+            WHEN sd.is_read_only = 1 THEN N'the database is read-only' END,
+       CASE WHEN sd.database_id IS NULL OR sd.state_desc <> N'ONLINE' OR sd.is_read_only = 1 THEN 1 ELSE 0 END
+FROM #Targets AS t
+CROSS JOIN #Databases AS d
+LEFT JOIN sys.databases AS sd ON sd.name = d.Name COLLATE DATABASE_DEFAULT;
+
+-- The probe runs inside each usable database, so names are compared using that database's collation.
+DECLARE @Probe nvarchar(max) = N'
+UPDATE p
+SET Skip = CASE WHEN dp.principal_id IS NULL THEN N''no user with that name exists in the database''
+                WHEN dp.principal_id <= 4 THEN N''it is a built-in principal, which is never dropped''
+                WHEN dp.type NOT IN (N''S'', N''U'', N''G'')
+                     THEN N''it is a '' + LOWER(REPLACE(dp.type_desc, N''_'', N'' '')) + N'', not a user'' END
+FROM #Plan AS p
+LEFT JOIN sys.database_principals AS dp ON dp.name = p.Target COLLATE DATABASE_DEFAULT
+WHERE p.DbName = DB_NAME() AND p.Skip IS NULL;
+
+UPDATE p
+SET Problem = 1
+FROM #Plan AS p
+JOIN sys.database_principals AS dp ON dp.name = p.Target COLLATE DATABASE_DEFAULT
+WHERE p.DbName = DB_NAME() AND p.Skip IS NOT NULL;
+
+UPDATE p
+SET Stmt = ISNULL((SELECT N''ALTER AUTHORIZATION ON SCHEMA::'' + QUOTENAME(s.name) + N'' TO dbo; ''
+                   FROM sys.schemas AS s
+                   WHERE s.principal_id = dp.principal_id
+                   FOR XML PATH(N''''), TYPE).value(N''.'', N''nvarchar(max)''), N'''')
+           + N''DROP USER '' + QUOTENAME(dp.name) + N'';''
+FROM #Plan AS p
+JOIN sys.database_principals AS dp ON dp.name = p.Target COLLATE DATABASE_DEFAULT
+WHERE p.DbName = DB_NAME() AND p.Skip IS NULL;';
+
+DECLARE db_cursor CURSOR LOCAL STATIC FORWARD_ONLY READ_ONLY FOR
+    SELECT DISTINCT DbName FROM #Plan WHERE DbName IS NOT NULL AND Skip IS NULL ORDER BY DbName;
+OPEN db_cursor;
+FETCH NEXT FROM db_cursor INTO @Db;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @Exec = QUOTENAME(@Db) + N'.sys.sp_executesql';
+    BEGIN TRY
+        EXEC @Exec @Probe;
+    END TRY
+    BEGIN CATCH
+        UPDATE #Plan
+        SET Skip = N'the database could not be inspected: ' + LEFT(ERROR_MESSAGE(), 300), Problem = 1
+        WHERE DbName = @Db AND Skip IS NULL AND Stmt IS NULL;
+    END CATCH;
+    FETCH NEXT FROM db_cursor INTO @Db;
+END;
+CLOSE db_cursor;
+DEALLOCATE db_cursor;
+
+-- Logins: one row per target
+INSERT INTO #Plan (Target, DbName) SELECT Name, NULL FROM #Targets;
+
+UPDATE p
+SET Skip = CASE WHEN sp.principal_id IS NULL THEN N'no server login with that name exists'
+                WHEN sp.principal_id = 1 THEN N'sa is never dropped'
+                WHEN sp.name = SUSER_SNAME() THEN N'it is the login this task connects with'
+                WHEN sp.name LIKE N'##%' THEN N'it is a system-created login, which is never dropped'
+                WHEN sp.type NOT IN (N'S', N'U', N'G')
+                     THEN N'it is a ' + LOWER(REPLACE(sp.type_desc, N'_', N' ')) + N', not a login' END
+FROM #Plan AS p
+LEFT JOIN sys.server_principals AS sp ON sp.name = p.Target COLLATE DATABASE_DEFAULT
+WHERE p.DbName IS NULL;
+
+UPDATE p
+SET Problem = 1
+FROM #Plan AS p
+JOIN sys.server_principals AS sp ON sp.name = p.Target COLLATE DATABASE_DEFAULT
+WHERE p.DbName IS NULL AND p.Skip IS NOT NULL;
+
+UPDATE p
+SET Sessions = (SELECT COUNT(*) FROM sys.dm_exec_sessions AS es
+                WHERE es.login_name = sp.name AND es.session_id <> @@SPID AND es.is_user_process = 1),
+    Stmt = ISNULL((SELECT N'BEGIN TRY KILL ' + CAST(es.session_id AS nvarchar(10)) + N'; END TRY BEGIN CATCH END CATCH; '
+                   FROM sys.dm_exec_sessions AS es
+                   WHERE es.login_name = sp.name AND es.session_id <> @@SPID AND es.is_user_process = 1
+                   FOR XML PATH(N''), TYPE).value(N'.', N'nvarchar(max)'), N'')
+           + N'DROP LOGIN ' + QUOTENAME(sp.name) + N';'
+FROM #Plan AS p
+JOIN sys.server_principals AS sp ON sp.name = p.Target COLLATE DATABASE_DEFAULT
+WHERE p.DbName IS NULL AND p.Skip IS NULL;
+
+-- Report on (and, unless it is a dry run, carry out) each row. For a given name the users come
+-- before the login.
+DECLARE run_cursor CURSOR LOCAL STATIC FORWARD_ONLY READ_ONLY FOR
+    SELECT Target, DbName, Stmt, Sessions, Skip, Problem
+    FROM #Plan
+    ORDER BY Target, CASE WHEN DbName IS NULL THEN 1 ELSE 0 END, DbName;
+OPEN run_cursor;
+FETCH NEXT FROM run_cursor INTO @Target, @Db, @Stmt, @Sessions, @Skip, @Problem;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    SET @Subject = ISNULL(N'[' + @Db + N'] user ', N'[server] login ') + QUOTENAME(@Target);
+    SET @Note = CASE WHEN @Db IS NULL AND @Sessions > 0
+                          THEN N' (' + CASE WHEN @DryRun = 1 THEN N'would kill ' ELSE N'killed ' END
+                               + CAST(@Sessions AS nvarchar(10)) + N' open session(s))'
+                     WHEN @Db IS NOT NULL AND @Stmt LIKE N'ALTER AUTHORIZATION%'
+                          THEN N' (its schemas ' + CASE WHEN @DryRun = 1 THEN N'would be moved' ELSE N'were moved' END + N' to dbo)'
+                     ELSE N'' END;
+
+    IF @Skip IS NOT NULL
+    BEGIN
+        IF @Problem = 1
+        BEGIN
+            PRINT N'!' + @Subject + N': NOT DONE - ' + @Skip;
+            SET @Failed += 1;
+        END
+        ELSE
+        BEGIN
+            PRINT N':' + @Subject + N': not done - ' + @Skip;
+            SET @NotDone += 1;
+        END;
+    END
+    ELSE IF @DryRun = 1
+    BEGIN
+        PRINT N':' + @Subject + N': would be dropped' + @Note;
+        SET @Done += 1;
+    END
+    ELSE
+    BEGIN
+        SET @Exec = ISNULL(QUOTENAME(@Db) + N'.', N'') + N'sys.sp_executesql';
+        BEGIN TRY
+            EXEC @Exec @Stmt;
+            PRINT N':' + @Subject + N': dropped' + @Note;
+            SET @Done += 1;
+        END TRY
+        BEGIN CATCH
+            PRINT N'!' + @Subject + N': FAILED - ' + ERROR_MESSAGE();
+            SET @Failed += 1;
+        END CATCH;
+    END;
+
+    FETCH NEXT FROM run_cursor INTO @Target, @Db, @Stmt, @Sessions, @Skip, @Problem;
+END;
+CLOSE run_cursor;
+DEALLOCATE run_cursor;
+
+PRINT N':Summary: ' + CAST(@Done AS nvarchar(10)) + CASE WHEN @DryRun = 1 THEN N' would be dropped, ' ELSE N' dropped, ' END
+      + CAST(@NotDone AS nvarchar(10)) + N' not done (nothing to drop), '
+      + CAST(@Failed AS nvarchar(10)) + N' failed or blocked.';
+
+IF @Failed > 0
+    RAISERROR(N'Some users or logins could not be dropped; see the lines starting with ! above.', 16, 1);
+'@
+
+    $script = $template.
+        Replace('{{DRYRUN}}', $(if ($DryRun) { '1' } else { '0' })).
+        Replace('{{USERS}}', (& $literals $users)).
+        Replace('{{DATABASES}}', (& $literals $databases))
+
+    # Each statement is run separately and its failure is caught in T-SQL, so no transaction: a doomed
+    # transaction would stop the statements after the first failure.
+    Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $script -CommandTimeout $CommandTimeout -UseTransaction $false
+}

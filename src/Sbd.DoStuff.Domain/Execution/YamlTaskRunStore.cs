@@ -101,6 +101,7 @@ internal sealed class YamlTaskRunStore : ITaskRunStore
         public required string ListId { get; init; }
         public required string TaskId { get; init; }
         public required string TaskName { get; init; }
+        public string? EntryKey { get; init; }
         public TaskRunStatus Status { get; init; }
         public required DateTimeOffset StartedAt { get; init; }
         public DateTimeOffset? CompletedAt { get; init; }
@@ -115,6 +116,7 @@ internal sealed class YamlTaskRunStore : ITaskRunStore
             ListId = run.ListId,
             TaskId = run.TaskId,
             TaskName = run.TaskName,
+            EntryKey = run.EntryKey,
             Status = run.Status,
             StartedAt = run.StartedAt,
             CompletedAt = run.CompletedAt,
@@ -132,6 +134,7 @@ internal sealed class YamlTaskRunStore : ITaskRunStore
                 ListId = ListId,
                 TaskId = TaskId,
                 TaskName = TaskName,
+                EntryKey = EntryKey,
                 StartedAt = StartedAt,
                 Status = Status,
                 CompletedAt = CompletedAt,

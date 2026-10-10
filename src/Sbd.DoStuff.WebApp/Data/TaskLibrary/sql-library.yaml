@@ -102,3 +102,47 @@
   command: |-
     Import-Module Sbd.Sql
     Enable-SqlServerMixedMode -ConnectionStringSetting $ConnectionStringSetting -StartTimeoutSeconds ([int]$StartTimeoutSeconds)
+- id: list-sql-databases
+  name: List SQL Databases
+  description: Lists every database on the instance with the disk space its data and log files take (allocated file size in MB, largest first), plus the total.
+  type: powershell
+  parameters:
+    - name: ConnectionStringSetting
+      description: Name of the configuration setting holding the connection string, e.g. ConnectionStrings:Main. Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__Main).
+      required: true
+      canOverride: true
+      configurationSetting: true
+    - name: CommandTimeout
+      defaultValue: '300'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Get-SqlDatabaseSize -ConnectionStringSetting $ConnectionStringSetting -CommandTimeout ([int]$CommandTimeout)
+- id: drop-sql-users
+  name: Drop SQL Users and Logins
+  description: Drops database users, and the server logins of the same names, from a SQL Server instance. For each name, drops the matching user from every listed database (handing any schema it owns to dbo first), then kills the login's open sessions and drops the login if there is one. Never drops sa or the login this task connects with. Reports the outcome for every user in every database and for every login, saying whether it was dropped, not done and why (no such user, database not found, built-in principal), or failed with the server error. Runs as a dry run that only lists the statements unless DryRun is set to false. Users in unlisted databases are left as orphans; a login that owns a database or SQL Agent jobs can't be dropped until those are reassigned.
+  type: powershell
+  parameters:
+    - name: ConnectionStringSetting
+      description: Name of the configuration setting holding the connection string, e.g. ConnectionStrings:Main. Its login needs permission to drop users and logins (ALTER ANY LOGIN and ALTER ANY USER, or sysadmin). Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__Main).
+      required: true
+      canOverride: true
+      configurationSetting: true
+    - name: UserNames
+      description: The user and login names to drop, separated by commas or new lines.
+      required: true
+      canOverride: true
+    - name: DatabaseNames
+      description: The databases to drop the users from, separated by commas or new lines.
+      required: true
+      canOverride: true
+    - name: DryRun
+      description: When true (the default), only lists what would be dropped. Set to false to drop them.
+      defaultValue: 'true'
+      canOverride: true
+    - name: CommandTimeout
+      defaultValue: '300'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Remove-SqlUser -ConnectionStringSetting $ConnectionStringSetting -UserNames $UserNames -DatabaseNames $DatabaseNames -DryRun ($DryRun -ne 'false') -CommandTimeout ([int]$CommandTimeout)

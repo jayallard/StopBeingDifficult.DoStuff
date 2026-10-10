@@ -6,7 +6,7 @@
 @if (string.IsNullOrEmpty(Node.Segment))
 {
     <div class="space-y-2">
-        @foreach (var child in Node.Children.Values.OrderBy(c => c.Segment))
+        @foreach (var child in Node.Children.Values)
         {
             <CategoryTreeNode Node="child" ListId="@ListId"/>
         }
@@ -18,7 +18,7 @@ else
         <summary class="cursor-pointer select-none font-medium text-slate-800 hover:text-indigo-700">@Node.Segment</summary>
 
         <div class="mt-2 space-y-2 pb-2">
-            @foreach (var child in Node.Children.Values.OrderBy(c => c.Segment))
+            @foreach (var child in Node.Children.Values)
             {
                 <CategoryTreeNode Node="child" ListId="@ListId"/>
             }
