@@ -34,21 +34,23 @@ internal sealed class WindowsProcessRunner(IEnumerable<string>? moduleDirectorie
         exit 0
         """;
 
-    private readonly Lazy<bool> _pwshIsOnPath = new(() => IsOnPath("pwsh.exe"));
-
-    protected override (string FileName, string Arguments) BuildShellInvocation(string command, bool useWindowsPowerShell)
+    protected override (string FileName, string Arguments) BuildShellInvocation(string command, PowerShellEdition edition)
     {
+        var fileName = edition == PowerShellEdition.Windows ? "powershell.exe" : "pwsh.exe";
+        if (!IsOnPath(fileName))
+        {
+            throw new PowerShellNotFoundException(edition == PowerShellEdition.Windows
+                ? "Windows PowerShell 5.1 (powershell.exe) was not found on PATH, but this task requires it."
+                : "PowerShell 7+ (pwsh.exe) was not found on PATH, but this task requires it.");
+        }
+
         var script = ScriptTemplate.Replace("__COMMAND__", command);
         var encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        var fileName = !useWindowsPowerShell && _pwshIsOnPath.Value ? "pwsh.exe" : "powershell.exe";
         // Bypass (process scope only) so tasks can load .ps1 scripts and .psm1 modules from the
         // artifacts directories even under Windows PowerShell's default 'Restricted' policy.
         return (fileName, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}");
     }
 
-    // PowerShell 7 isn't installed on every Windows machine (Windows PowerShell 5.1 is the
-    // built-in default), so the pwsh.exe preference silently falls back to powershell.exe
-    // rather than failing every task on machines that don't have it.
     private static bool IsOnPath(string fileName)
     {
         var pathEnvironmentVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;

@@ -53,12 +53,46 @@ function Test-IsElevated {
     return ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Initialize-IisDefaultWebSite {
+    # Makes sure a "Default Web Site" exists (http *:80 -> %SystemDrive%\inetpub\wwwroot). Enabling the
+    # features doesn't guarantee one: applicationHost.config can survive an earlier uninstall without it.
+    # Sets $LASTEXITCODE to 0 on success.
+    $siteName = 'Default Web Site'
+    $appcmd = Join-Path $env:SystemRoot 'System32\inetsrv\appcmd.exe'
+    if (-not (Test-Path $appcmd)) {
+        Write-Output "!appcmd.exe not found; can't create the $siteName"
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $null = & $appcmd list site "/name:$siteName"
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output ":$siteName already exists"
+        return
+    }
+
+    $physicalPath = Join-Path $env:SystemDrive 'inetpub\wwwroot'
+    if (-not (Test-Path $physicalPath)) {
+        $null = New-Item -ItemType Directory -Path $physicalPath -Force
+    }
+
+    Write-Output ":Creating $siteName (http *:80 -> $physicalPath)"
+    & $appcmd add site "/name:$siteName" "/physicalPath:$physicalPath" '/bindings:http/*:80:'
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!Failed to create the $siteName (appcmd exit code $LASTEXITCODE)"
+        return
+    }
+
+    $global:LASTEXITCODE = 0
+}
+
 function Install-Iis {
     <#
     .SYNOPSIS
     Installs IIS, or enables any of the requested IIS features that are missing if it's already installed.
     .DESCRIPTION
-    Requires an elevated session when anything needs enabling. Sets $LASTEXITCODE to dism's exit code,
+    Requires an elevated session when anything needs enabling. Also creates the "Default Web Site"
+    (http port 80, inetpub\wwwroot) if it doesn't exist. Sets $LASTEXITCODE to dism's exit code,
     or 0 if every requested feature is already enabled or was enabled (a pending reboot is reported but
     still counts as success).
     #>
@@ -85,6 +119,15 @@ function Install-Iis {
     if ($missing.Count -eq 0) {
         Write-Output ":All requested IIS features are already enabled"
         Write-Output ":IIS updates are delivered through Windows Update"
+        if (Get-InstalledIisVersion) {
+            if (-not (Test-IsElevated)) {
+                Write-Output "!Creating the Default Web Site requires running as Administrator"
+                $global:LASTEXITCODE = 5
+                return
+            }
+            Initialize-IisDefaultWebSite
+            return
+        }
         $global:LASTEXITCODE = 0
         return
     }
@@ -117,7 +160,7 @@ function Install-Iis {
     }
 
     Write-Output ":IIS $after is installed (build $(Get-IisBuildVersion))"
-    $global:LASTEXITCODE = 0
+    Initialize-IisDefaultWebSite
 }
 
 function Uninstall-Iis {

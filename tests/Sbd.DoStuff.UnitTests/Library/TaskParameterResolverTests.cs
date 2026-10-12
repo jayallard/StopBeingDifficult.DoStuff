@@ -10,7 +10,7 @@ public class TaskParameterResolverTests
         IReadOnlyDictionary<string, string>? pinned = null,
         IReadOnlySet<string>? nonOverridable = null) =>
         new("task", "Task", null, "powershell", "echo {X}", null, null, null, [parameter],
-            pinned ?? new Dictionary<string, string>(), nonOverridable ?? new HashSet<string>(), UseWindowsPowerShell: false);
+            pinned ?? new Dictionary<string, string>(), nonOverridable ?? new HashSet<string>());
 
     [Fact]
     public void SuppliedValue_WinsOverPinnedAndDefault()

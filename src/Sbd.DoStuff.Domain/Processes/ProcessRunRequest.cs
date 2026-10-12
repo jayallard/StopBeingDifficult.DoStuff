@@ -4,4 +4,4 @@ public sealed record ProcessRunRequest(
     string Command,
     string? WorkingDirectory,
     IReadOnlyDictionary<string, string>? EnvironmentVariables,
-    bool UseWindowsPowerShell = false);
+    PowerShellEdition Edition = PowerShellEdition.Core);

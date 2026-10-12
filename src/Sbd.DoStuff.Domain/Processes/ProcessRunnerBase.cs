@@ -11,14 +11,14 @@ public abstract class ProcessRunnerBase(IEnumerable<string>? moduleDirectories =
 {
     private readonly IReadOnlyList<string> _moduleDirectories = moduleDirectories?.ToList() ?? [];
 
-    protected abstract (string FileName, string Arguments) BuildShellInvocation(string command, bool useWindowsPowerShell);
+    protected abstract (string FileName, string Arguments) BuildShellInvocation(string command, PowerShellEdition edition);
 
     public async Task<ProcessRunResult> RunAsync(
         ProcessRunRequest request,
         Action<TaskOutputLine> onOutputLine,
         CancellationToken cancellationToken)
     {
-        var (fileName, arguments) = BuildShellInvocation(request.Command, request.UseWindowsPowerShell);
+        var (fileName, arguments) = BuildShellInvocation(request.Command, request.Edition);
 
         var startInfo = new ProcessStartInfo
         {

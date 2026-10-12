@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Sbd.DoStuff.Domain.Processes;
 using Sbd.DoStuff.Domain.Tasks;
 
 namespace Sbd.DoStuff.Domain.Library;
@@ -8,12 +9,13 @@ internal sealed class TaskFactory(IConfiguration? configuration = null) : ITaskF
     public ITask Create(EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> allParameterValues) =>
         effective.Type switch
         {
-            "powershell" => CreateShellCommandTask(effective, allParameterValues),
+            "powershell" => CreateShellCommandTask(effective, allParameterValues, PowerShellEdition.Core),
+            "windows-powershell" => CreateShellCommandTask(effective, allParameterValues, PowerShellEdition.Windows),
             _ => throw new InvalidOperationException($"Unknown task type '{effective.Type}' for task '{effective.Id}'."),
         };
 
     private ShellCommandTask CreateShellCommandTask(
-        EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> values)
+        EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> values, PowerShellEdition edition)
     {
         var command = (effective.Command, effective.ScriptPath) switch
         {
@@ -32,7 +34,7 @@ internal sealed class TaskFactory(IConfiguration? configuration = null) : ITaskF
 
         return new ShellCommandTask(
             effective.Id, effective.Name, command, workingDirectory, environmentVariables, effective.Description,
-            effective.UseWindowsPowerShell);
+            edition);
     }
 
     // A configuration-setting parameter holds the setting's *name*; the resolved value (which may be

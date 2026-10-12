@@ -39,15 +39,15 @@ public class ShellCommandTaskTests
     }
 
     [Fact]
-    public async Task UseWindowsPowerShell_IsForwardedToProcessRunRequest()
+    public async Task Edition_IsForwardedToProcessRunRequest()
     {
         var runner = new FakeProcessRunner();
-        var task = new ShellCommandTask("id", "Name", "command", null, null, null, useWindowsPowerShell: true);
+        var task = new ShellCommandTask("id", "Name", "command", null, null, null, PowerShellEdition.Windows);
         var context = new FakeTaskExecutionContext(runner);
 
         await task.RunAsync(context, CancellationToken.None);
 
-        runner.LastRequest!.UseWindowsPowerShell.ShouldBeTrue();
+        runner.LastRequest!.Edition.ShouldBe(PowerShellEdition.Windows);
     }
 
     [Fact]

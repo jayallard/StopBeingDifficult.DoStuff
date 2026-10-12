@@ -17,5 +17,4 @@ public sealed record EffectiveTaskDefinition(
     IReadOnlyDictionary<string, string>? EnvironmentVariables,
     IReadOnlyList<TaskParameterDefinition> Parameters,
     IReadOnlyDictionary<string, string> PinnedParameterValues,
-    IReadOnlySet<string> NonOverridableParameterNames,
-    bool UseWindowsPowerShell);
+    IReadOnlySet<string> NonOverridableParameterNames);

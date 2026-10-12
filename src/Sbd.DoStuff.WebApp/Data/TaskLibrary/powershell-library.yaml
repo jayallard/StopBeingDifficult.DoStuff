@@ -1,7 +1,7 @@
 - id: install-powershell
   name: Install or Update PowerShell
-  description: Installs PowerShell 7+, or updates it if it's already installed. Runs under PowerShell 7 if present, otherwise Windows PowerShell 5.1.
-  type: powershell
+  description: Installs PowerShell 7+, or updates it if it's already installed. Runs under Windows PowerShell 5.1 so it works before PowerShell 7 exists.
+  type: windows-powershell
   command: |-
     Import-Module Sbd.PowerShell
     Install-PowerShell
@@ -19,7 +19,7 @@
     Test-PowerShellVersion -MinVersion $MinVersion
 - id: run-powershell-script
   name: Run PowerShell Script
-  description: Runs a PowerShell script file. The script's exit code becomes the task's result.
+  description: Runs a PowerShell script file. The working directory is the script's folder, and its exit code becomes the task's result.
   type: powershell
   parameters:
     - name: ScriptPath
@@ -36,5 +36,34 @@
         Write-Error "Script not found: $ScriptPath"
         exit 2
     }
+    Set-Location -LiteralPath (Split-Path -Parent (Resolve-Path -LiteralPath $ScriptPath).ProviderPath)
+    $scriptArguments = @($Arguments -split '\r?\n' | Where-Object { $_.Trim() })
+    & $ScriptPath @scriptArguments
+- id: get-windows-powershell-version
+  name: Get Windows PowerShell Version
+  description: Prints the version of Windows PowerShell 5.1 (powershell.exe)
+  type: windows-powershell
+  command: |-
+    Write-Output ":Windows PowerShell Version: $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
+- id: run-windows-powershell-script
+  name: Run Windows PowerShell Script
+  description: Runs a PowerShell script file under Windows PowerShell 5.1. The working directory is the script's folder, and its exit code becomes the task's result.
+  type: windows-powershell
+  parameters:
+    - name: ScriptPath
+      description: Full path to the .ps1 file to run.
+      required: true
+      canOverride: true
+    - name: Arguments
+      type: multilineText
+      description: Optional arguments passed to the script, one per line. Blank lines are ignored.
+      defaultValue: ''
+      canOverride: true
+  command: |-
+    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
+        Write-Error "Script not found: $ScriptPath"
+        exit 2
+    }
+    Set-Location -LiteralPath (Split-Path -Parent (Resolve-Path -LiteralPath $ScriptPath).ProviderPath)
     $scriptArguments = @($Arguments -split '\r?\n' | Where-Object { $_.Trim() })
     & $ScriptPath @scriptArguments

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Sbd.DoStuff.Domain.Library;
+using Sbd.DoStuff.Domain.Processes;
 using Sbd.DoStuff.Domain.Tasks;
 using Shouldly;
 using TaskFactory = Sbd.DoStuff.Domain.Library.TaskFactory;
@@ -10,9 +11,9 @@ public class TaskFactoryTests
 {
     private static EffectiveTaskDefinition Effective(
         string? command, string? scriptPath = null, string? workingDirectory = null,
-        IReadOnlyDictionary<string, string>? environmentVariables = null, bool useWindowsPowerShell = false) =>
-        new("task", "Task", null, "powershell", command, scriptPath, workingDirectory, environmentVariables, [],
-            new Dictionary<string, string>(), new HashSet<string>(), useWindowsPowerShell);
+        IReadOnlyDictionary<string, string>? environmentVariables = null, string type = "powershell") =>
+        new("task", "Task", null, type, command, scriptPath, workingDirectory, environmentVariables, [],
+            new Dictionary<string, string>(), new HashSet<string>());
 
     [Fact]
     public void PrependsVariableAssignment_ForEachParameter()
@@ -112,14 +113,25 @@ public class TaskFactoryTests
     }
 
     [Fact]
-    public void UseWindowsPowerShell_PropagatesToCreatedTask()
+    public void WindowsPowerShellType_CreatesWindowsEditionTask()
     {
         var factory = new TaskFactory();
-        var effective = Effective("npm run build", useWindowsPowerShell: true);
+        var effective = Effective("npm run build", type: "windows-powershell");
 
         var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string>());
 
-        task.UseWindowsPowerShell.ShouldBeTrue();
+        task.Edition.ShouldBe(PowerShellEdition.Windows);
+    }
+
+    [Fact]
+    public void PowerShellType_CreatesCoreEditionTask()
+    {
+        var factory = new TaskFactory();
+        var effective = Effective("npm run build");
+
+        var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string>());
+
+        task.Edition.ShouldBe(PowerShellEdition.Core);
     }
 
     [Fact]

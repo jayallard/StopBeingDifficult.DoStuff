@@ -29,7 +29,18 @@ entries:
   - taskId: get-powershell-version
     categories:
       - prerequisites.powershell
+  - taskId: get-windows-powershell-version
+    categories:
+      - prerequisites.powershell
   - taskId: run-powershell-script
+    categories:
+      - demo.powershell
+    parameterValues:
+      ScriptPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Artifacts\Demo\hello.ps1'
+      Arguments: |-
+        Jay
+        Claude
+  - taskId: run-windows-powershell-script
     categories:
       - demo.powershell
     parameterValues:

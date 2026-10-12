@@ -61,8 +61,7 @@ public static class TaskDefinitionResolver
             current.EnvironmentVariables,
             current.Parameters ?? Array.Empty<TaskParameterDefinition>(),
             pinned,
-            nonOverridable,
-            current.UseWindowsPowerShell ?? false);
+            nonOverridable);
     }
 
     // A parameter locked to false anywhere in the chain stays locked: this only ever adds

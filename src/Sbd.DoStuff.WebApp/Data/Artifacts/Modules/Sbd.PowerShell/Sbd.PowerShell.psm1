@@ -3,7 +3,7 @@
 # starting with ':' are status messages and '!' are errors (the Sbd.DoStuff app's conventions).
 #
 # Everything here works from both Windows PowerShell 5.1 and PowerShell 7+, so the tasks can run
-# under whichever one the app picks (pwsh.exe if it exists, otherwise powershell.exe).
+# under either: Install-PowerShell is run by the windows-powershell task type.
 
 $WinGetNoApplicableUpgrade = -1978335189
 $PowerShellPackageId = 'Microsoft.PowerShell'
