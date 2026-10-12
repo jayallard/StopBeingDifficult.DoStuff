@@ -39,3 +39,28 @@
   command: |-
     Import-Module Sbd.FileSystem
     Copy-FileOverwrite -SourceFile $SourceFile -TargetFile $TargetFile
+
+- id: text-replace
+  name: Text Replace
+  description: Replaces every occurrence of FindText with ReplaceText in a file. FindText is matched literally, not as a regular expression. The file's encoding is preserved, and the file is left untouched when FindText isn't found.
+  type: powershell
+  parameters:
+    - name: FilePath
+      description: The existing text file to modify.
+      required: true
+      canOverride: true
+    - name: FindText
+      description: The literal text to search for. Must not be empty.
+      required: true
+      canOverride: true
+    - name: ReplaceText
+      description: The text to put in place of each match. Leave empty to delete the matched text.
+      defaultValue: ''
+      canOverride: true
+    - name: CaseSensitive
+      description: 'When true, only exact-case matches are replaced. Default false.'
+      defaultValue: 'false'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.FileSystem
+    Update-FileText -FilePath $FilePath -FindText $FindText -ReplaceText $ReplaceText -CaseSensitive ($CaseSensitive -eq 'true')

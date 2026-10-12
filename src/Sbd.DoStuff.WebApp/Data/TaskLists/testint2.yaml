@@ -249,3 +249,11 @@ entries:
       FileName: 'D:\path\to\file.xml'
       XPath: /configuration/appSettings/add[@key='Example']/@value
       Value: example
+
+  - taskId: text-replace
+    categories:
+      - demo.filesystem
+    parameterValues:
+      FilePath: 'D:\path\to\file.txt'
+      FindText: 'old text'
+      ReplaceText: 'new text'

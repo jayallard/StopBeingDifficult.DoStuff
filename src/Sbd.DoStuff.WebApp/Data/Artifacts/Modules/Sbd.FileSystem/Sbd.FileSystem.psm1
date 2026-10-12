@@ -140,3 +140,76 @@ function Copy-FileOverwrite {
     Write-Output ":$verb $targetFull (from $source)"
     $global:LASTEXITCODE = 0
 }
+
+function Update-FileText {
+    <#
+    .SYNOPSIS
+    Replaces every occurrence of a piece of text in a file.
+    .DESCRIPTION
+    FindText is matched literally (not as a regular expression) and every occurrence in FilePath is
+    replaced with ReplaceText (which may be empty, to delete the text). Matching ignores case unless
+    -CaseSensitive is set. The file's encoding (UTF-8 with or without BOM, UTF-16) is preserved, and
+    the file is left untouched when there is nothing to replace.
+
+    Sets $LASTEXITCODE to 0 on success (including "no matches"), 1 on failure.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$FilePath,
+        [Parameter(Mandatory)][string]$FindText,
+        [string]$ReplaceText = '',
+        [bool]$CaseSensitive = $false
+    )
+
+    $global:LASTEXITCODE = 1
+
+    if ($FindText.Length -eq 0) {
+        Write-Output '!FindText must not be empty.'
+        return
+    }
+    if (-not (Test-Path -LiteralPath $FilePath -PathType Leaf)) {
+        Write-Output "!File not found: $FilePath"
+        return
+    }
+    $path = (Resolve-Path -LiteralPath $FilePath).ProviderPath
+
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes($path)
+        $bomLength = 0
+        if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+            $encoding = New-Object System.Text.UTF8Encoding($true); $bomLength = 3
+        }
+        elseif ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFF -and $bytes[1] -eq 0xFE) {
+            $encoding = New-Object System.Text.UnicodeEncoding($false, $true); $bomLength = 2
+        }
+        elseif ($bytes.Length -ge 2 -and $bytes[0] -eq 0xFE -and $bytes[1] -eq 0xFF) {
+            $encoding = New-Object System.Text.UnicodeEncoding($true, $true); $bomLength = 2
+        }
+        else {
+            $encoding = New-Object System.Text.UTF8Encoding($false)
+        }
+        $text = $encoding.GetString($bytes, $bomLength, $bytes.Length - $bomLength)
+
+        $options = [System.Text.RegularExpressions.RegexOptions]::CultureInvariant
+        if (-not $CaseSensitive) { $options = $options -bor [System.Text.RegularExpressions.RegexOptions]::IgnoreCase }
+        $regex = New-Object System.Text.RegularExpressions.Regex([System.Text.RegularExpressions.Regex]::Escape($FindText), $options)
+
+        $count = $regex.Matches($text).Count
+        if ($count -eq 0) {
+            Write-Output ":No occurrences of the text were found in $path; the file was not changed."
+            $global:LASTEXITCODE = 0
+            return
+        }
+
+        # A MatchEvaluator keeps '$' in ReplaceText literal instead of being read as a substitution.
+        $newText = $regex.Replace($text, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $ReplaceText })
+        [System.IO.File]::WriteAllText($path, $newText, $encoding)
+    }
+    catch {
+        Write-Output "!Could not update the file: $($_.Exception.Message)"
+        return
+    }
+
+    Write-Output ":Replaced $count occurrence(s) in $path"
+    $global:LASTEXITCODE = 0
+}

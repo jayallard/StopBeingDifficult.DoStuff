@@ -6,7 +6,7 @@
     Description          = 'File and folder management helpers (symbolic links, file copy, ...) for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('New-FolderLink', 'Copy-FileOverwrite')
+    FunctionsToExport    = @('New-FolderLink', 'Copy-FileOverwrite', 'Update-FileText')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()
