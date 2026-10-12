@@ -14,7 +14,19 @@ else
 {
     <p class="text-xs uppercase tracking-wide text-slate-400">@_libraryName library</p>
     <h1 class="mb-1 text-2xl font-semibold text-slate-900">@_effective.Name</h1>
-    <p class="mb-1 text-xs text-slate-400">@_effective.Id</p>
+    <p class="mb-1 flex items-center gap-2 text-xs text-slate-400">
+        @_effective.Id
+        @if (_effective.UseWindowsPowerShell)
+        {
+            <span class="rounded bg-amber-100 px-1.5 py-0.5 font-normal text-amber-700"
+                  title="This task always runs in powershell.exe (Windows PowerShell 5.1)">Windows PowerShell 5.1</span>
+        }
+        else
+        {
+            <span class="rounded bg-slate-100 px-1.5 py-0.5 font-normal text-slate-600"
+                  title="Runs in pwsh.exe (PowerShell 7) when installed, otherwise powershell.exe">PowerShell 7</span>
+        }
+    </p>
     @if (!string.IsNullOrWhiteSpace(_effective.Description))
     {
         <p class="mb-4 text-slate-500">@_effective.Description</p>

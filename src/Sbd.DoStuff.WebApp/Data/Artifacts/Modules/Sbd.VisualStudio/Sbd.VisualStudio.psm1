@@ -60,4 +60,53 @@ function Get-VisualStudioVersions {
     $global:LASTEXITCODE = 0
 }
 
-Export-ModuleMember -Function Get-VisualStudioVersions
+function Set-VisualStudioRunAsAdmin {
+    <#
+    .SYNOPSIS
+    Configures every installed Visual Studio to always start as administrator.
+    .DESCRIPTION
+    Sets the RUNASADMIN compatibility flag on each instance's devenv.exe under
+    HKCU\...\AppCompatFlags\Layers (the same thing as ticking "Run this program as an administrator"
+    in the file's Compatibility properties). Per-user, so it needs no elevation. Other existing
+    compatibility flags on the file are kept. Sets $LASTEXITCODE to 0 on success, or 1 if Visual
+    Studio isn't installed.
+    #>
+    [CmdletBinding()]
+    param()
+
+    $vswhere = Get-VsWhere
+    if (-not $vswhere) {
+        Write-Output "!Visual Studio is not installed (vswhere.exe was not found)."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $json = (& $vswhere -all -prerelease -products * -format json | Out-String).Trim()
+    $instances = @()
+    if ($json) { $instances = @($json | ConvertFrom-Json) }
+
+    $layers = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers'
+    $configured = 0
+    foreach ($instance in $instances) {
+        $devenv = Join-Path $instance.installationPath 'Common7\IDE\devenv.exe'
+        if (-not (Test-Path -LiteralPath $devenv)) { continue }
+
+        if (-not (Test-Path $layers)) { New-Item -Path $layers -Force | Out-Null }
+        $current = (Get-ItemProperty -Path $layers -Name $devenv -ErrorAction SilentlyContinue).$devenv
+        $flags = @(([string]$current) -split '\s+' | Where-Object { $_ -and $_ -ne '~' -and $_ -ne 'RUNASADMIN' })
+        $value = (@('~') + $flags + 'RUNASADMIN') -join ' '
+
+        Set-ItemProperty -Path $layers -Name $devenv -Value $value -Type String
+        Write-Output ":$($instance.displayName) will always run as administrator ($devenv)"
+        $configured++
+    }
+
+    if ($configured -eq 0) {
+        Write-Output "!No Visual Studio installation with a devenv.exe was found."
+        $global:LASTEXITCODE = 1
+        return
+    }
+    $global:LASTEXITCODE = 0
+}
+
+Export-ModuleMember -Function Get-VisualStudioVersions, Set-VisualStudioRunAsAdmin

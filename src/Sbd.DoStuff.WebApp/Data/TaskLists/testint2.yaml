@@ -162,6 +162,9 @@ entries:
   - taskId: get-visual-studio-versions
     categories:
       - prerequisites.visualstudio
+  - taskId: set-visual-studio-run-as-admin
+    categories:
+      - prerequisites.visualstudio
   - taskId: execute-sql-file
     categories:
       - demo.sql
@@ -191,6 +194,11 @@ entries:
   - taskId: install-dotnet-11
     categories:
       - prerequisites.dotnet
+  - taskId: build-dotnet-solution
+    categories:
+      - prerequisites.dotnet
+    parameterValues:
+      SolutionPath: D:/oss/StopBeingDifficult.DoStuff/Sbd.DoStuff.slnx
   - taskId: list-sql-databases
     categories:
       - demo.sql
@@ -203,3 +211,17 @@ entries:
       ConnectionStringSetting: ConnectionStrings:DoStuffDemo
       UserNames: ReadyTime, ReadyTimeService, EPayEntry
       DatabaseNames: ProliantConfiguration, ReadyTime, ReadyTimeDataSync
+  - taskId: publish-dacpac
+    categories:
+      - demo.sql
+    parameterValues:
+      ConnectionStringSetting: ConnectionStrings:DoStuffDemo
+      DacPacPath: 'D:\path\to\Database.dacpac'
+      PublishProfilePath: 'D:\path\to\Database.publish.xml'
+      ScriptOnly: 'true'
+  - taskId: create-symbolic-link
+    categories:
+      - demo.filesystem
+    parameterValues:
+      LinkPath: 'D:\svn\Proliant\ePayEntry.root\trunk\ePayEntry II\ReadyPayOnline'
+      TargetPath: 'D:\git\rpo.app\ReadyPayOnline'

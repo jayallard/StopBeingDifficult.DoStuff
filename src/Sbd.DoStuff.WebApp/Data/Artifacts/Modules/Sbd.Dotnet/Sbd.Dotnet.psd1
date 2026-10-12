@@ -6,7 +6,7 @@
     Description          = '.NET SDK listing and installation for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Get-DotnetSdks', 'Install-DotnetSdk')
+    FunctionsToExport    = @('Get-DotnetSdks', 'Install-DotnetSdk', 'Build-DotnetSolution')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

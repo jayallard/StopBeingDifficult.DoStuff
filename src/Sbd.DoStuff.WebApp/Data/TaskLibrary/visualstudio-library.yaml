@@ -10,3 +10,10 @@
   command: |-
     Import-Module Sbd.VisualStudio
     Get-VisualStudioVersions -MinVersion $MinVersion
+- id: set-visual-studio-run-as-admin
+  name: Run Visual Studio as Admin
+  description: Sets every installed Visual Studio to always start as administrator (per-user compatibility flag on devenv.exe; takes effect the next time Visual Studio is launched).
+  type: powershell
+  command: |-
+    Import-Module Sbd.VisualStudio
+    Set-VisualStudioRunAsAdmin

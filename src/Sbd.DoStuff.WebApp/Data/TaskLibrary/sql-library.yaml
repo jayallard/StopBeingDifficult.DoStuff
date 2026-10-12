@@ -146,3 +146,42 @@
   command: |-
     Import-Module Sbd.Sql
     Remove-SqlUser -ConnectionStringSetting $ConnectionStringSetting -UserNames $UserNames -DatabaseNames $DatabaseNames -DryRun ($DryRun -ne 'false') -CommandTimeout ([int]$CommandTimeout)
+
+- id: publish-dacpac
+  name: Publish DacPac
+  description: Publishes a .dacpac to a SQL Server database with SqlPackage, taking the deployment options (drop objects not in source, block on data loss, SQLCMD variables, ...) from a publish profile (.publish.xml). The target is the configured connection string, not whatever the profile names. Set ScriptOnly to true to print the deployment script without changing anything. Requires SqlPackage (dotnet tool install -g microsoft.sqlpackage).
+  type: powershell
+  parameters:
+    - name: ConnectionStringSetting
+      description: Name of the configuration setting holding the target connection string, e.g. ConnectionStrings:Main. Its login needs permission to create/alter objects in the target database. Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__Main).
+      required: true
+      canOverride: true
+      configurationSetting: true
+    - name: DacPacPath
+      type: filePath
+      description: Path to the .dacpac file to publish (the build output of the SQL project).
+      required: true
+      canOverride: true
+    - name: PublishProfilePath
+      type: filePath
+      description: Path to the publish profile (.publish.xml) holding the deployment options.
+      required: true
+      canOverride: true
+    - name: TargetDatabaseName
+      description: Optional database name; overrides the one in the connection string and in the profile.
+      canOverride: true
+    - name: SqlCmdVariables
+      type: multilineText
+      description: Optional SQLCMD variable values as NAME=VALUE entries, separated by commas or new lines; they override the values in the profile.
+      canOverride: true
+    - name: CommandTimeout
+      description: Seconds a deployment statement may run before it is cancelled; 0 means no limit.
+      defaultValue: '300'
+      canOverride: true
+    - name: ScriptOnly
+      description: 'When true, generates and prints the deployment script instead of running it (a safe preview: nothing is changed). Default false.'
+      defaultValue: 'false'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Sql
+    Publish-DacPac -ConnectionStringSetting $ConnectionStringSetting -DacPacPath $DacPacPath -PublishProfilePath $PublishProfilePath -TargetDatabaseName $TargetDatabaseName -SqlCmdVariables $SqlCmdVariables -CommandTimeout ([int]$CommandTimeout) -ScriptOnly ($ScriptOnly -eq 'true')

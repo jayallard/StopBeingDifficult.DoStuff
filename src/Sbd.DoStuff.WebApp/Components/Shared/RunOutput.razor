@@ -1,5 +1,6 @@
-@implements IDisposable
+@implements IAsyncDisposable
 @inject ITaskExecutionEngine Engine
+@inject IJSRuntime JS
 
 @if (ShowStatus)
 {
@@ -23,5 +24,5 @@
     </div>
 }
 
-<pre class="max-h-[32rem] overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 shadow-inner">@foreach (var line in Run.OutputLines)
+<pre @ref="_output" class="max-h-[32rem] overflow-y-auto rounded-lg border border-slate-800 bg-slate-950 p-4 font-mono text-sm leading-6 shadow-inner">@foreach (var line in Run.OutputLines)
 {<div class="@LineClass(line)">@LineText(line)</div>}</pre>

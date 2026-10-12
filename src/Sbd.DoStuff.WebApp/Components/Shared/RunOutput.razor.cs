@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using Sbd.DoStuff.Domain.Execution;
 
 namespace Sbd.DoStuff.WebApp.Components.Shared;
@@ -8,7 +9,21 @@ public partial class RunOutput
     [Parameter, EditorRequired] public TaskRun Run { get; set; } = null!;
     [Parameter] public bool ShowStatus { get; set; }
 
+    private ElementReference _output;
+    private IJSObjectReference? _autoscroll;
+
     protected override void OnInitialized() => Engine.RunChanged += OnRunChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _autoscroll = await JS.InvokeAsync<IJSObjectReference>("import", "./js/autoscroll.js");
+        await _autoscroll.InvokeVoidAsync("attach", _output);
+    }
 
     private void OnRunChanged(TaskRun run)
     {
@@ -47,5 +62,20 @@ public partial class RunOutput
         ? line.Text[1..]
         : line.Text;
 
-    public void Dispose() => Engine.RunChanged -= OnRunChanged;
+    public async ValueTask DisposeAsync()
+    {
+        Engine.RunChanged -= OnRunChanged;
+
+        if (_autoscroll is not null)
+        {
+            try
+            {
+                await _autoscroll.InvokeVoidAsync("detach", _output);
+                await _autoscroll.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
 }

@@ -70,4 +70,43 @@ function Install-DotnetSdk {
     if ($LASTEXITCODE -eq 0) { Update-SessionPath }
 }
 
-Export-ModuleMember -Function Get-DotnetSdks, Install-DotnetSdk
+function Build-DotnetSolution {
+    <#
+    .SYNOPSIS
+    Compiles a solution (or project) with `dotnet build`.
+    .DESCRIPTION
+    SolutionPath is the .sln/.slnx/.csproj file, or a directory containing exactly one. Configuration
+    is Debug or Release. Sets $LASTEXITCODE to dotnet's exit code (0 = build succeeded).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$SolutionPath,
+
+        [ValidateSet('Debug', 'Release')]
+        [string]$Configuration = 'Debug'
+    )
+
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { Update-SessionPath }
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+        Write-Output "!dotnet is not installed."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    if (-not (Test-Path -LiteralPath $SolutionPath)) {
+        Write-Output "!Path not found: $SolutionPath"
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    Write-Output ":Building $SolutionPath ($Configuration)"
+    dotnet build $SolutionPath --configuration $Configuration --nologo
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output ":Build succeeded."
+    } else {
+        Write-Output "!Build failed (exit code $LASTEXITCODE)."
+    }
+}
+
+Export-ModuleMember -Function Get-DotnetSdks, Install-DotnetSdk, Build-DotnetSolution

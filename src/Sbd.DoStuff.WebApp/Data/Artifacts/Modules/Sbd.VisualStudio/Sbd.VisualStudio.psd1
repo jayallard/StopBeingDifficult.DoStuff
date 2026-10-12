@@ -6,7 +6,7 @@
     Description          = 'Visual Studio tasks for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Get-VisualStudioVersions')
+    FunctionsToExport    = @('Get-VisualStudioVersions', 'Set-VisualStudioRunAsAdmin')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

@@ -3,10 +3,10 @@
     ModuleVersion        = '1.0.0'
     GUID                 = 'e4a9d6b1-8c27-4f53-b0d9-61c3a7f2e85d'
     Author               = 'Jay Allard'
-    Description          = 'Run SQL Server scripts in a single transaction for Sbd.DoStuff.'
+    Description          = 'Run SQL Server scripts and publish DacPacs for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Invoke-SqlScript', 'Invoke-SqlFile', 'Install-Ssms', 'Install-SqlServerDeveloper', 'Enable-SqlServerMixedMode', 'Get-SqlDatabaseSize', 'Remove-SqlUser')
+    FunctionsToExport    = @('Invoke-SqlScript', 'Invoke-SqlFile', 'Install-Ssms', 'Install-SqlServerDeveloper', 'Enable-SqlServerMixedMode', 'Get-SqlDatabaseSize', 'Remove-SqlUser', 'Publish-DacPac')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

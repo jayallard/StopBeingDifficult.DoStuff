@@ -828,3 +828,129 @@ IF @Failed > 0
     # transaction would stop the statements after the first failure.
     Invoke-SqlScript -ConnectionStringSetting $ConnectionStringSetting -Script $script -CommandTimeout $CommandTimeout -UseTransaction $false
 }
+
+function Find-SqlPackage {
+    # Returns the path to sqlpackage, or $null. Looks on PATH (re-reading it from the registry first, in
+    # case it was just installed), then in the usual install locations: the `dotnet tool` folder, the
+    # standalone DAC framework folder, and Visual Studio's bundled copy. The newest match wins.
+    $command = Get-Command sqlpackage -ErrorAction SilentlyContinue
+    if (-not $command) {
+        $machine = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+        $user = [Environment]::GetEnvironmentVariable('Path', 'User')
+        $env:Path = (@($machine, $user, $env:Path) | Where-Object { $_ }) -join ';'
+        $command = Get-Command sqlpackage -ErrorAction SilentlyContinue
+    }
+    if ($command) { return $command.Source }
+
+    $patterns = @(
+        (Join-Path $env:USERPROFILE '.dotnet\tools\sqlpackage.exe'),
+        (Join-Path $env:ProgramFiles 'Microsoft SQL Server\*\DAC\bin\sqlpackage.exe'),
+        (Join-Path $env:ProgramFiles 'Microsoft Visual Studio\*\*\Common7\IDE\Extensions\Microsoft\SQLDB\DAC\sqlpackage.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'Microsoft SQL Server\*\DAC\bin\sqlpackage.exe')
+    )
+    $found = foreach ($pattern in $patterns) {
+        Get-ChildItem -Path $pattern -ErrorAction SilentlyContinue | Sort-Object FullName -Descending
+    }
+    $first = $found | Select-Object -First 1
+    if ($first) { return $first.FullName }
+    $null
+}
+
+function Publish-DacPac {
+    <#
+    .SYNOPSIS
+    Publishes a .dacpac to a SQL Server database with SqlPackage, using a publish profile (.publish.xml).
+    .DESCRIPTION
+    Runs `sqlpackage /Action:Publish` with the .dacpac as the source and the publish profile for the
+    deployment options (drop objects not in source, block on data loss, SQLCMD variables, ...). The target
+    comes from the connection string named by ConnectionStringSetting (read from the environment variable
+    of the same name, ':' as '__'); TargetDatabaseName, if given, overrides the database in it. SqlCmdVariables
+    are NAME=VALUE entries separated by commas or new lines and override the profile's variable values.
+    With -ScriptOnly nothing is changed: the deployment script is generated and printed instead.
+    Sets $LASTEXITCODE to SqlPackage's exit code (0 = success), or 1 if it couldn't be started.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$ConnectionStringSetting,
+        [Parameter(Mandatory)][string]$DacPacPath,
+        [Parameter(Mandatory)][string]$PublishProfilePath,
+        [string]$TargetDatabaseName,
+        [string]$SqlCmdVariables,
+        [int]$CommandTimeout = 300,
+        [bool]$ScriptOnly = $false
+    )
+
+    $global:LASTEXITCODE = 1
+
+    $connectionString = Get-SqlConnectionString -Setting $ConnectionStringSetting
+    if (-not $connectionString) {
+        Write-Output (Get-MissingConnectionStringMessage -Setting $ConnectionStringSetting)
+        return
+    }
+
+    foreach ($file in @(@('DacPac', $DacPacPath), @('Publish profile', $PublishProfilePath))) {
+        if (-not (Test-Path -LiteralPath $file[1] -PathType Leaf)) {
+            Write-Output "!$($file[0]) file not found: $($file[1])"
+            return
+        }
+    }
+    $dacPac = (Resolve-Path -LiteralPath $DacPacPath).ProviderPath
+    $profilePath = (Resolve-Path -LiteralPath $PublishProfilePath).ProviderPath
+
+    $sqlPackage = Find-SqlPackage
+    if (-not $sqlPackage) {
+        Write-Output '!SqlPackage was not found. Install it with: dotnet tool install -g microsoft.sqlpackage (or winget install Microsoft.SqlPackage).'
+        return
+    }
+
+    $variables = @($SqlCmdVariables -split '[,\r\n]+' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    foreach ($variable in $variables) {
+        if ($variable -notmatch '^[^=\s]+=') {
+            Write-Output "!Invalid SQLCMD variable '$variable': expected NAME=VALUE."
+            return
+        }
+    }
+
+    $action = if ($ScriptOnly) { 'Script' } else { 'Publish' }
+    $arguments = @(
+        "/Action:$action",
+        "/SourceFile:$dacPac",
+        "/Profile:$profilePath",
+        "/TargetConnectionString:$connectionString",
+        "/TargetTimeout:$CommandTimeout"
+    )
+    if ($TargetDatabaseName) { $arguments += "/TargetDatabaseName:$TargetDatabaseName" }
+    foreach ($variable in $variables) { $arguments += "/Variables:$variable" }
+
+    $scriptFile = $null
+    if ($ScriptOnly) {
+        $scriptFile = Join-Path ([System.IO.Path]::GetTempPath()) "dacpac-$([guid]::NewGuid().ToString('N')).sql"
+        $arguments += "/OutputPath:$scriptFile"
+    }
+
+    Write-Output ":SqlPackage: $sqlPackage"
+    Write-Output ":DacPac: $dacPac"
+    Write-Output ":Publish profile: $profilePath"
+    if ($TargetDatabaseName) { Write-Output ":Target database: $TargetDatabaseName" }
+    foreach ($variable in $variables) { Write-Output ":SQLCMD variable: $variable" }
+    if ($ScriptOnly) { Write-Output ':Script only: generating the deployment script, nothing will be changed.' }
+
+    # The connection string is deliberately not echoed (it may hold a password).
+    & $sqlPackage @arguments 2>&1 | ForEach-Object { "$_" }
+    $exitCode = $LASTEXITCODE
+
+    if ($scriptFile -and (Test-Path -LiteralPath $scriptFile)) {
+        Write-Output ''
+        Write-Output ':Deployment script:'
+        Get-Content -LiteralPath $scriptFile
+        Remove-Item -LiteralPath $scriptFile -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($exitCode -eq 0) {
+        Write-Output $(if ($ScriptOnly) { ':Deployment script generated.' } else { ':DacPac published.' })
+    }
+    else {
+        Write-Output "!SqlPackage failed with exit code $exitCode."
+    }
+    $global:LASTEXITCODE = $exitCode
+}

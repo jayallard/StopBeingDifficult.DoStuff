@@ -1,0 +1,24 @@
+- id: create-symbolic-link
+  name: Create Symbolic Link
+  description: Creates a symbolic link (or junction) at LinkPath that maps to the existing folder TargetPath, so anything that reads LinkPath sees the contents of TargetPath. Missing parent folders of LinkPath are created. Re-running is safe; a link that already points at TargetPath is left alone. An existing link to a different folder is replaced only when Force is true, and a real file or folder at LinkPath is never removed. SymbolicLink requires an elevated session or Windows Developer Mode; Junction does not.
+  type: powershell
+  parameters:
+    - name: LinkPath
+      description: The path where the link is created, e.g. the old location that other tooling still points at.
+      required: true
+      canOverride: true
+    - name: TargetPath
+      description: The existing folder the link maps to. It must already exist.
+      required: true
+      canOverride: true
+    - name: LinkType
+      description: 'SymbolicLink (default) or Junction. A Junction needs no elevation or Developer Mode but only works for folders on local volumes.'
+      defaultValue: SymbolicLink
+      canOverride: true
+    - name: Force
+      description: 'When true, replaces an existing link at LinkPath that points somewhere else. Never replaces a real file or folder. Default false.'
+      defaultValue: 'false'
+      canOverride: true
+  command: |-
+    Import-Module Sbd.FileSystem
+    New-FolderLink -LinkPath $LinkPath -TargetPath $TargetPath -LinkType $LinkType -Force ($Force -eq 'true')

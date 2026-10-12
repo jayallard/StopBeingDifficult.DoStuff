@@ -14,3 +14,8 @@ entries:
   - taskId: install-dotnet-11
     categories:
       - dotnet.install
+  - taskId: build-dotnet-solution
+    categories:
+      - dotnet.build
+    parameterValues:
+      SolutionPath: D:\oss\StopBeingDifficult.DoStuff\Sbd.DoStuff.slnx

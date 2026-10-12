@@ -31,3 +31,19 @@
   baseTaskId: install-dotnet-sdk
   parameterValues:
     Major: 11
+- id: build-dotnet-solution
+  name: Build .NET Solution
+  description: Compiles a solution or project with `dotnet build` in the chosen configuration (Debug or Release).
+  type: powershell
+  parameters:
+    - name: SolutionPath
+      description: Path to the .sln/.slnx/.csproj file, or a directory containing one
+      required: true
+      canOverride: true
+    - name: Configuration
+      description: Build configuration, Debug or Release
+      defaultValue: Debug
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Dotnet
+    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration

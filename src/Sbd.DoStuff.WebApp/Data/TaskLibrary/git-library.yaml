@@ -19,7 +19,7 @@
     Test-GitVersion -MinVersion $MinVersion
 - id: git-clone
   name: Git Clone
-  description: Clones each listed repository into the work directory. Repositories that already exist are reported and skipped; a failed clone is an error.
+  description: Clones each listed repository into the work directory. Repositories that already exist are reported and skipped; a failed clone is an error. HistoryDays limits each clone to recent history (a shallow clone).
   type: powershell
   parameters:
     - name: WorkDirectory
@@ -31,6 +31,11 @@
       description: The repositories to clone, one URL per line. Blank lines and lines starting with # are ignored.
       required: true
       canOverride: true
+    - name: HistoryDays
+      description: How many days of history to clone, e.g. 10 for the last 10 days. 0 clones the full history.
+      defaultValue: 0
+      required: true
+      canOverride: true
   command: |-
     Import-Module Sbd.Git
-    Copy-GitRepository -WorkDirectory $WorkDirectory -Repositories $Repositories
+    Copy-GitRepository -WorkDirectory $WorkDirectory -Repositories $Repositories -HistoryDays $HistoryDays
