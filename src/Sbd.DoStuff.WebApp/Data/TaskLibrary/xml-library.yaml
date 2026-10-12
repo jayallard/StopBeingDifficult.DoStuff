@@ -1,0 +1,17 @@
+- id: set-xml-value
+  name: Set XML Value
+  description: Sets the value of every node in an XML file matching an XPath expression (element text or attribute value). Fails if the file is missing or nothing matches. For files with a default namespace use local-name() in the XPath.
+  type: powershell
+  parameters:
+    - name: FileName
+      required: true
+      canOverride: true
+    - name: XPath
+      required: true
+      canOverride: true
+    - name: Value
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Xml
+    Set-XmlValue -FileName $FileName -XPath $XPath -Value $Value

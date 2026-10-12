@@ -74,6 +74,11 @@ public partial class LibraryTask
         }
     }
 
+    private static bool IsChecked(string value) => string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+
+    private void SetChecked(TaskParameterDefinition parameter, ChangeEventArgs e) =>
+        SetValue(parameter, e.Value is true ? "true" : "false");
+
     private static string InputClass(bool locked, TaskParameterDefinition parameter, string value)
     {
         const string baseClass = "mt-1 w-full rounded-md border px-2 py-1.5 text-sm focus:outline-none";

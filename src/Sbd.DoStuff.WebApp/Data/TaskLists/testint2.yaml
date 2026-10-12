@@ -236,3 +236,16 @@ entries:
     parameterValues:
       LinkPath: 'D:\svn\Proliant\ePayEntry.root\trunk\ePayEntry II\ReadyPayOnline'
       TargetPath: 'D:\git\rpo.app\ReadyPayOnline'
+  - taskId: copy-file
+    categories:
+      - demo.filesystem
+    parameterValues:
+      SourceFile: 'D:\path\to\source.txt'
+      TargetFile: 'D:\path\to\target.txt'
+  - taskId: set-xml-value
+    categories:
+      - demo.xml
+    parameterValues:
+      FileName: 'D:\path\to\file.xml'
+      XPath: /configuration/appSettings/add[@key='Example']/@value
+      Value: example

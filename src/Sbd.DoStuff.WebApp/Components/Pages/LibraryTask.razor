@@ -65,6 +65,14 @@ else
                               disabled="@locked"
                               @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)">@value</textarea>
                 }
+                else if (parameter.Type == TaskParameterType.Boolean)
+                {
+                    <input type="checkbox"
+                           class="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                           checked="@IsChecked(value)"
+                           disabled="@locked"
+                           @onchange="e => SetChecked(parameter, e)"/>
+                }
                 else if (parameter.Type == TaskParameterType.FilePath)
                 {
                     <FilePathInput Value="@value"

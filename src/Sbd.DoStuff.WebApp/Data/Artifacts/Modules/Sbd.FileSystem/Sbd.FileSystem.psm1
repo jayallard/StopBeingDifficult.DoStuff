@@ -85,3 +85,58 @@ function New-FolderLink {
     Write-Output ":Created $LinkType $linkFull -> $target"
     $global:LASTEXITCODE = 0
 }
+
+function Copy-FileOverwrite {
+    <#
+    .SYNOPSIS
+    Copies a file to a target path, overwriting the target if it already exists.
+    .DESCRIPTION
+    SourceFile must be an existing file. TargetFile is the full path of the copy (not a folder).
+    Missing parent folders of TargetFile are created. An existing file at TargetFile is overwritten;
+    a folder at TargetFile is never replaced.
+
+    Sets $LASTEXITCODE to 0 on success, 1 on failure.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$SourceFile,
+        [Parameter(Mandatory)][string]$TargetFile
+    )
+
+    $global:LASTEXITCODE = 1
+
+    if (-not (Test-Path -LiteralPath $SourceFile -PathType Leaf)) {
+        Write-Output "!Source file not found: $SourceFile"
+        return
+    }
+    $source = (Resolve-Path -LiteralPath $SourceFile).ProviderPath
+    $targetFull = [System.IO.Path]::GetFullPath($TargetFile)
+
+    if (Test-Path -LiteralPath $targetFull -PathType Container) {
+        Write-Output "!$targetFull is a folder; TargetFile must be a file path."
+        return
+    }
+    if ($source -eq $targetFull) {
+        Write-Output "!Source and target are the same file: $source"
+        return
+    }
+
+    $parent = Split-Path -Path $targetFull -Parent
+    if ($parent -and -not (Test-Path -LiteralPath $parent)) {
+        New-Item -ItemType Directory -Path $parent -Force | Out-Null
+        Write-Output ":Created folder $parent"
+    }
+
+    $existed = Test-Path -LiteralPath $targetFull -PathType Leaf
+    try {
+        Copy-Item -LiteralPath $source -Destination $targetFull -Force -ErrorAction Stop
+    }
+    catch {
+        Write-Output "!Could not copy the file: $($_.Exception.Message)"
+        return
+    }
+
+    $verb = if ($existed) { 'Overwrote' } else { 'Copied to' }
+    Write-Output ":$verb $targetFull (from $source)"
+    $global:LASTEXITCODE = 0
+}

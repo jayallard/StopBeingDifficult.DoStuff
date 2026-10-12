@@ -33,7 +33,7 @@
     Major: 11
 - id: build-dotnet-solution
   name: Build .NET Solution
-  description: Compiles a solution or project with `dotnet build` in the chosen configuration (Debug or Release).
+  description: Compiles a solution or project with `dotnet build` (or MSBuild, for .sqlproj) in the chosen configuration (Debug or Release).
   type: powershell
   parameters:
     - name: SolutionPath
@@ -44,6 +44,11 @@
       description: Build configuration, Debug or Release
       defaultValue: Debug
       canOverride: true
+    - name: UseMsBuild
+      description: Compile with MSBuild instead of `dotnet build` (required for .sqlproj projects)
+      type: boolean
+      defaultValue: 'false'
+      canOverride: true
   command: |-
     Import-Module Sbd.Dotnet
-    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration
+    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration -UseMsBuild:($UseMsBuild -eq 'true')

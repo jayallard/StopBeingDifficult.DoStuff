@@ -22,3 +22,20 @@
   command: |-
     Import-Module Sbd.FileSystem
     New-FolderLink -LinkPath $LinkPath -TargetPath $TargetPath -LinkType $LinkType -Force ($Force -eq 'true')
+
+- id: copy-file
+  name: Copy File
+  description: Copies SourceFile to TargetFile. If TargetFile already exists it is overwritten. Missing parent folders of TargetFile are created. TargetFile must be a file path, not an existing folder.
+  type: powershell
+  parameters:
+    - name: SourceFile
+      description: The existing file to copy.
+      required: true
+      canOverride: true
+    - name: TargetFile
+      description: The full path of the copy. An existing file at this path is overwritten.
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.FileSystem
+    Copy-FileOverwrite -SourceFile $SourceFile -TargetFile $TargetFile

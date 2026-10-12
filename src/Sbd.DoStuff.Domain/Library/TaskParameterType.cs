@@ -6,5 +6,7 @@ public enum TaskParameterType
     Text,
     MultilineText,
     /// <summary>A path to a file; the UI offers a Browse button (typing a path still works).</summary>
-    FilePath
+    FilePath,
+    /// <summary>A checkbox; the value is carried as the string "true" or "false" (a missing value means false).</summary>
+    Boolean
 }

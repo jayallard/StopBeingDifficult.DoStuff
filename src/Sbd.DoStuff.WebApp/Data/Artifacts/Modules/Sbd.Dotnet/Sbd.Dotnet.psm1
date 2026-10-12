@@ -70,13 +70,28 @@ function Install-DotnetSdk {
     if ($LASTEXITCODE -eq 0) { Update-SessionPath }
 }
 
+function Find-MsBuild {
+    # `dotnet build` can't compile .sqlproj (SSDT) projects, which need the full Visual Studio MSBuild.
+    # Prefer the newest VS install that has MSBuild (via vswhere), then fall back to PATH.
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (Test-Path -LiteralPath $vswhere) {
+        $found = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild `
+            -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
+        if ($found) { return $found }
+    }
+    $cmd = Get-Command msbuild.exe -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
 function Build-DotnetSolution {
     <#
     .SYNOPSIS
-    Compiles a solution (or project) with `dotnet build`.
+    Compiles a solution (or project) with `dotnet build`, or with MSBuild when -UseMsBuild is set.
     .DESCRIPTION
-    SolutionPath is the .sln/.slnx/.csproj file, or a directory containing exactly one. Configuration
-    is Debug or Release. Sets $LASTEXITCODE to dotnet's exit code (0 = build succeeded).
+    SolutionPath is the .sln/.slnx/.csproj/.sqlproj file, or a directory containing exactly one.
+    Configuration is Debug or Release. UseMsBuild compiles with Visual Studio's MSBuild.exe instead
+    of dotnet (needed for .sqlproj). Sets $LASTEXITCODE to the build tool's exit code (0 = succeeded).
     #>
     [CmdletBinding()]
     param(
@@ -84,15 +99,10 @@ function Build-DotnetSolution {
         [string]$SolutionPath,
 
         [ValidateSet('Debug', 'Release')]
-        [string]$Configuration = 'Debug'
-    )
+        [string]$Configuration = 'Debug',
 
-    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { Update-SessionPath }
-    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-        Write-Output "!dotnet is not installed."
-        $global:LASTEXITCODE = 1
-        return
-    }
+        [switch]$UseMsBuild
+    )
 
     if (-not (Test-Path -LiteralPath $SolutionPath)) {
         Write-Output "!Path not found: $SolutionPath"
@@ -100,8 +110,28 @@ function Build-DotnetSolution {
         return
     }
 
-    Write-Output ":Building $SolutionPath ($Configuration)"
-    dotnet build $SolutionPath --configuration $Configuration --nologo
+    if ($UseMsBuild) {
+        $msbuild = Find-MsBuild
+        if (-not $msbuild) {
+            Write-Output "!MSBuild was not found. Install Visual Studio (or the Build Tools) with the MSBuild component."
+            $global:LASTEXITCODE = 1
+            return
+        }
+
+        Write-Output ":Building $SolutionPath ($Configuration) with MSBuild: $msbuild"
+        & $msbuild $SolutionPath /restore /p:Configuration=$Configuration /nologo /verbosity:minimal
+    } else {
+        if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { Update-SessionPath }
+        if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+            Write-Output "!dotnet is not installed."
+            $global:LASTEXITCODE = 1
+            return
+        }
+
+        Write-Output ":Building $SolutionPath ($Configuration)"
+        dotnet build $SolutionPath --configuration $Configuration --nologo
+    }
+
     if ($LASTEXITCODE -eq 0) {
         Write-Output ":Build succeeded."
     } else {
