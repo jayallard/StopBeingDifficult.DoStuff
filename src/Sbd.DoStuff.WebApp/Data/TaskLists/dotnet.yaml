@@ -19,3 +19,6 @@ entries:
       - dotnet.build
     parameterValues:
       SolutionPath: D:\oss\StopBeingDifficult.DoStuff\Sbd.DoStuff.slnx
+  - taskId: install-dotnet-core-2-2
+    categories:
+      - dotnet.install

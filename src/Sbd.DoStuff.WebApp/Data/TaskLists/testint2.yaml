@@ -257,3 +257,6 @@ entries:
       FilePath: 'D:\path\to\file.txt'
       FindText: 'old text'
       ReplaceText: 'new text'
+  - taskId: install-dotnet-core-2-2
+    categories:
+      - prerequisites.dotnet

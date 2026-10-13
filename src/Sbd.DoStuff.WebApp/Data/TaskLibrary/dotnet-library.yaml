@@ -31,6 +31,13 @@
   baseTaskId: install-dotnet-sdk
   parameterValues:
     Major: 11
+- id: install-dotnet-core-2-2
+  name: Install .NET Core 2.2
+  description: Installs the .NET Core 2.2 SDK (2.2.207) by downloading Microsoft's installer, since winget has no package for it. Needs an elevated session.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Dotnet
+    Install-DotnetLegacySdk -Version 2.2
 - id: build-dotnet-solution
   name: Build .NET Solution
   description: Compiles a solution or project with `dotnet build` (or MSBuild, for .sqlproj) in the chosen configuration (Debug or Release).

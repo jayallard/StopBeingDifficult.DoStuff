@@ -70,6 +70,81 @@ function Install-DotnetSdk {
     if ($LASTEXITCODE -eq 0) { Update-SessionPath }
 }
 
+# SDKs that winget doesn't carry (it starts at 3.1), by major.minor. They're out of support but
+# Microsoft still hosts the installers.
+$LegacySdks = @{
+    '2.2' = @{
+        Version = '2.2.207'
+        Url     = 'https://dotnetcli.blob.core.windows.net/dotnet/Sdk/2.2.207/dotnet-sdk-2.2.207-win-x64.exe'
+    }
+}
+
+function Install-DotnetLegacySdk {
+    <#
+    .SYNOPSIS
+    Installs an out-of-support .NET Core SDK (2.2) by downloading Microsoft's installer directly.
+    .DESCRIPTION
+    winget has no package for these versions. Needs an elevated session. Sets $LASTEXITCODE to the
+    installer's exit code, or 0 if the SDK is already installed (a pending reboot counts as success).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('2.2')]
+        [string]$Version
+    )
+
+    $sdk = $LegacySdks[$Version]
+
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { Update-SessionPath }
+    if ((Get-Command dotnet -ErrorAction SilentlyContinue) -and
+        (@(dotnet --list-sdks) | Where-Object { $_ -like "$($sdk.Version) *" })) {
+        Write-Output ":.NET Core SDK $($sdk.Version) is already installed"
+        $global:LASTEXITCODE = 0
+        return
+    }
+
+    $principal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        Write-Output "!Installing the .NET Core SDK $($sdk.Version) requires an elevated (administrator) session."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $installer = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetFileName($sdk.Url))
+    try {
+        Write-Output ":Downloading $($sdk.Url)"
+        $progress = $ProgressPreference
+        $ProgressPreference = 'SilentlyContinue'
+        try { Invoke-WebRequest -Uri $sdk.Url -OutFile $installer -UseBasicParsing }
+        finally { $ProgressPreference = $progress }
+
+        Write-Output ":Installing $installer"
+        $process = Start-Process -FilePath $installer -ArgumentList '/install', '/quiet', '/norestart' -Wait -PassThru
+        $code = $process.ExitCode
+    }
+    catch {
+        Write-Output "!Failed to install the .NET Core SDK $($sdk.Version): $($_.Exception.Message)"
+        $global:LASTEXITCODE = 1
+        return
+    }
+    finally {
+        Remove-Item $installer -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($code -eq 3010) {
+        Write-Output ":A restart is required to finish installing the SDK"
+        $code = 0
+    }
+    elseif ($code -ne 0) {
+        Write-Output "!The installer failed with exit code $code"
+    }
+    else {
+        Update-SessionPath
+    }
+    $global:LASTEXITCODE = $code
+}
+
 function Find-MsBuild {
     # `dotnet build` can't compile .sqlproj (SSDT) projects, which need the full Visual Studio MSBuild.
     # Prefer the newest VS install that has MSBuild (via vswhere), then fall back to PATH.
@@ -139,4 +214,4 @@ function Build-DotnetSolution {
     }
 }
 
-Export-ModuleMember -Function Get-DotnetSdks, Install-DotnetSdk, Build-DotnetSolution
+Export-ModuleMember -Function Get-DotnetSdks, Install-DotnetSdk, Install-DotnetLegacySdk, Build-DotnetSolution
