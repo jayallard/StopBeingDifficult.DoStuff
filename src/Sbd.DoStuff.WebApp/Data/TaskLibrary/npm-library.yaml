@@ -1,0 +1,22 @@
+- id: execute-npm
+  name: Execute npm Commands
+  description: Runs the given npm commands, one per line, in a working directory. Fails on the first command that fails. Version "auto" switches Node via fnm to the version in the working directory's .nvmrc (and fails if there is none); another value is passed to fnm as the version to use; blank uses the Node already on PATH.
+  type: powershell
+  parameters:
+    - name: WorkingDirectory
+      description: Directory to run the commands in (and to read .nvmrc from)
+      required: true
+      canOverride: true
+    - name: Commands
+      description: npm commands to run, one per line
+      type: multilineText
+      defaultValue: npm install
+      required: true
+      canOverride: true
+    - name: Version
+      description: Node version for fnm to use, or "auto" to use the version in the working directory's .nvmrc
+      defaultValue: auto
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Npm
+    Invoke-NpmCommands -WorkingDirectory $WorkingDirectory -Commands $Commands -Version $Version

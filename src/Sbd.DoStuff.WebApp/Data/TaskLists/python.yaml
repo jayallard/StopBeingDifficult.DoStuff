@@ -1,0 +1,10 @@
+id: python
+name: Python
+description: Check for and install Python
+entries:
+  - taskId: check-python-version
+    categories:
+      - python
+  - taskId: install-python
+    categories:
+      - python.install

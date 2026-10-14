@@ -260,3 +260,14 @@ entries:
   - taskId: install-dotnet-core-2-2
     categories:
       - prerequisites.dotnet
+  - taskId: execute-npm
+    categories:
+      - demo.npm
+    parameterValues:
+      WorkingDirectory: 'D:\path\to\project'
+  - taskId: install-python
+    categories:
+      - prerequisites.python
+  - taskId: check-python-version
+    categories:
+      - prerequisites.python
