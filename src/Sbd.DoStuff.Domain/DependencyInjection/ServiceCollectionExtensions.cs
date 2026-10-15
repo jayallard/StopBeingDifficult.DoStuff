@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Sbd.DoStuff.Domain.DataSources;
 using Sbd.DoStuff.Domain.Execution;
 using Sbd.DoStuff.Domain.Library;
 using Sbd.DoStuff.Domain.Lists;
@@ -14,10 +15,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDoStuffDomain(this IServiceCollection services, IConfiguration configuration)
     {
-        // Each artifacts directory's Modules folder goes on PSModulePath, so task commands can
+        // Each assets directory's Modules folder goes on PSModulePath, so task commands can
         // `Import-Module <Name>` the same modules a user can import directly in PowerShell.
-        var moduleDirectories = RequireDirectories(configuration, "Artifacts:Directories")
-            .Select(directory => Path.GetFullPath(Path.Combine(ExpandHomeDirectory(directory), "Modules")))
+        var sources = RequireDirectories(configuration, "FileDataSource:Directories")
+            .Select(directory => Path.GetFullPath(ExpandHomeDirectory(directory)))
+            .ToArray();
+        var assetsDirectories = ExistingSubdirectories(sources, FileDataSource.AssetsFolder);
+
+        var moduleDirectories = assetsDirectories
+            .Select(directory => Path.Combine(directory, "Modules"))
             .ToArray();
         services.AddSingleton<IProcessRunner>(_ => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? new WindowsProcessRunner(moduleDirectories)
@@ -26,24 +32,26 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITaskFactory, Library.TaskFactory>();
 
         services.AddSingleton<ITaskLibrary>(provider => new YamlTaskLibrary(
-            RequireDirectories(configuration, "TaskLibrary:Directories").Select(ExpandHomeDirectory),
-            RequireDirectories(configuration, "Artifacts:Directories").Select(ExpandHomeDirectory),
+            ExistingSubdirectories(sources, FileDataSource.TaskLibraryFolder),
+            assetsDirectories,
             provider.GetRequiredService<ILogger<YamlTaskLibrary>>()));
         services.AddSingleton<ITaskListRepository>(provider =>
         {
-            var directories = RequireDirectories(configuration, "TaskLists:Directories").Select(ExpandHomeDirectory).ToArray();
+            // New public lists are saved under the first source, new private lists under the last.
             var storage = new TaskListStorageOptions(
-                PublicDirectory: ExpandHomeDirectory(configuration["TaskLists:PublicDirectory"] ?? directories[0]),
-                PrivateDirectory: ExpandHomeDirectory(configuration["TaskLists:PrivateDirectory"] ?? "~/.sbd.dostuff/TaskLists"));
-
-            // Make sure lists saved to the write directories are also loaded on the next start.
-            var loadDirectories = directories
-                .Concat([storage.PublicDirectory, storage.PrivateDirectory])
-                .DistinctBy(d => Path.GetFullPath(d), StringComparer.OrdinalIgnoreCase);
+                PublicDirectory: Path.Combine(sources[0], FileDataSource.TaskListsFolder),
+                PrivateDirectory: Path.Combine(sources[^1], FileDataSource.TaskListsFolder));
 
             return new YamlTaskListRepository(
-                loadDirectories, provider.GetRequiredService<ILogger<YamlTaskListRepository>>(), storage);
+                ExistingSubdirectories(sources, FileDataSource.TaskListsFolder),
+                provider.GetRequiredService<ILogger<YamlTaskListRepository>>(), storage);
         });
+
+        foreach (var source in sources)
+        {
+            services.AddSingleton<IDataSource>(provider => new FileDataSource(
+                source, provider.GetRequiredService<ITaskLibrary>(), provider.GetRequiredService<ITaskListRepository>()));
+        }
 
         services.AddSingleton<ITaskRunStore>(_ => CreateTaskRunStore(configuration));
         services.AddSingleton<ITaskExecutionEngine, TaskExecutionEngine>();
@@ -64,6 +72,10 @@ public static class ServiceCollectionExtensions
             : directories;
     }
 
+    // Every subfolder is optional: a data source only contributes the kinds of data it has.
+    private static string[] ExistingSubdirectories(IEnumerable<string> sources, string name) =>
+        sources.Select(source => Path.Combine(source, name)).Where(Directory.Exists).ToArray();
+
     private static string ExpandHomeDirectory(string path) =>
         path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal)
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), path[2..])
@@ -82,6 +94,5 @@ public static class ServiceCollectionExtensions
     }
 
     private static string ResolveTaskRunStoreFilePath(IConfiguration configuration) =>
-        configuration["taskrunstore:yaml:file"] ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".sbd.dostuff", "TaskRuns.yaml");
+        ExpandHomeDirectory(configuration["taskrunstore:yaml:file"] ?? "~/.sbd/TaskRuns.yaml");
 }

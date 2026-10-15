@@ -1,5 +1,61 @@
 @import "tailwindcss";
 
+/* Class-based dark mode, toggled by adding "dark" to <html> (see App.razor). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Dark mode re-maps the palette instead of restyling each component: the light-mode utilities keep
+ * working, but the shades they reference resolve to dark-theme values (slate is flipped, the accent
+ * colours get dark tints for backgrounds and light shades for text).
+ */
+html.dark {
+    color-scheme: dark;
+
+    --color-white: oklch(20.8% .042 265.755);
+    --color-slate-50: oklch(12.9% .042 264.695);
+    --color-slate-100: oklch(27.9% .041 260.031);
+    --color-slate-200: oklch(37.2% .044 257.287);
+    --color-slate-300: oklch(44.6% .043 257.281);
+    --color-slate-400: oklch(55.4% .046 257.417);
+    --color-slate-500: oklch(70.4% .04 256.788);
+    --color-slate-600: oklch(86.9% .022 252.894);
+    --color-slate-700: oklch(92.9% .013 255.508);
+    --color-slate-800: oklch(96.8% .007 247.896);
+    --color-slate-900: oklch(98.4% .003 247.858);
+    --color-slate-950: oklch(100% 0 0);
+
+    --color-indigo-50: oklch(28% .09 277);
+    --color-indigo-100: oklch(32% .1 277);
+    --color-indigo-200: oklch(40% .12 277);
+    --color-indigo-300: oklch(50% .15 277);
+    --color-indigo-700: oklch(78% .12 277);
+
+    --color-red-50: oklch(27% .08 18);
+    --color-red-200: oklch(40% .12 18);
+    --color-red-300: oklch(50% .15 20);
+    --color-red-600: oklch(70.4% .191 22.216);
+    --color-red-700: oklch(80.8% .114 19.571);
+
+    --color-amber-50: oklch(27% .05 85);
+    --color-amber-100: oklch(32% .07 85);
+    --color-amber-300: oklch(50% .12 85);
+    --color-amber-600: oklch(82% .15 90);
+    --color-amber-700: oklch(82% .15 90);
+    --color-amber-900: oklch(92% .1 95);
+    --color-amber-950: oklch(96.2% .059 95.617);
+
+    --color-emerald-50: oklch(27% .05 165);
+    --color-emerald-200: oklch(40% .08 165);
+    --color-emerald-600: oklch(76.5% .177 163.223);
+    --color-emerald-700: oklch(78% .14 165);
+
+    --color-sky-600: oklch(72% .14 242);
+    --color-sky-700: oklch(78% .12 242);
+    --color-blue-700: oklch(75% .15 260);
+    --color-purple-700: oklch(75% .15 305);
+    --color-teal-700: oklch(78% .11 186);
+}
+
 @layer base {
     body {
         @apply bg-slate-50 text-slate-900 antialiased;
@@ -12,3 +68,13 @@
     border-radius: 0.375rem;
     outline: 1px dashed var(--color-indigo-300);
 }
+
+/* Syntax highlighting tokens produced by SyntaxHighlighter. */
+.tok-comment { color: var(--color-slate-400); font-style: italic; }
+.tok-string { color: var(--color-emerald-700); }
+.tok-key { color: var(--color-indigo-700); }
+.tok-keyword { color: var(--color-purple-700); font-weight: 500; }
+.tok-variable { color: var(--color-sky-700); }
+.tok-function { color: var(--color-blue-700); }
+.tok-param { color: var(--color-teal-700); }
+.tok-number { color: var(--color-amber-700); }

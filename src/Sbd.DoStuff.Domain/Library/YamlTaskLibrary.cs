@@ -15,9 +15,9 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
     private readonly Dictionary<string, TaskDefinition> _definitions = new();
     private readonly List<TaskLibraryGroup> _groups = [];
 
-    public YamlTaskLibrary(IEnumerable<string> directories, IEnumerable<string> artifactsDirectories, ILogger<YamlTaskLibrary> logger)
+    public YamlTaskLibrary(IEnumerable<string> directories, IEnumerable<string> assetsDirectories, ILogger<YamlTaskLibrary> logger)
     {
-        var artifactsDirectoryList = artifactsDirectories.ToList();
+        var assetsDirectoryList = assetsDirectories.ToList();
 
         foreach (var directory in directories)
         {
@@ -41,7 +41,7 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
 
                     var resolved = definition.ScriptPath is null
                         ? definition
-                        : definition with { ScriptPath = ResolveScriptPath(definition, artifactsDirectoryList, file) };
+                        : definition with { ScriptPath = ResolveScriptPath(definition, assetsDirectoryList, file) };
 
                     if (!_definitions.TryAdd(resolved.Id, resolved))
                     {
@@ -59,7 +59,7 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
                     id = $"{baseId}-{suffix}";
                 }
 
-                _groups.Add(new TaskLibraryGroup(id, FormatName(baseId), fileDefinitions));
+                _groups.Add(new TaskLibraryGroup(id, FormatName(baseId), fileDefinitions, file));
             }
         }
 
@@ -114,7 +114,7 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
         }
     }
 
-    private static string ResolveScriptPath(TaskDefinition definition, IReadOnlyList<string> artifactsDirectories, string file)
+    private static string ResolveScriptPath(TaskDefinition definition, IReadOnlyList<string> assetsDirectories, string file)
     {
         if (Path.IsPathRooted(definition.ScriptPath))
         {
@@ -129,9 +129,9 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
             return resolved;
         }
 
-        foreach (var artifactsDirectory in artifactsDirectories)
+        foreach (var assetsDirectory in assetsDirectories)
         {
-            var candidate = Path.GetFullPath(Path.Combine(artifactsDirectory, definition.ScriptPath!));
+            var candidate = Path.GetFullPath(Path.Combine(assetsDirectory, definition.ScriptPath!));
             if (File.Exists(candidate))
             {
                 return candidate;
@@ -140,7 +140,7 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
 
         throw new InvalidOperationException(
             $"Task definition '{definition.Id}' (in '{file}') has ScriptPath '{definition.ScriptPath}', " +
-            $"which does not resolve to an existing file in any artifacts directory " +
-            $"({string.Join(", ", artifactsDirectories)}).");
+            $"which does not resolve to an existing file in any assets directory " +
+            $"({string.Join(", ", assetsDirectories)}).");
     }
 }

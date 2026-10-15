@@ -12,6 +12,8 @@ internal sealed class FakeTaskListRepository(params TaskListDefinition[] lists) 
 
     public TaskListScope? GetScope(string listId) => _lists.ContainsKey(listId) ? TaskListScope.Public : null;
 
+    public string? GetLocation(string listId) => null;
+
     public void Save(TaskListDefinition list, TaskListScope scope, string? originalId = null)
     {
         _lists.Remove(originalId ?? list.Id);

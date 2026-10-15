@@ -5,6 +5,9 @@ public interface ITaskListRepository
     IReadOnlyList<TaskListDefinition> GetAll();
     TaskListDefinition? Find(string listId);
 
+    /// <summary>Where a list is stored (its file path), or null if it doesn't exist.</summary>
+    string? GetLocation(string listId);
+
     /// <summary>The storage scope of an existing list, or null if it doesn't exist.</summary>
     TaskListScope? GetScope(string listId);
 

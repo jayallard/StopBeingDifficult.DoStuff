@@ -102,6 +102,7 @@ public partial class ListDetail : IDisposable
                 "if(!a)return;const id=new URL(a.href).hash.slice(1);" +
                 "r.invokeMethodAsync('OnHashChanged','#'+id).finally(()=>setTimeout(()=>{" +
                 "const el=document.getElementById(id);" +
+                "if(el){let d=el;while(d){if(d.tagName==='DETAILS')d.open=true;d=d.parentElement}el.scrollIntoView()}" +
                 "if(el&&id.includes('--task-'))el.animate([{boxShadow:'0 0 0 3px #818cf8',backgroundColor:'#e0e7ff'},{boxShadow:'0 0 0 3px transparent'}],{duration:1500,easing:'ease-out'})},150))};" +
                 "document.addEventListener('click',window.sbdHashHandler)}");
             await JS.InvokeVoidAsync("sbdHashListen", _self);

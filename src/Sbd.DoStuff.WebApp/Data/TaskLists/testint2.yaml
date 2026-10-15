@@ -36,7 +36,7 @@ entries:
     categories:
       - demo.powershell
     parameterValues:
-      ScriptPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Artifacts\Demo\hello.ps1'
+      ScriptPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Assets\Demo\hello.ps1'
       Arguments: |-
         Jay
         Claude
@@ -44,7 +44,7 @@ entries:
     categories:
       - demo.powershell
     parameterValues:
-      ScriptPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Artifacts\Demo\hello.ps1'
+      ScriptPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Assets\Demo\hello.ps1'
       Arguments: |-
         Jay
         Claude
@@ -181,7 +181,7 @@ entries:
       - demo.sql
     parameterValues:
       ConnectionStringSetting: ConnectionStrings:DoStuffDemo
-      ScriptPath: Data/Artifacts/Sql/demo.sql
+      ScriptPath: Data/Assets/Sql/demo.sql
   - taskId: install-ssms
     categories:
       - prerequisites.sql

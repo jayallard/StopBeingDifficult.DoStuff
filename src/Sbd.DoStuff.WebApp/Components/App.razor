@@ -5,6 +5,21 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <base href="/"/>
+    <script>
+        // Applied before first paint so a saved dark theme doesn't flash light.
+        (function () {
+            var dark = false;
+            try {
+                var saved = localStorage.getItem('theme');
+                dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+            } catch (e) { }
+            document.documentElement.classList.toggle('dark', dark);
+        })();
+        function toggleTheme() {
+            var dark = document.documentElement.classList.toggle('dark');
+            try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) { }
+        }
+    </script>
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["Sbd.DoStuff.WebApp.styles.css"]"/>
     <ImportMap/>

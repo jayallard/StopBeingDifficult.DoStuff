@@ -47,7 +47,7 @@ internal sealed class WindowsProcessRunner(IEnumerable<string>? moduleDirectorie
         var script = ScriptTemplate.Replace("__COMMAND__", command);
         var encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
         // Bypass (process scope only) so tasks can load .ps1 scripts and .psm1 modules from the
-        // artifacts directories even under Windows PowerShell's default 'Restricted' policy.
+        // assets directories even under Windows PowerShell's default 'Restricted' policy.
         return (fileName, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}");
     }
 

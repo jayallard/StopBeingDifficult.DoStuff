@@ -1,0 +1,62 @@
+@page "/configuration"
+@inject IEnumerable<IDataSource> DataSources
+
+<PageTitle>Configuration</PageTitle>
+
+<h1 class="mb-1 text-2xl font-semibold text-slate-900">Configuration</h1>
+<p class="mb-6 text-sm text-slate-500">
+    Where the task library, task lists and assets come from. Sources are listed in load order;
+    new public lists are saved to the first, private lists to the last.
+</p>
+
+<div class="space-y-8">
+    @foreach (var (source, index) in DataSources.Select((s, i) => (s, i)))
+    {
+        var items = source.GetItems();
+
+        <section id="@SourceAnchor(index)">
+            <div class="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-slate-500">@source.Type</span>
+                <h2 class="break-all font-mono text-sm text-slate-900">@source.Location</h2>
+            </div>
+
+            @if (items.Count == 0)
+            {
+                <p class="text-sm text-slate-400">Nothing found here.</p>
+            }
+
+            @foreach (var group in items.GroupBy(i => i.Kind))
+            {
+                <h3 id="@KindAnchor(index, group.Key)" class="mb-1 mt-4 text-xs font-medium uppercase tracking-wide text-slate-400">
+                    @KindTitle(group.Key) <span class="normal-case">(@group.Count())</span>
+                </h3>
+                <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                    <table class="w-full text-left text-sm">
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach (var item in group)
+                            {
+                                <tr>
+                                    <td class="px-3 py-2 align-top">
+                                        <a href="@($"configuration/file?path={Uri.EscapeDataString(item.Location)}")"
+                                           class="break-all font-mono text-slate-800 hover:text-indigo-700" title="@item.Location">@item.Name</a>
+                                        @if (item.Provides.Count > 0)
+                                        {
+                                            <div class="mt-0.5 text-xs text-slate-500">@ProvidesSummary(item)</div>
+                                        }
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-2 text-right align-top text-xs text-slate-400">
+                                        @if (item.Scope is not null)
+                                        {
+                                            <span class="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-slate-500">@item.Scope</span>
+                                        }
+                                        @FormatSize(item.SizeBytes)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    }
+</div>

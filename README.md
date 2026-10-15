@@ -37,12 +37,10 @@ Tasks are defined in YAML and loaded at startup from the directories configured 
 
 | Setting                  | Contents                                   | Defaults                                         |
 |--------------------------|--------------------------------------------|--------------------------------------------------|
-| `TaskLibrary:Directories` | Task definitions (reusable templates)      | `Data/TaskLibrary`, `D:/git/readytimesetup/tasks/TaskLibrary` |
-| `TaskLists:Directories`   | Task lists (categorized entries that reference definitions) | `Data/TaskLists`, `D:/git/readytimesetup/tasks/TaskLists` |
-| `Artifacts:Directories`   | `.ps1` scripts referenced by a definition's `scriptPath`, and PowerShell modules under `Modules/` | `Data/Artifacts`, `D:/git/readytimesetup/tasks/Artifacts` |
-| `TaskRunStore`            | `memory` or `yaml` run history             | `yaml` → `D:/git/readytimesetup/tasks/TaskRuns.yaml`          |
+| `FileDataSource:Directories` | Data source roots; each may contain `TaskLibrary/` (task definitions), `TaskLists/` (categorized lists) and `Assets/` (`.ps1` scripts referenced by `scriptPath`, and PowerShell modules under `Modules/`). All three subfolders are optional. | `Data`, `D:/git/readytimesetup/tasks` |
+| `TaskRunStore`            | `memory` or `yaml` run history             | `yaml` → `~/.sbd/TaskRuns.yaml` (created on first save)          |
 
-The `Data/...` folders in the repo hold sample data. Put your own tasks and lists under `D:/git/readytimesetup/tasks/`. Missing directories are skipped with a warning. That folder lives outside the repo, so **copy it yourself when moving to another machine**.
+The `Data` folder in the repo holds sample data. Put your own tasks and lists under `D:/git/readytimesetup/tasks/`. Missing directories and subfolders are skipped silently. New public task lists are saved under the first source's `TaskLists/`, private ones under the last source's. That folder lives outside the repo, so **copy it yourself when moving to another machine**.
 
 Broken definitions fail at startup with a clear error rather than when you click Run. Examples: a missing base task, an inheritance cycle, a missing required parameter, or a `scriptPath` that doesn't exist.
 
@@ -81,7 +79,7 @@ Parameter values are resolved in this order: task-list value, then inherited pin
 
 ### PowerShell modules
 
-Put real task logic in a PowerShell module rather than inline YAML, so you can also use it straight from a PowerShell session. Modules live under `<artifacts dir>/Modules/<Name>/`, and the app adds each of those `Modules` folders to `PSModulePath` for the processes it starts. A task then only imports the module and calls a function:
+Put real task logic in a PowerShell module rather than inline YAML, so you can also use it straight from a PowerShell session. Modules live under `<assets dir>/Modules/<Name>/`, and the app adds each of those `Modules` folders to `PSModulePath` for the processes it starts. A task then only imports the module and calls a function:
 
 ```yaml
 - id: get-git-version
@@ -98,7 +96,7 @@ Put real task logic in a PowerShell module rather than inline YAML, so you can a
 To use the same function yourself:
 
 ```powershell
-Import-Module .\src\Sbd.DoStuff.WebApp\Data\Artifacts\Modules\Sbd.Git
+Import-Module .\src\Sbd.DoStuff.WebApp\Data\Assets\Modules\Sbd.Git
 Test-GitVersion -MinVersion 2.50
 $LASTEXITCODE   # 0 = passed
 ```

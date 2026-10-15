@@ -1,22 +1,45 @@
 @inject ITaskLibrary Library
 @inject ITaskListRepository ListRepository
+@inject IEnumerable<IDataSource> DataSources
 @inject NavigationManager Navigation
 
 <div class="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:hidden">
     <a href="" class="text-base font-semibold text-slate-900">DoStuff</a>
+    <div class="flex items-center gap-1">
+    <button type="button" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode"
+            class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+    </button>
     <label for="nav-toggle" class="cursor-pointer rounded-md p-2 text-slate-500 hover:bg-slate-100">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
     </label>
+    </div>
 </div>
 
 <input type="checkbox" id="nav-toggle" class="peer hidden"/>
 
 <nav class="hidden w-full shrink-0 border-b border-slate-200 bg-white peer-checked:block sm:sticky sm:top-0 sm:block sm:h-screen sm:w-60 sm:overflow-y-auto sm:border-b-0 sm:border-r">
-    <div class="hidden px-6 py-6 sm:block">
-        <a href="" class="text-lg font-semibold tracking-tight text-slate-900">DoStuff</a>
-        <p class="text-xs text-slate-400">local task runner</p>
+    <div class="hidden items-start justify-between px-6 py-6 sm:flex">
+        <div>
+            <a href="" class="text-lg font-semibold tracking-tight text-slate-900">DoStuff</a>
+            <p class="text-xs text-slate-400">local task runner</p>
+        </div>
+        <button type="button" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light/dark mode"
+            class="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" class="hidden h-5 w-5 dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+    </button>
     </div>
 
     <div class="space-y-1 px-3 pb-4 sm:pt-2">
@@ -37,11 +60,39 @@
         </NavLink>
     </div>
 
+    <div class="space-y-1 px-3 pb-2">
+        <NavLink href="configuration"
+                 class="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                 ActiveClass="bg-indigo-50 text-indigo-700">
+            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>
+            Configuration
+        </NavLink>
+    </div>
+
     @if (_outlineRoot is not null)
     {
         <div class="px-3 pb-4">
             <h2 class="truncate px-2 pb-1 text-xs font-medium uppercase tracking-wide text-slate-400" title="@_outlineName">@_outlineName</h2>
             <OutlineNode Node="_outlineRoot" ListId="@_outlineListId"/>
+        </div>
+    }
+    @if (_configurationOutline is not null)
+    {
+        <div class="px-3 pb-4">
+            <h2 class="truncate px-2 pb-1 text-xs font-medium uppercase tracking-wide text-slate-400">Data sources</h2>
+            @foreach (var source in _configurationOutline)
+            {
+                <div class="mt-1">
+                    <a href="@($"configuration#{source.Anchor}")"
+                       class="block truncate rounded-md px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                       title="@source.Title">@source.Title</a>
+                    @foreach (var kind in source.Children)
+                    {
+                        <a href="@($"configuration#{kind.Anchor}")"
+                           class="block truncate rounded-md px-2 py-0.5 pl-4 text-xs text-slate-500 hover:bg-slate-100 hover:text-indigo-700">@kind.Title</a>
+                    }
+                </div>
+            }
         </div>
     }
 </nav>

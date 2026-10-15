@@ -1,7 +1,9 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Routing;
+using Sbd.DoStuff.Domain.DataSources;
 using Sbd.DoStuff.Domain.Lists;
+using Sbd.DoStuff.WebApp.Components.Pages;
 
 namespace Sbd.DoStuff.WebApp.Components.Layout;
 
@@ -9,6 +11,9 @@ public partial class NavMenu : IDisposable
 {
     private static readonly Regex ListPage = new(@"^lists/(?<id>[^/?#]+)/?(?:[?#].*)?$", RegexOptions.IgnoreCase);
 
+    private sealed record ConfigurationOutlineItem(string Title, string Anchor, IReadOnlyList<ConfigurationOutlineItem> Children);
+
+    private IReadOnlyList<ConfigurationOutlineItem>? _configurationOutline;
     private CategoryNode? _outlineRoot;
     private string _outlineListId = "";
     private string _outlineName = "";
@@ -29,8 +34,23 @@ public partial class NavMenu : IDisposable
     private void BuildOutline()
     {
         _outlineRoot = null;
+        _configurationOutline = null;
 
-        var match = ListPage.Match(Navigation.ToBaseRelativePath(Navigation.Uri));
+        var path = Navigation.ToBaseRelativePath(Navigation.Uri);
+        if (Regex.IsMatch(path, @"^configuration/?(?:[?#].*)?$", RegexOptions.IgnoreCase))
+        {
+            _configurationOutline = DataSources.Select((source, index) => new ConfigurationOutlineItem(
+                    source.Location,
+                    Configuration.SourceAnchor(index),
+                    source.GetItems().Select(i => i.Kind).Distinct().Order()
+                        .Select(kind => new ConfigurationOutlineItem(
+                            Configuration.KindTitle(kind), Configuration.KindAnchor(index, kind), []))
+                        .ToList()))
+                .ToList();
+            return;
+        }
+
+        var match = ListPage.Match(path);
         if (!match.Success)
         {
             return;

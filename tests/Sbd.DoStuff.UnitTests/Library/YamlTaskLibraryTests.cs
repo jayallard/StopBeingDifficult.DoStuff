@@ -7,7 +7,7 @@ namespace Sbd.DoStuff.UnitTests.Library;
 public class YamlTaskLibraryTests : IDisposable
 {
     private readonly string _directory = Directory.CreateTempSubdirectory("dostuff-tasklibrary-").FullName;
-    private readonly string _artifactsDirectory = Directory.CreateTempSubdirectory("dostuff-artifacts-").FullName;
+    private readonly string _assetsDirectory = Directory.CreateTempSubdirectory("dostuff-assets-").FullName;
 
     [Fact]
     public void SingleItemArrayFile_LoadsOneDefinition()
@@ -19,7 +19,7 @@ public class YamlTaskLibraryTests : IDisposable
               command: echo a
             """);
 
-        var library = CreateLibrary([_directory], [_artifactsDirectory]);
+        var library = CreateLibrary([_directory], [_assetsDirectory]);
 
         library.Find("task-a").ShouldNotBeNull();
         library.GetAll().Count.ShouldBe(1);
@@ -41,7 +41,7 @@ public class YamlTaskLibraryTests : IDisposable
               command: echo a
             """);
 
-        var parameters = CreateLibrary([_directory], [_artifactsDirectory]).Find("task-a")!.Parameters!;
+        var parameters = CreateLibrary([_directory], [_assetsDirectory]).Find("task-a")!.Parameters!;
 
         parameters.Single(p => p.Name == "One").Type.ShouldBe(TaskParameterType.Text);
         parameters.Single(p => p.Name == "Many").Type.ShouldBe(TaskParameterType.MultilineText);
@@ -62,7 +62,7 @@ public class YamlTaskLibraryTests : IDisposable
               command: echo b
             """);
 
-        var library = CreateLibrary([_directory], [_artifactsDirectory]);
+        var library = CreateLibrary([_directory], [_assetsDirectory]);
 
         library.GetAll().Count.ShouldBe(2);
     }
@@ -83,7 +83,7 @@ public class YamlTaskLibraryTests : IDisposable
               command: echo a
             """);
 
-        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_artifactsDirectory]));
+        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_assetsDirectory]));
     }
 
     [Fact]
@@ -102,13 +102,13 @@ public class YamlTaskLibraryTests : IDisposable
               command: echo derived
             """);
 
-        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_artifactsDirectory]));
+        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_assetsDirectory]));
     }
 
     [Fact]
-    public void RelativeScriptPath_ResolvesUnderArtifactsDirectory()
+    public void RelativeScriptPath_ResolvesUnderAssetsDirectory()
     {
-        File.WriteAllText(Path.Combine(_artifactsDirectory, "cleanup.ps1"), "param($FolderName)");
+        File.WriteAllText(Path.Combine(_assetsDirectory, "cleanup.ps1"), "param($FolderName)");
         WriteFile("a.yaml", """
             - id: task-a
               name: Task A
@@ -116,13 +116,13 @@ public class YamlTaskLibraryTests : IDisposable
               scriptPath: cleanup.ps1
             """);
 
-        var library = CreateLibrary([_directory], [_artifactsDirectory]);
+        var library = CreateLibrary([_directory], [_assetsDirectory]);
 
-        library.Find("task-a")!.ScriptPath.ShouldBe(Path.Combine(_artifactsDirectory, "cleanup.ps1"));
+        library.Find("task-a")!.ScriptPath.ShouldBe(Path.Combine(_assetsDirectory, "cleanup.ps1"));
     }
 
     [Fact]
-    public void AbsoluteScriptPath_UsedAsSpecified_IgnoringArtifactsDirectory()
+    public void AbsoluteScriptPath_UsedAsSpecified_IgnoringAssetsDirectory()
     {
         var outsideDirectory = Directory.CreateTempSubdirectory("dostuff-outside-").FullName;
         var scriptPath = Path.Combine(outsideDirectory, "cleanup.ps1");
@@ -136,7 +136,7 @@ public class YamlTaskLibraryTests : IDisposable
 
         try
         {
-            var library = CreateLibrary([_directory], [_artifactsDirectory]);
+            var library = CreateLibrary([_directory], [_assetsDirectory]);
 
             library.Find("task-a")!.ScriptPath.ShouldBe(scriptPath);
         }
@@ -156,13 +156,13 @@ public class YamlTaskLibraryTests : IDisposable
               scriptPath: missing.ps1
             """);
 
-        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_artifactsDirectory]));
+        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_assetsDirectory]));
     }
 
     [Fact]
     public void BothCommandAndScriptPath_Throws()
     {
-        File.WriteAllText(Path.Combine(_artifactsDirectory, "cleanup.ps1"), "param($FolderName)");
+        File.WriteAllText(Path.Combine(_assetsDirectory, "cleanup.ps1"), "param($FolderName)");
         WriteFile("a.yaml", """
             - id: task-a
               name: Task A
@@ -171,7 +171,7 @@ public class YamlTaskLibraryTests : IDisposable
               scriptPath: cleanup.ps1
             """);
 
-        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_artifactsDirectory]));
+        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_assetsDirectory]));
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class YamlTaskLibraryTests : IDisposable
               scriptPath: cleanup.ps1
             """);
 
-        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_artifactsDirectory]));
+        Should.Throw<InvalidOperationException>(() => CreateLibrary([_directory], [_assetsDirectory]));
     }
 
     [Fact]
@@ -212,7 +212,7 @@ public class YamlTaskLibraryTests : IDisposable
                   command: echo b
                 """);
 
-            var library = CreateLibrary([_directory, secondDirectory], [_artifactsDirectory]);
+            var library = CreateLibrary([_directory, secondDirectory], [_assetsDirectory]);
 
             library.GetAll().Count.ShouldBe(2);
         }
@@ -233,18 +233,18 @@ public class YamlTaskLibraryTests : IDisposable
               command: echo a
             """);
 
-        var library = CreateLibrary([_directory, missingDirectory], [_artifactsDirectory]);
+        var library = CreateLibrary([_directory, missingDirectory], [_assetsDirectory]);
 
         library.GetAll().Count.ShouldBe(1);
     }
 
     [Fact]
-    public void RelativeScriptPath_ResolvesFromSecondArtifactsDirectory_WhenNotInFirst()
+    public void RelativeScriptPath_ResolvesFromSecondAssetsDirectory_WhenNotInFirst()
     {
-        var secondArtifactsDirectory = Directory.CreateTempSubdirectory("dostuff-artifacts-2-").FullName;
+        var secondAssetsDirectory = Directory.CreateTempSubdirectory("dostuff-assets-2-").FullName;
         try
         {
-            File.WriteAllText(Path.Combine(secondArtifactsDirectory, "cleanup.ps1"), "param($FolderName)");
+            File.WriteAllText(Path.Combine(secondAssetsDirectory, "cleanup.ps1"), "param($FolderName)");
             WriteFile("a.yaml", """
                 - id: task-a
                   name: Task A
@@ -252,24 +252,24 @@ public class YamlTaskLibraryTests : IDisposable
                   scriptPath: cleanup.ps1
                 """);
 
-            var library = CreateLibrary([_directory], [_artifactsDirectory, secondArtifactsDirectory]);
+            var library = CreateLibrary([_directory], [_assetsDirectory, secondAssetsDirectory]);
 
-            library.Find("task-a")!.ScriptPath.ShouldBe(Path.Combine(secondArtifactsDirectory, "cleanup.ps1"));
+            library.Find("task-a")!.ScriptPath.ShouldBe(Path.Combine(secondAssetsDirectory, "cleanup.ps1"));
         }
         finally
         {
-            Directory.Delete(secondArtifactsDirectory, recursive: true);
+            Directory.Delete(secondAssetsDirectory, recursive: true);
         }
     }
 
     public void Dispose()
     {
         Directory.Delete(_directory, recursive: true);
-        Directory.Delete(_artifactsDirectory, recursive: true);
+        Directory.Delete(_assetsDirectory, recursive: true);
     }
 
     private void WriteFile(string name, string content) => File.WriteAllText(Path.Combine(_directory, name), content);
 
-    private static YamlTaskLibrary CreateLibrary(IEnumerable<string> directories, IEnumerable<string> artifactsDirectories) =>
-        new(directories, artifactsDirectories, NullLogger<YamlTaskLibrary>.Instance);
+    private static YamlTaskLibrary CreateLibrary(IEnumerable<string> directories, IEnumerable<string> assetsDirectories) =>
+        new(directories, assetsDirectories, NullLogger<YamlTaskLibrary>.Instance);
 }

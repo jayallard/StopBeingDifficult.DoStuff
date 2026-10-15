@@ -68,6 +68,14 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
         }
     }
 
+    public string? GetLocation(string listId)
+    {
+        lock (_gate)
+        {
+            return _lists.TryGetValue(listId, out var stored) ? stored.FilePath : null;
+        }
+    }
+
     public void Save(TaskListDefinition list, TaskListScope scope, string? originalId = null)
     {
         var storage = _storage ?? throw new InvalidOperationException("Task list storage directories are not configured.");
