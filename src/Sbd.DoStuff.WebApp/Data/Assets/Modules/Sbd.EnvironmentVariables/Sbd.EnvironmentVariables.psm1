@@ -9,6 +9,7 @@ function Set-EnvironmentVariable {
     .DESCRIPTION
     Windows only. The Machine type requires running as Administrator. Running processes (including
     this one) don't see the change; newly started processes do.
+    Writes a "::RestartApplication" command line if the persisted value changed.
     Sets $LASTEXITCODE to 0 on success, 1 on failure, 2 if not running on Windows.
     #>
     [CmdletBinding()]
@@ -37,6 +38,8 @@ function Set-EnvironmentVariable {
     }
 
     try {
+        # An empty value deletes the variable, so "unset" and "" count as the same value.
+        $previous = [string][Environment]::GetEnvironmentVariable($Name, [EnvironmentVariableTarget]$Type)
         [Environment]::SetEnvironmentVariable($Name, $Value, [EnvironmentVariableTarget]$Type)
     }
     catch {
@@ -46,6 +49,12 @@ function Set-EnvironmentVariable {
     }
 
     Write-Output ":Set $Type environment variable $Name = $Value"
+
+    # The running app only sees the change after a restart, so ask for one only if the value changed.
+    if ($previous -cne $Value) {
+        Write-Output "::RestartApplication"
+    }
+
     $global:LASTEXITCODE = 0
 }
 

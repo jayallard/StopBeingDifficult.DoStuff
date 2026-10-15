@@ -1,0 +1,17 @@
+@implements IDisposable
+@inject Sbd.DoStuff.WebApp.Services.PendingCommands Commands
+
+@foreach (var command in Commands.Pending)
+{
+    <div class="border-b border-amber-300 bg-amber-50 px-6 py-2 text-sm text-amber-900">
+        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-1">
+            <span class="font-medium">@Message(command)</span>
+            @if (command.Count > 1)
+            {
+                <span class="rounded bg-amber-200 px-1.5 py-0.5 text-xs font-medium">requested @command.Count times</span>
+            }
+            <button type="button" @onclick="() => Commands.Dismiss(command.Name)"
+                    class="ml-auto text-amber-700 hover:text-amber-950">Dismiss</button>
+        </div>
+    </div>
+}

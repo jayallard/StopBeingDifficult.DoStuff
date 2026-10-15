@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Sbd.DoStuff.Domain.Execution;
+using Sbd.DoStuff.WebApp.Services;
 
 namespace Sbd.DoStuff.WebApp.Components.Shared;
 
@@ -47,9 +48,11 @@ public partial class RunOutput
         : "border border-red-200 bg-red-50 text-red-700";
 
     private IEnumerable<TaskOutputLine> MessageLines =>
-        Run.OutputLines.Where(l => l.Text.StartsWith(':') || l.Text.StartsWith('!'));
+        Run.OutputLines.Where(l => !PendingCommands.IsCommandLine(l.Text) && (l.Text.StartsWith(':') || l.Text.StartsWith('!')));
 
-    private static string LineClass(TaskOutputLine line) => line.Text.StartsWith('!')
+    private static string LineClass(TaskOutputLine line) => PendingCommands.IsCommandLine(line.Text)
+        ? "font-medium text-amber-300"
+        : line.Text.StartsWith('!')
         ? "text-red-400"
         : line.Stream switch
         {
@@ -58,7 +61,9 @@ public partial class RunOutput
             _ => "text-slate-100",
         };
 
-    private static string LineText(TaskOutputLine line) => line.Text.StartsWith('!')
+    private static string LineText(TaskOutputLine line) => PendingCommands.IsCommandLine(line.Text)
+        ? $"Command: {PendingCommands.CommandName(line.Text)}"
+        : line.Text.StartsWith('!')
         ? line.Text[1..]
         : line.Text;
 

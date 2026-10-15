@@ -16,6 +16,8 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDoStuffDomain(builder.Configuration);
 builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.AppRestarter>();
+builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.PendingCommands>();
+builder.Services.AddHostedService(provider => provider.GetRequiredService<Sbd.DoStuff.WebApp.Services.PendingCommands>());
 builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.IFilePicker,Sbd.DoStuff.WebApp.Services.WindowsFilePicker>();
 
 var app = builder.Build();
