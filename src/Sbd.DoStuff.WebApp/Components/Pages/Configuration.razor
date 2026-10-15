@@ -1,9 +1,35 @@
 @page "/configuration"
 @inject IEnumerable<IDataSource> DataSources
+@inject Sbd.DoStuff.WebApp.Services.AppRestarter Restarter
+@inject IJSRuntime JS
 
 <PageTitle>Configuration</PageTitle>
 
-<h1 class="mb-1 text-2xl font-semibold text-slate-900">Configuration</h1>
+<div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+    <h1 class="text-2xl font-semibold text-slate-900">Configuration</h1>
+    @if (_restarting)
+    {
+        <span class="text-sm text-slate-500">Restarting&hellip;</span>
+    }
+    else if (_confirmRestart)
+    {
+        <div class="flex items-center gap-2 text-sm">
+            <span class="text-slate-500">Stops running tasks and reloads the app.</span>
+            <button type="button" @onclick="RestartAsync"
+                    class="rounded-md bg-indigo-600 px-3 py-1.5 font-medium text-white hover:bg-indigo-700">Restart</button>
+            <button type="button" @onclick="() => _confirmRestart = false"
+                    class="rounded-md px-3 py-1.5 text-slate-600 hover:bg-slate-100">Cancel</button>
+        </div>
+    }
+    else
+    {
+        <button type="button" @onclick="() => _confirmRestart = true"
+                title="Restart the app so it picks up new environment variables"
+                class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100">
+            Restart app
+        </button>
+    }
+</div>
 <p class="mb-6 text-sm text-slate-500">
     Where the task library, task lists and assets come from. Sources are listed in load order;
     new public lists are saved to the first, private lists to the last.

@@ -1,6 +1,9 @@
 using Sbd.DoStuff.Domain.DependencyInjection;
 using Sbd.DoStuff.WebApp.Components;
 
+// A restarted instance is launched while the old one is still shutting down; wait so the port is free.
+Sbd.DoStuff.WebApp.Services.AppRestarter.WaitForPreviousInstance();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Without this, Kestrel waits indefinitely for open Blazor Server SignalR
@@ -12,7 +15,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddDoStuffDomain(builder.Configuration);
-builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.IFilePicker, Sbd.DoStuff.WebApp.Services.WindowsFilePicker>();
+builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.AppRestarter>();
+builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.IFilePicker,Sbd.DoStuff.WebApp.Services.WindowsFilePicker>();
 
 var app = builder.Build();
 

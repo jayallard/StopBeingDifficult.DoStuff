@@ -1,3 +1,4 @@
+using Microsoft.JSInterop;
 using Sbd.DoStuff.Domain.DataSources;
 
 namespace Sbd.DoStuff.WebApp.Components.Pages;
@@ -5,6 +6,16 @@ namespace Sbd.DoStuff.WebApp.Components.Pages;
 public partial class Configuration
 {
     private const int MaxListedIds = 8;
+
+    private bool _confirmRestart;
+    private bool _restarting;
+
+    private async Task RestartAsync()
+    {
+        _restarting = true;
+        await JS.InvokeVoidAsync("reloadWhenServerRestarts");
+        Restarter.Restart();
+    }
 
     public static string SourceAnchor(int sourceIndex) => $"source-{sourceIndex}";
 

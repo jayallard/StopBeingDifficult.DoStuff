@@ -5,7 +5,7 @@ A small local web app for running curated, categorized lists of PowerShell tasks
 ## Requirements
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) (see `global.json`)
-- PowerShell 7 (`pwsh.exe`) is preferred on Windows. Windows PowerShell 5.1 is used if `pwsh` isn't on `PATH`, or for tasks that set `useWindowsPowerShell: true`. On Linux/macOS, commands run via `/bin/sh`.
+- PowerShell 7 (`pwsh.exe`) on `PATH` for tasks of type `powershell`. Tasks of type `windows-powershell` run under Windows PowerShell 5.1 (`powershell.exe`) instead. There is no fallback between the two: if the required executable isn't on `PATH`, the run fails. On Linux/macOS, commands run via `/bin/sh` (and `windows-powershell` tasks fail).
 - *(Optional)* the Tailwind CLI, only needed if you change styles. See below.
 
 ## Getting started
@@ -16,7 +16,7 @@ dotnet test tests/Sbd.DoStuff.UnitTests/Sbd.DoStuff.UnitTests.csproj
 dotnet run --project src/Sbd.DoStuff.WebApp
 ```
 
-The app listens on http://localhost:5096 by default (`Properties/launchSettings.json`).
+The app listens on http://localhost:5096 by default (`Properties/launchSettings.json`). Because it can run arbitrary scripts, it binds to loopback only and `AllowedHosts` is restricted to `localhost`, `127.0.0.1` and `[::1]` (blocks DNS-rebinding). Don't loosen these without putting authentication in front of it.
 
 ## Tailwind CSS setup
 
@@ -37,10 +37,10 @@ Tasks are defined in YAML and loaded at startup from the directories configured 
 
 | Setting                  | Contents                                   | Defaults                                         |
 |--------------------------|--------------------------------------------|--------------------------------------------------|
-| `FileDataSource:Directories` | Data source roots; each may contain `TaskLibrary/` (task definitions), `TaskLists/` (categorized lists) and `Assets/` (`.ps1` scripts referenced by `scriptPath`, and PowerShell modules under `Modules/`). All three subfolders are optional. | `Data`, `D:/git/readytimesetup/tasks` |
+| `FileDataSource:Directories` | Data source roots; each may contain `TaskLibrary/` (task definitions), `TaskLists/` (categorized lists) and `Assets/` (`.ps1` scripts referenced by `scriptPath`, and PowerShell modules under `Modules/`). All three subfolders are optional. | `Data` (sample data in the repo) |
 | `TaskRunStore`            | `memory` or `yaml` run history             | `yaml` → `~/.sbd/TaskRuns.yaml` (created on first save)          |
 
-The `Data` folder in the repo holds sample data. Put your own tasks and lists under `D:/git/readytimesetup/tasks/`. Missing directories and subfolders are skipped silently. New public task lists are saved under the first source's `TaskLists/`, private ones under the last source's. That folder lives outside the repo, so **copy it yourself when moving to another machine**.
+The `Data` folder in the repo holds sample data. Add your own tasks and lists by listing an extra directory (e.g. `~/dostuff`) under `FileDataSource:Directories`. Missing directories and subfolders are skipped silently. New public task lists are saved under the first source's `TaskLists/`, private ones under the last source's. That folder lives outside the repo, so **copy it yourself when moving to another machine**.
 
 Broken definitions fail at startup with a clear error rather than when you click Run. Examples: a missing base task, an inheritance cycle, a missing required parameter, or a `scriptPath` that doesn't exist.
 

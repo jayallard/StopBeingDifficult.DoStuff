@@ -19,6 +19,16 @@
             var dark = document.documentElement.classList.toggle('dark');
             try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) { }
         }
+        // After a server restart the Blazor circuit is gone: wait for the server to go down and come
+        // back, then reload so the page gets a fresh circuit.
+        function reloadWhenServerRestarts() {
+            var sawDown = false;
+            var timer = setInterval(function () {
+                fetch('/', { cache: 'no-store' }).then(function (r) {
+                    if (sawDown && r.ok) { clearInterval(timer); location.reload(); }
+                }).catch(function () { sawDown = true; });
+            }, 500);
+        }
     </script>
     <link rel="stylesheet" href="@Assets["app.css"]"/>
     <link rel="stylesheet" href="@Assets["Sbd.DoStuff.WebApp.styles.css"]"/>
