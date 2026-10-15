@@ -17,13 +17,53 @@
 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     @foreach (var list in ListRepository.GetAll())
     {
-        <a href="@($"lists/{list.Id}")"
-           class="block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md">
-            <h2 class="font-medium text-slate-900">@list.Name</h2>
-            @if (!string.IsNullOrWhiteSpace(list.Description))
+        <div class="flex flex-col rounded-lg border border-slate-200 bg-white shadow-sm transition hover:border-indigo-300 hover:shadow-md">
+            @if (_renamingId == list.Id)
             {
-                <p class="mt-1 text-sm text-slate-500">@list.Description</p>
+                <div class="p-4">
+                    <input type="text"
+                           class="w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+                           @bind="_renameValue" @bind:event="oninput"
+                           @onkeydown="e => OnRenameKey(e, list)" />
+                    @if (_error is not null)
+                    {
+                        <p class="mt-1 text-xs text-red-600">@_error</p>
+                    }
+                </div>
+                <div class="mt-auto flex items-center gap-2 border-t border-slate-100 px-4 py-2">
+                    <button type="button" class="rounded bg-indigo-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-indigo-500"
+                            @onclick="() => Rename(list)">Save</button>
+                    <button type="button" class="text-xs text-slate-400 hover:text-slate-700"
+                            @onclick="CancelRename">Cancel</button>
+                </div>
             }
-        </a>
+            else
+            {
+                <a href="@($"lists/{list.Id}")" class="block flex-1 p-4">
+                    <h2 class="font-medium text-slate-900">@list.Name</h2>
+                    @if (!string.IsNullOrWhiteSpace(list.Description))
+                    {
+                        <p class="mt-1 text-sm text-slate-500">@list.Description</p>
+                    }
+                </a>
+                <div class="flex items-center gap-3 border-t border-slate-100 px-4 py-2">
+                    @if (_confirmDeleteId == list.Id)
+                    {
+                        <span class="text-xs text-slate-500">Delete this list?</span>
+                        <button type="button" class="rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-500"
+                                @onclick="() => Delete(list)">Delete</button>
+                        <button type="button" class="text-xs text-slate-400 hover:text-slate-700"
+                                @onclick="() => _confirmDeleteId = null">No</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="text-xs text-slate-500 hover:text-indigo-600"
+                                @onclick="() => StartRename(list)">Rename</button>
+                        <button type="button" class="text-xs text-slate-500 hover:text-red-600"
+                                @onclick="() => StartDelete(list)">Delete</button>
+                    }
+                </div>
+            }
+        </div>
     }
 </div>

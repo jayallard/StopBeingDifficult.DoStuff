@@ -2,8 +2,10 @@
 @implements IDisposable
 @inject ITaskRunStore RunStore
 @inject ITaskExecutionEngine Engine
+@inject ITaskLibrary Library
+@inject ITaskListRepository ListRepository
 
-<PageTitle>@(_run?.TaskName ?? "Run not found")</PageTitle>
+<PageTitle>@DisplayName</PageTitle>
 
 @if (_run is null)
 {
@@ -13,7 +15,7 @@ else
 {
     <div class="mb-4 flex items-start justify-between">
         <div>
-            <h1 class="text-2xl font-semibold text-slate-900">@_run.TaskName</h1>
+            <h1 class="text-2xl font-semibold text-slate-900">@DisplayName</h1>
             <p class="text-sm text-slate-500">Status: <span class="@RunOutput.StatusClass(_run.Status)">@_run.Status</span></p>
         </div>
 
@@ -36,6 +38,52 @@ else
             }
         </div>
     </div>
+
+    @if (_entry is not null)
+    {
+        var def = _entry.Definition;
+        <section class="mb-4 rounded border border-slate-200 bg-white px-3 py-2">
+            @if (!string.IsNullOrWhiteSpace(def.Description))
+            {
+                <p class="mb-2 text-sm text-slate-600">@def.Description</p>
+            }
+            @if (!string.IsNullOrWhiteSpace(_entry.Notes))
+            {
+                <p class="mb-2 whitespace-pre-line text-sm text-slate-600">@_entry.Notes</p>
+            }
+            <dl class="space-y-1">
+                <div class="flex items-baseline gap-2 text-xs">
+                    <dt class="font-medium text-slate-500">Task</dt>
+                    <dd class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@def.Name (@def.Id)</dd>
+                </div>
+                <div class="flex items-baseline gap-2 text-xs">
+                    <dt class="font-medium text-slate-500">Type</dt>
+                    <dd class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@def.Type</dd>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(def.ScriptPath))
+                {
+                    <div class="flex items-baseline gap-2 text-xs">
+                        <dt class="font-medium text-slate-500">Script</dt>
+                        <dd class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@def.ScriptPath</dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(def.WorkingDirectory))
+                {
+                    <div class="flex items-baseline gap-2 text-xs">
+                        <dt class="font-medium text-slate-500">Working directory</dt>
+                        <dd class="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@def.WorkingDirectory</dd>
+                    </div>
+                }
+                @foreach (var (name, value) in _entry.ParameterValues)
+                {
+                    <div class="flex items-baseline gap-2 text-xs">
+                        <dt class="font-medium text-slate-500">@name</dt>
+                        <dd class="whitespace-pre-wrap rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@value</dd>
+                    </div>
+                }
+            </dl>
+        </section>
+    }
 
     <RunOutput Run="_run"/>
 }
