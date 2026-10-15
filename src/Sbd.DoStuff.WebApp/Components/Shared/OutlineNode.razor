@@ -1,0 +1,16 @@
+@foreach (var child in Node.Children.Values)
+{
+    <div class="@(Depth == 0 ? "mt-1" : "ml-2 border-l border-slate-200 pl-2")">
+        <a href="@($"lists/{ListId}#{CategoryAnchor.Id(child.FullPath)}")"
+           class="block truncate rounded-md px-2 py-1 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+           title="@child.Segment">@child.Segment</a>
+        @for (var i = 0; i < child.Tasks.Count; i++)
+        {
+            var task = child.Tasks[i];
+            <a href="@($"lists/{ListId}#{CategoryAnchor.TaskId(child.FullPath, i)}")"
+               class="block truncate rounded-md px-2 py-0.5 pl-4 text-xs text-slate-500 hover:bg-slate-100 hover:text-indigo-700"
+               title="@(task.Name ?? task.Definition.Name)">@(task.Name ?? task.Definition.Name)</a>
+        }
+        <OutlineNode Node="child" ListId="@ListId" Depth="Depth + 1"/>
+    </div>
+}

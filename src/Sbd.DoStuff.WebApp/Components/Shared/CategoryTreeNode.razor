@@ -14,7 +14,7 @@
 }
 else
 {
-    <details class="ml-2 border-l border-slate-200 pl-3" open>
+    <details id="@CategoryAnchor.Id(Node.FullPath)" class="ml-2 scroll-mt-4 border-l border-slate-200 pl-3" open>
         <summary class="cursor-pointer select-none font-medium text-slate-800 hover:text-indigo-700">@Node.Segment</summary>
 
         <div class="mt-2 space-y-2 pb-2">
@@ -23,9 +23,10 @@ else
                 <CategoryTreeNode Node="child" ListId="@ListId"/>
             }
 
-            @foreach (var task in Node.Tasks)
+            @for (var i = 0; i < Node.Tasks.Count; i++)
             {
-                <div class="@RowClass(task)">
+                var task = Node.Tasks[i];
+                <div id="@CategoryAnchor.TaskId(Node.FullPath, i)" class="@(RowClass(task) + " scroll-mt-4")">
                     <div>
                         <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
                             @(task.Name ?? task.Definition.Name)

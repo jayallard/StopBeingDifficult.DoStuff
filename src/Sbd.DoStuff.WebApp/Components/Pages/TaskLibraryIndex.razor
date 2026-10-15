@@ -1,0 +1,23 @@
+@page "/library"
+@inject ITaskLibrary Library
+
+<PageTitle>Task Library</PageTitle>
+
+<h1 class="mb-1 text-2xl font-semibold text-slate-900">Task Library</h1>
+<p class="mb-6 text-sm text-slate-500">Every task definition available to lists.</p>
+
+<div class="space-y-6">
+    @foreach (var group in Library.GetGroups())
+    {
+        <section>
+            <h2 class="mb-2 text-sm font-medium uppercase tracking-wide text-slate-400">@group.Name <span class="normal-case">(@group.Tasks.Count)</span></h2>
+            <div class="grid gap-2 sm:grid-cols-2">
+                @foreach (var task in group.Tasks)
+                {
+                    <a href="@($"library/{group.Id}/{task.Id}")"
+                       class="truncate rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition hover:border-indigo-300 hover:text-indigo-700">@task.Name</a>
+                }
+            </div>
+        </section>
+    }
+</div>

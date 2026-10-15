@@ -3,6 +3,8 @@
 @inject ITaskLibrary Library
 @inject ITaskRunStore RunStore
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>@(_list?.Name ?? "List not found")</PageTitle>
 

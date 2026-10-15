@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Routing;
 using Microsoft.JSInterop;
 using Sbd.DoStuff.Domain.Lists;
+using Sbd.DoStuff.WebApp.Components.Shared;
 
 namespace Sbd.DoStuff.WebApp.Components.Pages;
 
-public partial class ListDetail
+public partial class ListDetail : IDisposable
 {
     [Parameter] public string ListId { get; set; } = "";
 
@@ -19,6 +21,51 @@ public partial class ListDetail
     private CategoryNode? ActiveTab(List<CategoryNode> tabs) =>
         tabs.FirstOrDefault(t => t.Segment == _activeTab) ?? tabs.FirstOrDefault();
 
+    protected override void OnInitialized() => Navigation.LocationChanged += OnLocationChanged;
+
+    // In tabbed mode an outline link may target a category on an inactive tab: switch to it, then scroll.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) =>
+        _ = HandleFragment(new Uri(e.Location).Fragment.TrimStart('#'));
+
+    // Blazor navigates same-page hash links with pushState (no LocationChanged or hashchange), so link clicks are caught in JS.
+    [JSInvokable]
+    public Task OnHashChanged(string fragment) => HandleFragment(fragment.TrimStart('#'));
+
+    private async Task HandleFragment(string fragment)
+    {
+        if (!_tabbed || _root is null || !fragment.StartsWith("cat-"))
+        {
+            return;
+        }
+
+        var tab = _root.Children.Values.FirstOrDefault(t =>
+        {
+            var id = CategoryAnchor.Id(t.FullPath);
+            return fragment == id || fragment.StartsWith(id + "--");
+        });
+        if (tab is null)
+        {
+            return;
+        }
+
+        _pendingScroll = fragment;
+        await InvokeAsync(async () =>
+        {
+            await SelectTab(tab.Segment);
+            StateHasChanged();
+        });
+    }
+
+    private string? _pendingScroll;
+
+    private DotNetObjectReference<ListDetail>? _self;
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+        _self?.Dispose();
+    }
+
     protected override void OnParametersSet()
     {
         _list = ListRepository.Find(ListId);
@@ -28,9 +75,39 @@ public partial class ListDetail
     // Browser storage isn't reachable until the circuit is interactive, so the saved mode is read after the first render.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (_pendingScroll is not null)
+        {
+            var id = _pendingScroll;
+            _pendingScroll = null;
+            try
+            {
+                await JS.InvokeVoidAsync("eval", $"document.getElementById('{id}')?.scrollIntoView()");
+            }
+            catch (JSException)
+            {
+            }
+        }
+
         if (!firstRender)
         {
             return;
+        }
+
+        _self = DotNetObjectReference.Create(this);
+        try
+        {
+            await JS.InvokeVoidAsync("eval",
+                "window.sbdHashListen=(r)=>{if(window.sbdHashHandler)document.removeEventListener('click',window.sbdHashHandler);" +
+                "window.sbdHashHandler=(e)=>{const a=e.target.closest&&e.target.closest('a[href*=\"#cat-\"]');" +
+                "if(!a)return;const id=new URL(a.href).hash.slice(1);" +
+                "r.invokeMethodAsync('OnHashChanged','#'+id).finally(()=>setTimeout(()=>{" +
+                "const el=document.getElementById(id);" +
+                "if(el&&id.includes('--task-'))el.animate([{boxShadow:'0 0 0 3px #818cf8',backgroundColor:'#e0e7ff'},{boxShadow:'0 0 0 3px transparent'}],{duration:1500,easing:'ease-out'})},150))};" +
+                "document.addEventListener('click',window.sbdHashHandler)}");
+            await JS.InvokeVoidAsync("sbdHashListen", _self);
+        }
+        catch (JSException)
+        {
         }
 
         try
