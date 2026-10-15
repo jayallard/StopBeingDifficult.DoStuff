@@ -1,0 +1,67 @@
+@page "/lists/{ListId}/organize"
+@implements IAsyncDisposable
+@inject ITaskListRepository ListRepository
+@inject ITaskLibrary Library
+@inject IJSRuntime JS
+
+<PageTitle>@(_list is null ? "List not found" : $"Organize {_list.Name}")</PageTitle>
+
+@if (_list is null)
+{
+    <p class="text-slate-500">List not found.</p>
+}
+else
+{
+    <nav class="mb-4 flex items-center justify-between border-b border-slate-200 pb-3">
+        <h1 class="text-2xl font-semibold text-slate-900">@_list.Name <span class="text-base font-normal text-slate-400">organize</span></h1>
+        <div class="flex items-center gap-2">
+            <a href="@($"lists/{ListId}/edit")"
+               class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-400 hover:text-slate-900">
+                List settings
+            </a>
+            <a href="@($"lists/{ListId}")"
+               class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500">
+                Done
+            </a>
+        </div>
+    </nav>
+
+    <p class="mb-3 text-sm text-slate-500">
+        Changes are saved as you make them. Drag <span class="text-slate-400">⠿</span> to move tasks and categories;
+        a category dropped inside another becomes its subcategory. Empty categories are not saved until they hold a task.
+    </p>
+
+    @if (_error is not null)
+    {
+        <div class="mb-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">@_error</div>
+    }
+
+    <div class="mb-4 flex items-center gap-2">
+        <input type="text" placeholder="New top-level category…"
+               class="w-64 rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+               @bind="_newCategory" @bind:event="oninput"
+               @onkeydown="OnNewCategoryKey"/>
+        <button type="button" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-400"
+                @onclick="AddTopLevelCategory">
+            Add category
+        </button>
+        @if (_newCategoryError is not null)
+        {
+            <span class="text-xs text-red-600">@_newCategoryError</span>
+        }
+    </div>
+
+    <div @ref="_root" class="organizer">
+        <ul data-cat-list data-parent="@_model.Root.Id" class="space-y-2">
+            @foreach (var category in _model.Root.Children)
+            {
+                <OrganizerCategory @key="category.Id" Node="category" Model="_model" OnChanged="OnChanged"/>
+            }
+        </ul>
+    </div>
+
+    @if (_model.Root.Children.Count == 0)
+    {
+        <p class="text-sm text-slate-500">No categories yet. Add one above.</p>
+    }
+}

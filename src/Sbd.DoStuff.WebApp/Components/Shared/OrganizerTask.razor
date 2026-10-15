@@ -1,0 +1,171 @@
+@inject ITaskLibrary Library
+
+<div data-key="@Entry.Key" class="rounded-md border border-slate-200 bg-white shadow-sm">
+    <div class="flex items-center gap-1 px-2 py-1.5">
+        <span class="task-handle cursor-grab select-none px-1 text-slate-400 hover:text-slate-700"
+              title="Drag to reorder or move to another category">⠿</span>
+
+        <button type="button" class="min-w-0 flex-1 truncate text-left text-sm font-medium text-slate-900 hover:text-indigo-700"
+                aria-expanded="@(_expanded ? "true" : "false")"
+                @onclick="ToggleExpanded">
+            <span class="text-slate-400">@(_expanded ? "▾" : "▸")</span>
+            @Title
+        </button>
+
+        <button type="button" class="rounded px-1.5 py-0.5 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                title="Move up" disabled="@(!CanMoveUp)" @onclick="OnMoveUp">▲</button>
+        <button type="button" class="rounded px-1.5 py-0.5 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                title="Move down" disabled="@(!CanMoveDown)" @onclick="OnMoveDown">▼</button>
+        <select class="w-20 rounded border border-slate-300 bg-white px-1 py-0.5 text-xs text-slate-600 hover:border-slate-400"
+                title="Move this task to another category"
+                @onchange="OnMoveToChanged">
+            <option value="">Move to…</option>
+            @foreach (var destination in Destinations)
+            {
+                <option value="@destination.Id">@destination.Path</option>
+            }
+        </select>
+        <button type="button"
+                class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-600 hover:border-slate-400"
+                @onclick="StartEdit">
+            Edit
+        </button>
+        @if (_confirmDelete)
+        {
+            <button type="button" class="rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-500" @onclick="OnDelete">Delete?</button>
+            <button type="button" class="text-xs text-slate-400 hover:text-slate-700" @onclick="() => _confirmDelete = false">No</button>
+        }
+        else
+        {
+            <button type="button"
+                    class="rounded border border-red-200 bg-white px-2 py-0.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                    @onclick="() => _confirmDelete = true">
+                Delete
+            </button>
+        }
+    </div>
+
+    @if (_expanded)
+    {
+        <div class="space-y-3 border-t border-slate-100 px-3 py-3">
+            @if (_loadError is not null)
+            {
+                <p class="text-xs text-red-600">@_loadError</p>
+            }
+
+            @if (_editing)
+            {
+                <div>
+                    <label class="text-sm font-medium text-slate-700">
+                        Name <span class="text-xs font-normal text-slate-400">optional — defaults to "@DefaultName"</span>
+                        <input type="text" placeholder="@DefaultName"
+                               class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm font-normal focus:border-indigo-500 focus:outline-none"
+                               @bind="_name" @bind:event="oninput"/>
+                    </label>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700">
+                        Notes <span class="text-xs font-normal text-slate-400">optional</span>
+                        <textarea rows="2"
+                                  class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm font-normal focus:border-indigo-500 focus:outline-none"
+                                  @bind="_notes" @bind:event="oninput"></textarea>
+                    </label>
+                </div>
+
+                @if (_effective is not null)
+                {
+                    @foreach (var parameter in _effective.Parameters)
+                    {
+                        var locked = _effective.NonOverridableParameterNames.Contains(parameter.Name);
+                        var value = _draft.GetValueOrDefault(parameter.Name, "");
+                        <div>
+                            <label class="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                @parameter.Name
+                                @if (parameter.Required)
+                                {
+                                    <span class="text-xs font-normal text-red-500">required</span>
+                                }
+                                @if (locked)
+                                {
+                                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-normal text-amber-700">locked</span>
+                                }
+                            </label>
+                            @if (!string.IsNullOrWhiteSpace(parameter.Description))
+                            {
+                                <p class="text-xs text-slate-500">@parameter.Description</p>
+                            }
+                            @if (parameter.Type == TaskParameterType.MultilineText)
+                            {
+                                <textarea rows="6" wrap="off"
+                                          class="@InputClass(locked, parameter, value) resize-y font-mono"
+                                          disabled="@locked"
+                                          @onchange="e => _draft[parameter.Name] = e.Value?.ToString() ?? string.Empty">@value</textarea>
+                            }
+                            else if (parameter.Type == TaskParameterType.Boolean)
+                            {
+                                <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                                       checked="@IsChecked(value)"
+                                       disabled="@locked"
+                                       @onchange="e => SetChecked(parameter, e)"/>
+                            }
+                            else if (parameter.Type == TaskParameterType.FilePath)
+                            {
+                                <FilePathInput Value="@value"
+                                               ValueChanged="v => _draft[parameter.Name] = v"
+                                               InputClass="@InputClass(locked, parameter, value)"
+                                               Disabled="@locked"/>
+                            }
+                            else
+                            {
+                                <input type="text" class="@InputClass(locked, parameter, value)"
+                                       value="@value"
+                                       disabled="@locked"
+                                       @onchange="e => _draft[parameter.Name] = e.Value?.ToString() ?? string.Empty"/>
+                            }
+                        </div>
+                    }
+                }
+
+                @if (_editError is not null)
+                {
+                    <p class="text-sm text-red-600">@_editError</p>
+                }
+
+                <div class="flex items-center gap-3">
+                    <button type="button" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500" @onclick="Save">Save</button>
+                    <button type="button" class="text-sm font-medium text-slate-500 hover:text-slate-900" @onclick="CancelEdit">Cancel</button>
+                </div>
+            }
+            else
+            {
+                <dl class="space-y-1 text-sm">
+                    <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-400">Task</dt><dd class="font-mono text-xs leading-5 text-slate-600">@Entry.TaskId</dd></div>
+                    @if (!string.IsNullOrWhiteSpace(_effective?.Description))
+                    {
+                        <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-400">Description</dt><dd class="text-slate-600">@_effective!.Description</dd></div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Entry.Notes))
+                    {
+                        <div class="flex gap-2"><dt class="w-24 shrink-0 text-slate-400">Notes</dt><dd class="whitespace-pre-line text-slate-600">@Entry.Notes</dd></div>
+                    }
+                    @if (_effective is not null)
+                    {
+                        @foreach (var parameter in _effective.Parameters)
+                        {
+                            <div class="flex gap-2">
+                                <dt class="w-24 shrink-0 truncate text-slate-400" title="@parameter.Name">@parameter.Name</dt>
+                                <dd class="min-w-0 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-700">
+                                    @CurrentValue(parameter)
+                                    @if (Entry.Values.ContainsKey(parameter.Name))
+                                    {
+                                        <span class="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 font-sans text-xs text-indigo-700">overridden</span>
+                                    }
+                                </dd>
+                            </div>
+                        }
+                    }
+                </dl>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,71 @@
+<li data-id="@Node.Id" class="rounded-lg border border-slate-200 bg-slate-100/60 p-2">
+    <div class="flex items-center gap-2">
+        <span class="cat-handle cursor-grab select-none px-1 text-slate-400 hover:text-slate-700"
+              title="Drag to reorder, or onto another category to nest it">⠿</span>
+        <h3 class="font-medium text-slate-800">@Node.Name</h3>
+        <span class="text-xs text-slate-400">@Node.Entries.Count</span>
+        <div class="ml-auto flex gap-1">
+            <button type="button"
+                    class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-600 hover:border-slate-400"
+                    @onclick="() => _addingTask = !_addingTask">
+                + Task
+            </button>
+            <button type="button"
+                    class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-600 hover:border-slate-400"
+                    @onclick="() => _addingCategory = !_addingCategory">
+                + Subcategory
+            </button>
+        </div>
+    </div>
+
+    @if (_addingTask)
+    {
+        <div class="mt-2">
+            <TaskPicker OnPicked="AddTask"/>
+        </div>
+    }
+
+    @if (_addingCategory)
+    {
+        <div class="mt-2 flex items-center gap-2">
+            <input type="text" placeholder="Subcategory name…"
+                   class="w-56 rounded-md border border-slate-300 bg-white px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none"
+                   @bind="_newName" @bind:event="oninput"
+                   @onkeydown="OnNewNameKey"/>
+            <button type="button" class="text-xs font-medium text-indigo-600 hover:text-indigo-500" @onclick="AddSubcategory">Add</button>
+            <button type="button" class="text-xs text-slate-400 hover:text-slate-700" @onclick="CancelAddCategory">Cancel</button>
+            @if (_error is not null)
+            {
+                <span class="text-xs text-red-600">@_error</span>
+            }
+        </div>
+    }
+
+    <div class="relative mt-2">
+        @if (Node.Entries.Count == 0)
+        {
+            <div class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-400">Drop tasks here</div>
+        }
+        <div data-task-list data-node="@Node.Id" class="min-h-8 space-y-1 rounded-md border border-dashed border-slate-300 p-1">
+            @foreach (var entry in Node.Entries)
+            {
+                <OrganizerTask @key="entry.Key" Entry="entry"
+                               CanMoveUp="@(!ReferenceEquals(entry, Node.Entries[0]))"
+                               CanMoveDown="@(!ReferenceEquals(entry, Node.Entries[^1]))"
+                               OnMoveUp="() => Shift(entry, -1)"
+                               OnMoveDown="() => Shift(entry, 1)"
+                               Destinations="Destinations(entry)"
+                               OnMoveTo="id => MoveTo(entry, id)"
+                               OnDelete="() => Delete(entry)"
+                               OnSaved="OnChanged"/>
+            }
+        </div>
+    </div>
+
+    <ul data-cat-list data-parent="@Node.Id" class="organizer-children mt-2 space-y-2 pl-4">
+        @foreach (var child in Node.Children)
+        {
+            <OrganizerCategory @key="child.Id" Node="child" Model="Model" OnChanged="OnChanged"/>
+        }
+    </ul>
+</li>

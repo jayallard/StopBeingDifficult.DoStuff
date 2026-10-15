@@ -5,3 +5,10 @@
         @apply bg-slate-50 text-slate-900 antialiased;
     }
 }
+
+/* While a category is being dragged, expose each category's sub-list as a visible drop target. */
+.organizer.is-dragging-category .organizer-children {
+    min-height: 1.75rem;
+    border-radius: 0.375rem;
+    outline: 1px dashed var(--color-indigo-300);
+}
