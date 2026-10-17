@@ -233,4 +233,36 @@ function Copy-GitRepository {
     }
 }
 
-Export-ModuleMember -Function Install-Git, Test-GitVersion, Copy-GitRepository
+function Enable-GitLongPaths {
+    <#
+    .SYNOPSIS
+    Sets git's core.longpaths for the current user, so paths over 259 characters can be checked out on Windows.
+    .DESCRIPTION
+    Writes core.longpaths=true to the user's global git config (idempotent). Without it, git silently skips
+    files whose full path exceeds Windows' MAX_PATH. Sets $LASTEXITCODE to 0 on success, 2 if Git isn't installed.
+    #>
+    [CmdletBinding()]
+    param()
+
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        Write-Output "!Git is not installed."
+        $global:LASTEXITCODE = 2
+        return
+    }
+
+    $current = git config --global --get core.longpaths
+    if ($current -eq 'true') {
+        Write-Output ":core.longpaths is already enabled"
+        $global:LASTEXITCODE = 0
+        return
+    }
+
+    git config --global core.longpaths true
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!Failed to set core.longpaths (git exit code $LASTEXITCODE)"
+        return
+    }
+    Write-Output ":Enabled core.longpaths in the global git config"
+}
+
+Export-ModuleMember -Function Install-Git, Test-GitVersion, Copy-GitRepository, Enable-GitLongPaths

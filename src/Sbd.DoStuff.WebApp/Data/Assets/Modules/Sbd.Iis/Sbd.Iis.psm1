@@ -65,9 +65,35 @@ function Initialize-IisDefaultWebSite {
         return
     }
 
+    # A surviving applicationHost.config may lack DefaultAppPool, which leaves the site with an
+    # "invalid app pool name". Make sure the pool exists, and that the site uses it.
+    $poolName = 'DefaultAppPool'
+    $null = & $appcmd list apppool "/name:$poolName"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output ":Creating app pool $poolName"
+        & $appcmd add apppool "/name:$poolName"
+        if ($LASTEXITCODE -ne 0) {
+            Write-Output "!Failed to create the $poolName app pool (appcmd exit code $LASTEXITCODE)"
+            return
+        }
+    }
+
     $null = & $appcmd list site "/name:$siteName"
     if ($LASTEXITCODE -eq 0) {
-        Write-Output ":$siteName already exists"
+        $currentPool = (& $appcmd list app "$siteName/" /text:applicationPool) | Select-Object -First 1
+        $null = & $appcmd list apppool "/name:$currentPool"
+        if (-not $currentPool -or $LASTEXITCODE -ne 0) {
+            Write-Output ":$siteName uses missing app pool '$currentPool'; switching it to $poolName"
+            & $appcmd set app "$siteName/" "/applicationPool:$poolName"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Output "!Failed to assign $poolName to the $siteName (appcmd exit code $LASTEXITCODE)"
+                return
+            }
+        }
+        else {
+            Write-Output ":$siteName already exists"
+        }
+        $global:LASTEXITCODE = 0
         return
     }
 
@@ -80,6 +106,12 @@ function Initialize-IisDefaultWebSite {
     & $appcmd add site "/name:$siteName" "/physicalPath:$physicalPath" '/bindings:http/*:80:'
     if ($LASTEXITCODE -ne 0) {
         Write-Output "!Failed to create the $siteName (appcmd exit code $LASTEXITCODE)"
+        return
+    }
+
+    & $appcmd set app "$siteName/" "/applicationPool:$poolName"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!Failed to assign $poolName to the $siteName (appcmd exit code $LASTEXITCODE)"
         return
     }
 

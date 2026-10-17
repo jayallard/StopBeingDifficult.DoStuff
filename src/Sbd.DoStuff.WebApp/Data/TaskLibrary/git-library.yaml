@@ -39,3 +39,10 @@
   command: |-
     Import-Module Sbd.Git
     Copy-GitRepository -WorkDirectory $WorkDirectory -Repositories $Repositories -HistoryDays $HistoryDays
+- id: enable-git-long-paths
+  name: Enable Git Long Paths
+  description: Sets git's core.longpaths in the user's global config, so files whose full path exceeds 259 characters aren't silently skipped when cloning or checking out on Windows. Does not change Windows' own long path setting.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Git
+    Enable-GitLongPaths

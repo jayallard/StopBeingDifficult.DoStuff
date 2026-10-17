@@ -23,6 +23,9 @@ entries:
   - taskId: install-git
     categories:
       - prerequisites.git
+  - taskId: enable-git-long-paths
+    categories:
+      - prerequisites.git
   - taskId: install-powershell
     categories:
       - prerequisites.powershell

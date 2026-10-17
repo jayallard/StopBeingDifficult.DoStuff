@@ -23,6 +23,7 @@
   type: powershell
   parameters:
     - name: ScriptPath
+      type: filePath
       description: Full path to the .ps1 file to run.
       required: true
       canOverride: true
@@ -51,6 +52,7 @@
   type: windows-powershell
   parameters:
     - name: ScriptPath
+      type: filePath
       description: Full path to the .ps1 file to run.
       required: true
       canOverride: true

@@ -20,11 +20,53 @@ public partial class TaskRunView
         !string.IsNullOrWhiteSpace(_entry?.Name) ? _entry.Name
         : _entry?.Definition.Name ?? _run?.TaskName ?? "Run not found";
 
+    private Timer? _ticker;
+
+    private bool IsActive => _run?.Status is TaskRunStatus.Pending or TaskRunStatus.Running;
+
+    private string RunTime
+    {
+        get
+        {
+            if (_run is null)
+            {
+                return "";
+            }
+
+            var end = IsActive ? DateTimeOffset.UtcNow : _run.CompletedAt ?? _run.StartedAt;
+            var elapsed = end - _run.StartedAt;
+            if (elapsed < TimeSpan.Zero)
+            {
+                elapsed = TimeSpan.Zero;
+            }
+
+            return elapsed.TotalHours >= 1
+                ? $"{(int)elapsed.TotalHours}:{elapsed:mm\\:ss}"
+                : $"{elapsed:mm\\:ss}";
+        }
+    }
+
     protected override void OnInitialized()
     {
         _run = RunStore.Get(RunId);
         _entry = FindEntry();
         Engine.RunChanged += OnRunChanged;
+        UpdateTicker();
+    }
+
+    // Re-renders once a second while the run is active so the Run Time counter advances;
+    // the timer is stopped when the run reaches a terminal state, freezing the displayed time.
+    private void UpdateTicker()
+    {
+        if (IsActive)
+        {
+            _ticker ??= new Timer(_ => InvokeAsync(StateHasChanged), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+        }
+        else if (_ticker is not null)
+        {
+            _ticker.Dispose();
+            _ticker = null;
+        }
     }
 
     // Maps the run back to the list entry that started it (by EntryKey), falling back to the
@@ -67,11 +109,16 @@ public partial class TaskRunView
     {
         if (run.RunId == RunId)
         {
+            UpdateTicker();
             InvokeAsync(StateHasChanged);
         }
     }
 
     private void Cancel() => Engine.TryCancelRun(RunId);
 
-    public void Dispose() => Engine.RunChanged -= OnRunChanged;
+    public void Dispose()
+    {
+        Engine.RunChanged -= OnRunChanged;
+        _ticker?.Dispose();
+    }
 }

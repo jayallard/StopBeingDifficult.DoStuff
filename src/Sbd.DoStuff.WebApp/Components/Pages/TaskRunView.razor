@@ -17,6 +17,7 @@ else
         <div>
             <h1 class="text-2xl font-semibold text-slate-900">@DisplayName</h1>
             <p class="text-sm text-slate-500">Status: <span class="@RunOutput.StatusClass(_run.Status)">@_run.Status</span></p>
+            <p class="text-sm text-slate-500">Run Time: <span class="tabular-nums text-slate-700">@RunTime</span></p>
         </div>
 
         <div class="flex flex-col items-end gap-2">
@@ -78,7 +79,7 @@ else
                 {
                     <div class="flex items-baseline gap-2 text-xs">
                         <dt class="font-medium text-slate-500">@name</dt>
-                        <dd class="whitespace-pre-wrap rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@value</dd>
+                        <dd class="whitespace-pre-wrap rounded bg-slate-100 px-1.5 py-0.5 text-slate-700"><ParameterValueText Type="_entry.Definition.Parameters.FirstOrDefault(p => p.Name == name)?.Type ?? TaskParameterType.Text" Value="@value"/></dd>
                     </div>
                 }
             </dl>

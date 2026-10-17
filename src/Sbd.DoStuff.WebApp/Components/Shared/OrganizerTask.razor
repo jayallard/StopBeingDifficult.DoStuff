@@ -155,7 +155,7 @@
                             <div class="flex gap-2">
                                 <dt class="w-24 shrink-0 truncate text-slate-400" title="@parameter.Name">@parameter.Name</dt>
                                 <dd class="min-w-0 whitespace-pre-wrap break-words font-mono text-xs leading-5 text-slate-700">
-                                    @CurrentValue(parameter)
+                                    <ParameterValueText Type="parameter.Type" Value="@CurrentValue(parameter)"/>
                                     @if (Entry.Values.ContainsKey(parameter.Name))
                                     {
                                         <span class="ml-1 rounded bg-indigo-100 px-1.5 py-0.5 font-sans text-xs text-indigo-700">overridden</span>

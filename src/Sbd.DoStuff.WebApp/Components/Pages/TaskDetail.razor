@@ -48,7 +48,7 @@ else
                             {
                                 <div class="flex items-baseline gap-2 text-xs">
                                     <dt class="font-medium text-slate-500">@name</dt>
-                                    <dd class="whitespace-pre-wrap rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">@value</dd>
+                                    <dd class="whitespace-pre-wrap rounded bg-slate-100 px-1.5 py-0.5 text-slate-700"><ParameterValueText Type="entry.View.Definition.Parameters.FirstOrDefault(p => p.Name == name)?.Type ?? TaskParameterType.Text" Value="@value"/></dd>
                                 </div>
                             }
                         </dl>

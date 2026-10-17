@@ -44,7 +44,7 @@ else
                             <div class="mt-1 flex flex-wrap gap-1.5">
                                 @foreach (var (name, value) in task.ParameterValues)
                                 {
-                                    <span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">@name: @value</span>
+                                    <span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">@name: <ParameterValueText Type="task.Definition.Parameters.FirstOrDefault(p => p.Name == name)?.Type ?? TaskParameterType.Text" Value="@value"/></span>
                                 }
                             </div>
                         }

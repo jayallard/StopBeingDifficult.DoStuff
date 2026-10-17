@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Sbd.DoStuff.Domain.DataSources;
+using Sbd.DoStuff.Domain.Library;
+using Sbd.DoStuff.Domain.Lists;
 using Sbd.DoStuff.WebApp.Syntax;
 
 namespace Sbd.DoStuff.WebApp.Components.Pages;
@@ -37,6 +39,12 @@ public partial class FileViewer
             }
         }
 
+        if ((_item is null || _text is null) && IsFilePathParameterValue(Path) && File.Exists(Path))
+        {
+            _item = new DataItem(DataItemKind.Asset, System.IO.Path.GetFileName(Path), Path, [], new FileInfo(Path).Length);
+            _text = File.ReadAllText(Path);
+        }
+
         if (_item is null || _text is null)
         {
             return;
@@ -45,6 +53,45 @@ public partial class FileViewer
         _language = SyntaxHighlighter.LanguageFor(_item.Name);
         _html = SyntaxHighlighter.Highlight(_text, _language);
         _lineCount = _text.Length == 0 ? 0 : _text.Split('\n').Length;
+    }
+
+    // A FilePath parameter value (a task default, a pinned value, or a list entry's value) may be shown
+    // too, but only those exact paths, so this still can't be used to read arbitrary files.
+    private bool IsFilePathParameterValue(string path)
+    {
+        var comparer = StringComparer.OrdinalIgnoreCase;
+        foreach (var definition in Library.GetAll())
+        {
+            EffectiveTaskDefinition effective;
+            try
+            {
+                effective = TaskDefinitionResolver.Resolve(definition, Library);
+            }
+            catch (Exception)
+            {
+                continue;
+            }
+
+            foreach (var parameter in effective.Parameters.Where(p => p.Type == TaskParameterType.FilePath))
+            {
+                if (comparer.Equals(parameter.DefaultValue, path)
+                    || (effective.PinnedParameterValues.TryGetValue(parameter.Name, out var pinned) && comparer.Equals(pinned, path)))
+                {
+                    return true;
+                }
+
+                var overridden = Lists.GetAll()
+                    .SelectMany(l => l.Entries)
+                    .Where(e => e.TaskId == definition.Id && e.ParameterValues is not null)
+                    .Any(e => e.ParameterValues!.TryGetValue(parameter.Name, out var v) && comparer.Equals(v, path));
+                if (overridden)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static string FormatSize(long? bytes) => bytes switch

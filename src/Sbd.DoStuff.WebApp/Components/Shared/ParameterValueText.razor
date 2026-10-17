@@ -1,0 +1,10 @@
+@* Read-only display of a parameter value; FilePath values link to the file viewer. *@
+@if (Type == TaskParameterType.FilePath && !string.IsNullOrWhiteSpace(Value))
+{
+    <a href="@($"configuration/file?path={Uri.EscapeDataString(Value)}")"
+       class="break-all text-indigo-600 hover:text-indigo-500 hover:underline" title="View file contents">@Value</a>
+}
+else
+{
+    @Value
+}
