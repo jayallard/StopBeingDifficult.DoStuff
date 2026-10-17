@@ -253,6 +253,15 @@ entries:
       XPath: /configuration/appSettings/add[@key='Example']/@value
       Value: example
 
+  - taskId: set-web-config-app-settings
+    categories:
+      - demo.xml
+    parameterValues:
+      FileName: 'D:\path	o\web.config'
+      Settings: |-
+        ExampleKey=example
+        AnotherKey=another
+
   - taskId: text-replace
     categories:
       - demo.filesystem

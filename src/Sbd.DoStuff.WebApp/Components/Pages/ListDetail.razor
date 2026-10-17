@@ -69,11 +69,11 @@ else
 
         @if (active is not null)
         {
-            <CategoryTreeNode @key="@($"{_resetVersion}:{active.Segment}")" Node="active" ListId="@ListId"/>
+            <CategoryTreeNode @key="@($"{_resetVersion}:{active.Segment}")" Node="active" ListId="@ListId" OnSaved="Reload"/>
         }
     }
     else
     {
-        <CategoryTreeNode @key="_resetVersion" Node="_root!" ListId="@ListId"/>
+        <CategoryTreeNode @key="_resetVersion" Node="_root!" ListId="@ListId" OnSaved="Reload"/>
     }
 }

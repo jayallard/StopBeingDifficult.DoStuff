@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Sbd.DoStuff.Domain.Execution;
 using Sbd.DoStuff.Domain.Lists;
+using Sbd.DoStuff.WebApp.Editing;
 
 namespace Sbd.DoStuff.WebApp.Components.Shared;
 
@@ -8,6 +9,13 @@ public partial class CategoryTreeNode : IDisposable
 {
     [Parameter, EditorRequired] public CategoryNode Node { get; set; } = null!;
     [Parameter, EditorRequired] public string ListId { get; set; } = "";
+
+    /// <summary>Raised after an edited entry was saved, so the page can reload the list and rebuild the tree.</summary>
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private TaskListEntryView? _editingView;
+    private EntryEditModel? _editing;
+    private string? _editError;
 
     private readonly Dictionary<string, TaskRun> _lastRuns = new();
     private readonly Dictionary<string, string> _runErrors = new();
@@ -54,6 +62,81 @@ public partial class CategoryTreeNode : IDisposable
         {
             _runErrors[view.Definition.Id] = ex.Message;
         }
+    }
+
+    private void StartEdit(TaskListEntryView view)
+    {
+        var source = view.Source!;
+        _editError = null;
+        _editingView = view;
+        _editing = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name);
+    }
+
+    private void CancelEdit()
+    {
+        _editingView = null;
+        _editing = null;
+        _editError = null;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (_editingView?.Source is not { } source || _editing is null)
+        {
+            return;
+        }
+
+        var list = ListRepository.Find(ListId);
+        var index = list is null ? -1 : IndexOfEntry(list, source);
+        if (list is null || index < 0)
+        {
+            _editError = "This list changed since it was loaded; reload the page and try again.";
+            return;
+        }
+
+        var updated = new TaskListEntry(
+            source.TaskId,
+            source.Categories,
+            _editing.Values.Count == 0 ? null : new Dictionary<string, string>(_editing.Values),
+            string.IsNullOrWhiteSpace(_editing.Notes) ? null : _editing.Notes.Trim(),
+            string.IsNullOrWhiteSpace(_editing.Name) ? null : _editing.Name.Trim());
+
+        var entries = list.Entries.ToList();
+        entries[index] = updated;
+        var definition = list with { Entries = entries };
+
+        var errors = TaskListValidator.Validate(definition, Library);
+        if (errors.Count > 0)
+        {
+            _editError = string.Join(" ", errors);
+            return;
+        }
+
+        try
+        {
+            ListRepository.Save(definition, ListRepository.GetScope(ListId) ?? TaskListScope.Private, ListId);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            _editError = ex.Message;
+            return;
+        }
+
+        CancelEdit();
+        await OnSaved.InvokeAsync();
+    }
+
+    private static int IndexOfEntry(TaskListDefinition list, TaskListEntry source)
+    {
+        for (var i = 0; i < list.Entries.Count; i++)
+        {
+            if (ReferenceEquals(list.Entries[i], source))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private static string KeyOf(TaskListEntryView view) => TaskRunKey.For(view.Definition.Id, view.ParameterValues);

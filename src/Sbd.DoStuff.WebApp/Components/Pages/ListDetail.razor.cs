@@ -72,6 +72,13 @@ public partial class ListDetail : IDisposable
         _root = _list is null ? null : CategoryTreeBuilder.Build(_list.Entries, Library);
     }
 
+    // After an inline edit was saved: rebuild the tree from the stored list; the new key re-creates the nodes with fresh run state.
+    private void Reload()
+    {
+        OnParametersSet();
+        _resetVersion++;
+    }
+
     // Browser storage isn't reachable until the circuit is interactive, so the saved mode is read after the first render.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

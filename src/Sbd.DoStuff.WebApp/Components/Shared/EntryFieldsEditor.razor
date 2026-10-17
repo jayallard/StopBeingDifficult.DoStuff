@@ -1,0 +1,90 @@
+<div class="space-y-3">
+    <div>
+        <label class="text-sm font-medium text-slate-700" for="name-@Entry.Key">
+            Name <span class="text-xs font-normal text-slate-400">optional — defaults to "@Effective.Name"</span>
+        </label>
+        <input id="name-@Entry.Key"
+               type="text"
+               class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+               placeholder="@Effective.Name"
+               @bind="Entry.Name"
+               @bind:event="onchange"/>
+    </div>
+
+    <div>
+        <label class="text-sm font-medium text-slate-700" for="notes-@Entry.Key">
+            Notes <span class="text-xs font-normal text-slate-400">optional — why this task is in the list</span>
+        </label>
+        <textarea id="notes-@Entry.Key"
+                  rows="2"
+                  class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+                  @bind="Entry.Notes"
+                  @bind:event="onchange"></textarea>
+    </div>
+
+    @if (Effective.Parameters.Count == 0)
+    {
+        <p class="text-sm text-slate-500">This task has no parameters.</p>
+    }
+
+    @foreach (var parameter in Effective.Parameters)
+    {
+        var locked = Effective.NonOverridableParameterNames.Contains(parameter.Name);
+        var value = CurrentValue(parameter);
+        <div>
+            <label class="flex items-center gap-2 text-sm font-medium text-slate-700">
+                @parameter.Name
+                @if (parameter.Required)
+                {
+                    <span class="text-xs font-normal text-red-500">required</span>
+                }
+                @if (locked)
+                {
+                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-xs font-normal text-amber-700">locked</span>
+                }
+                else if (Entry.Values.ContainsKey(parameter.Name))
+                {
+                    <span class="rounded bg-indigo-100 px-1.5 py-0.5 text-xs font-normal text-indigo-700">overridden</span>
+                    <button type="button" class="text-xs font-normal text-slate-400 hover:text-slate-700"
+                            @onclick="() => ResetValue(parameter)">reset</button>
+                }
+            </label>
+            @if (!string.IsNullOrWhiteSpace(parameter.Description))
+            {
+                <p class="text-xs text-slate-500">@parameter.Description</p>
+            }
+            @if (parameter.Type == TaskParameterType.MultilineText)
+            {
+                <textarea rows="6" wrap="off"
+                          class="@InputClass(locked, parameter, value) resize-y font-mono"
+                          disabled="@locked"
+                          readonly="@locked"
+                          @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)">@value</textarea>
+            }
+            else if (parameter.Type == TaskParameterType.Boolean)
+            {
+                <input type="checkbox"
+                       class="h-4 w-4 rounded border-slate-300 text-indigo-600"
+                       checked="@IsChecked(value)"
+                       disabled="@locked"
+                       @onchange="e => SetChecked(parameter, e)"/>
+            }
+            else if (parameter.Type == TaskParameterType.FilePath)
+            {
+                <FilePathInput Value="@value"
+                               ValueChanged="v => SetValue(parameter, v)"
+                               InputClass="@InputClass(locked, parameter, value)"
+                               Disabled="@locked"/>
+            }
+            else
+            {
+                <input type="text"
+                       class="@InputClass(locked, parameter, value)"
+                       value="@value"
+                       disabled="@locked"
+                       readonly="@locked"
+                       @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)"/>
+            }
+        </div>
+    }
+</div>

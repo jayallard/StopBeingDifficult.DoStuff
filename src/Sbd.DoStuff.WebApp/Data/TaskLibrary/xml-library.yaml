@@ -15,3 +15,27 @@
   command: |-
     Import-Module Sbd.Xml
     Set-XmlValue -FileName $FileName -XPath $XPath -Value $Value
+
+- id: set-web-config-app-settings
+  name: Set web.config App Settings
+  description: Adds or updates entries in the appSettings or connectionStrings section of a web.config (or of an extension file whose root is that section), chosen with SectionPath (which must already exist). Names and values are trimmed and the output reports each one as added, changed or unchanged. Settings are name=value pairs, one per line; existing keys have their value updated and missing keys are added. Fails if the file doesn't exist.
+  type: powershell
+  parameters:
+    - name: FileName
+      description: Path to the web.config file.
+      required: true
+      type: filePath
+      canOverride: true
+    - name: SectionPath
+      description: "Path of element names from the file's root to the section holding the add entries, e.g. configuration/appSettings, appSettings (extension file) or configuration/connectionStrings. Every element on the path must exist."
+      required: false
+      defaultValue: configuration/appSettings
+      canOverride: true
+    - name: Settings
+      description: Multiline name=value pairs, one per line (for connectionStrings, name=connection string).
+      required: true
+      type: multilineText
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Xml
+    Set-WebConfigAppSettings -FileName $FileName -SectionPath $SectionPath -Settings $Settings

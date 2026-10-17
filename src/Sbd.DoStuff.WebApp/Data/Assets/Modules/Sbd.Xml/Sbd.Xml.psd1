@@ -6,7 +6,7 @@
     Description          = 'XML file manipulation for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Set-XmlValue')
+    FunctionsToExport    = @('Set-XmlValue', 'Set-WebConfigAppSettings')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

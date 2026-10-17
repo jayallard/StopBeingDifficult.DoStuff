@@ -50,7 +50,7 @@ public static class CategoryTreeBuilder
         {
             var effective = TaskDefinitionResolver.Resolve(definition, library);
             var values = TaskParameterResolver.Resolve(effective, entry.ParameterValues);
-            return new TaskListEntryView(effective, values, entry.Notes, entry.Name);
+            return new TaskListEntryView(effective, values, entry.Notes, entry.Name, entry);
         }
         catch (Exception)
         {
