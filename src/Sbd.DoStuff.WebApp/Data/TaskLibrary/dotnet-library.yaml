@@ -57,6 +57,16 @@
       type: boolean
       defaultValue: 'false'
       canOverride: true
+    - name: UseDevenv
+      description: Build with Visual Studio's devenv.com (the IDE's own build; needed for Website projects, whose bin folder MSBuild doesn't populate). Overrides UseMsBuild and ignores SuppressWarnings
+      type: boolean
+      defaultValue: 'false'
+      canOverride: true
+    - name: SuppressWarnings
+      description: Hide compiler warnings from the build output to reduce noise (errors are still shown)
+      type: boolean
+      defaultValue: 'true'
+      canOverride: true
   command: |-
     Import-Module Sbd.Dotnet
-    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration -UseMsBuild:($UseMsBuild -eq 'true')
+    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration -UseMsBuild:($UseMsBuild -eq 'true') -UseDevenv:($UseDevenv -eq 'true') -SuppressWarnings:($SuppressWarnings -eq 'true')

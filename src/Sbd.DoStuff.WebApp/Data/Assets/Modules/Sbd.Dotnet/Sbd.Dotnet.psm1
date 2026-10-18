@@ -159,6 +159,20 @@ function Find-MsBuild {
     return $null
 }
 
+function Find-Devenv {
+    # devenv.com is Visual Studio's command-line host. Unlike MSBuild it runs the IDE's own build, including
+    # copying a Website project's referenced assemblies into its bin folder.
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (Test-Path -LiteralPath $vswhere) {
+        $found = & $vswhere -latest -prerelease -products * -requires Microsoft.Component.MSBuild `
+            -find 'Common7\IDE\devenv.com' | Select-Object -First 1
+        if ($found) { return $found }
+    }
+    $cmd = Get-Command devenv.com -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
 function Build-DotnetSolution {
     <#
     .SYNOPSIS
@@ -166,7 +180,8 @@ function Build-DotnetSolution {
     .DESCRIPTION
     SolutionPath is the .sln/.slnx/.csproj/.sqlproj file, or a directory containing exactly one.
     Configuration is Debug or Release. UseMsBuild compiles with Visual Studio's MSBuild.exe instead
-    of dotnet (needed for .sqlproj). Sets $LASTEXITCODE to the build tool's exit code (0 = succeeded).
+    of dotnet (needed for .sqlproj). UseDevenv builds with Visual Studio's devenv.com (the IDE's own build, which also
+    populates a Website project's bin folder) and takes precedence over UseMsBuild. SuppressWarnings hides warnings from the build output (errors still show). Sets $LASTEXITCODE to the build tool's exit code (0 = succeeded).
     #>
     [CmdletBinding()]
     param(
@@ -176,8 +191,16 @@ function Build-DotnetSolution {
         [ValidateSet('Debug', 'Release')]
         [string]$Configuration = 'Debug',
 
-        [switch]$UseMsBuild
+        [switch]$UseMsBuild,
+
+        [switch]$UseDevenv,
+
+        [switch]$SuppressWarnings
     )
+
+    # ErrorsOnly drops warnings (and informational messages) from the console output; errors still show.
+    # Typed as string[] so a single element isn't unrolled to a string, which @loggerArgs would splat char by char.
+    [string[]]$loggerArgs = if ($SuppressWarnings) { '-clp:ErrorsOnly' } else { @() }
 
     if (-not (Test-Path -LiteralPath $SolutionPath)) {
         Write-Output "!Path not found: $SolutionPath"
@@ -185,7 +208,18 @@ function Build-DotnetSolution {
         return
     }
 
-    if ($UseMsBuild) {
+    if ($UseDevenv) {
+        $devenv = Find-Devenv
+        if (-not $devenv) {
+            Write-Output "!devenv.com was not found. Install Visual Studio."
+            $global:LASTEXITCODE = 1
+            return
+        }
+
+        # devenv has no errors-only logger, so -SuppressWarnings has no effect here.
+        Write-Output ":Building $SolutionPath ($Configuration) with Visual Studio: $devenv"
+        & $devenv $SolutionPath /Build $Configuration
+    } elseif ($UseMsBuild) {
         $msbuild = Find-MsBuild
         if (-not $msbuild) {
             Write-Output "!MSBuild was not found. Install Visual Studio (or the Build Tools) with the MSBuild component."
@@ -194,7 +228,7 @@ function Build-DotnetSolution {
         }
 
         Write-Output ":Building $SolutionPath ($Configuration) with MSBuild: $msbuild"
-        & $msbuild $SolutionPath /restore /p:Configuration=$Configuration /nologo /verbosity:minimal
+        & $msbuild $SolutionPath /restore /p:Configuration=$Configuration /nologo /verbosity:minimal @loggerArgs
     } else {
         if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { Update-SessionPath }
         if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
@@ -204,7 +238,7 @@ function Build-DotnetSolution {
         }
 
         Write-Output ":Building $SolutionPath ($Configuration)"
-        dotnet build $SolutionPath --configuration $Configuration --nologo
+        dotnet build $SolutionPath --configuration $Configuration --nologo @loggerArgs
     }
 
     if ($LASTEXITCODE -eq 0) {

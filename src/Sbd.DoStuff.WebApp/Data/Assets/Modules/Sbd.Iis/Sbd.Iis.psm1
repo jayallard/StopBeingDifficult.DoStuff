@@ -53,6 +53,67 @@ function Test-IsElevated {
     return ([Security.Principal.WindowsPrincipal]$identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+$IisConfigPath = Join-Path $env:SystemRoot 'System32\inetsrv\config\applicationHost.config'
+
+# Native modules a working IIS must have registered. When applicationHost.config survives an IIS
+# uninstall it can lose these, and every request then gets a bare 401 (no module authenticates it).
+$IisCoreModules = 'AnonymousAuthenticationModule', 'StaticFileModule', 'DefaultDocumentModule'
+
+function Test-IisModuleRegistered {
+    # $true/$false whether applicationHost.config registers the native module; $null if it can't be
+    # read (not elevated), in which case callers shouldn't draw conclusions.
+    param([Parameter(Mandatory)][string]$Name)
+
+    try { $xml = [xml][IO.File]::ReadAllText($IisConfigPath) }
+    catch [IO.FileNotFoundException] { return $false }
+    catch [IO.DirectoryNotFoundException] { return $false }
+    catch { return $null }
+    return $null -ne $xml.SelectSingleNode("/configuration/system.webServer/globalModules/add[@name='$Name']")
+}
+
+function Test-IisConfigHealthy {
+    # $false if applicationHost.config is missing any core native module; $true otherwise (or unreadable).
+    foreach ($name in $IisCoreModules) {
+        if ((Test-IisModuleRegistered $name) -eq $false) { return $false }
+    }
+    return $true
+}
+
+function Test-RestartPending {
+    # True if component servicing (dism/Windows Update) is waiting for a restart.
+    $keys = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending',
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootInProgress',
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\PackagesPending',
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+    foreach ($key in $keys) {
+        if (Test-Path $key) { return $true }
+    }
+    return $false
+}
+
+function Stop-IisServices {
+    foreach ($name in 'W3SVC', 'WAS') {
+        if (Get-Service $name -ErrorAction SilentlyContinue) {
+            Stop-Service $name -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Backup-IisConfig {
+    # Moves applicationHost.config aside so a fresh one is generated when IIS is next installed.
+    # IIS must be removed first; a surviving config is what leaves a reinstall broken.
+    Stop-IisServices
+    if (-not (Test-Path -LiteralPath $IisConfigPath)) { return }
+    $backup = "$IisConfigPath.removed-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+    try {
+        Move-Item -LiteralPath $IisConfigPath -Destination $backup -ErrorAction Stop
+        Write-Output ":Moved applicationHost.config aside to $backup"
+    }
+    catch {
+        Write-Output "!Couldn't move applicationHost.config aside: $($_.Exception.Message)"
+    }
+}
+
 function Initialize-IisDefaultWebSite {
     # Makes sure a "Default Web Site" exists (http *:80 -> %SystemDrive%\inetpub\wwwroot). Enabling the
     # features doesn't guarantee one: applicationHost.config can survive an earlier uninstall without it.
@@ -148,6 +209,19 @@ function Install-Iis {
         ForEach-Object { $_.Name })
     $missing = @($Feature | Where-Object { $enabled -notcontains $_ })
 
+    if ($before -and $missing.Count -eq 0 -and -not (Test-IisConfigHealthy)) {
+        # The features are on, but applicationHost.config doesn't register the core modules (a leftover
+        # from an earlier uninstall). Enabling features again won't fix that: remove IIS, set the config
+        # aside, and reinstall so IIS generates a fresh one.
+        Write-Output ":applicationHost.config is missing core IIS modules; removing IIS so it can be reinstalled cleanly"
+        Uninstall-Iis
+        if ($LASTEXITCODE -ne 0) { return }
+        $enabled = @(Get-CimInstance Win32_OptionalFeature -Filter "InstallState = $OptionalFeatureEnabled" |
+            Where-Object { $_.Name -like 'IIS-*' } |
+            ForEach-Object { $_.Name })
+        $missing = @($Feature | Where-Object { $enabled -notcontains $_ })
+    }
+
     if ($missing.Count -eq 0) {
         Write-Output ":All requested IIS features are already enabled"
         Write-Output ":IIS updates are delivered through Windows Update"
@@ -170,6 +244,14 @@ function Install-Iis {
         return
     }
 
+    # Enabling features while a removal is still pending a restart fails with dism error 2.
+    if (Test-RestartPending) {
+        Write-Output "!A restart is required to finish removing IIS. Restart Windows, then run this again."
+        Write-Output "::RestartComputer"
+        $global:LASTEXITCODE = 1
+        return
+    }
+
     Write-Output ":Enabling: $($missing -join ', ')"
     $dismArgs = @('/Online', '/Enable-Feature', '/All', '/NoRestart') +
         @($missing | ForEach-Object { "/FeatureName:$_" })
@@ -177,6 +259,7 @@ function Install-Iis {
 
     if ($LASTEXITCODE -eq $DismRebootRequired) {
         Write-Output ":A restart is required to finish enabling IIS features"
+        Write-Output "::RestartComputer"
         $global:LASTEXITCODE = 0
     }
     elseif ($LASTEXITCODE -ne 0) {
@@ -216,6 +299,7 @@ function Uninstall-Iis {
 
     if ($enabled.Count -eq 0) {
         Write-Output ":IIS is not installed; nothing to remove"
+        if ((Test-IsElevated) -and (Test-Path -LiteralPath $IisConfigPath)) { Backup-IisConfig }
         $global:LASTEXITCODE = 0
         return
     }
@@ -227,18 +311,23 @@ function Uninstall-Iis {
     }
 
     Write-Output ":Disabling: $($enabled -join ', ')"
+    Stop-IisServices
     $dismArgs = @('/Online', '/Disable-Feature', '/NoRestart') +
         @($enabled | ForEach-Object { "/FeatureName:$_" })
     dism.exe @dismArgs
 
     if ($LASTEXITCODE -eq $DismRebootRequired) {
         Write-Output ":A restart is required to finish removing IIS"
+        Write-Output "::RestartComputer"
         $global:LASTEXITCODE = 0
     }
     elseif ($LASTEXITCODE -ne 0) {
         Write-Output "!dism failed with exit code $LASTEXITCODE"
         return
     }
+
+    # Leave no applicationHost.config behind: a reinstall doesn't repair a surviving one.
+    Backup-IisConfig
 
     Write-Output ":IIS has been removed ($($enabled.Count) features disabled)"
     $global:LASTEXITCODE = 0
@@ -344,7 +433,11 @@ function Test-IisUrlRewrite {
     param()
 
     $program = Get-InstalledProgram 'IIS URL Rewrite Module*' | Select-Object -First 1
-    if ($program) {
+    if ($program -and (Get-InstalledIisVersion) -and (Test-IisModuleRegistered 'RewriteModule') -eq $false) {
+        Write-Output "!$($program.DisplayName) is installed but isn't registered with IIS (IIS was reinstalled); reinstall it"
+        $global:LASTEXITCODE = 2
+    }
+    elseif ($program) {
         Write-Output ":$($program.DisplayName) $($program.DisplayVersion) is installed"
         $global:LASTEXITCODE = 0
     }
@@ -367,6 +460,13 @@ function Install-IisUrlRewrite {
     param()
 
     if (-not (Test-IsElevated)) { Write-NotElevated 'Installing IIS URL Rewrite'; return }
+    if ((Get-InstalledProgram 'IIS URL Rewrite Module*') -and (Get-InstalledIisVersion) -and
+        (Test-IisModuleRegistered 'RewriteModule') -eq $false) {
+        # Present from before IIS was reinstalled: its registration lived in the old applicationHost.config.
+        Write-Output ":IIS URL Rewrite isn't registered with IIS; reinstalling it"
+        Uninstall-WinGetPackage 'Microsoft.IIS.URLRewrite'
+        if ($LASTEXITCODE -ne 0) { return }
+    }
     Install-WinGetPackage 'Microsoft.IIS.URLRewrite'
 }
 
@@ -391,7 +491,11 @@ function Test-IisRequestRouting {
     param()
 
     $program = Get-InstalledProgram 'Microsoft Application Request Routing*' | Select-Object -First 1
-    if ($program) {
+    if ($program -and (Get-InstalledIisVersion) -and (Test-IisModuleRegistered 'ApplicationRequestRouting') -eq $false) {
+        Write-Output "!$($program.DisplayName) is installed but isn't registered with IIS (IIS was reinstalled); reinstall it"
+        $global:LASTEXITCODE = 2
+    }
+    elseif ($program) {
         Write-Output ":$($program.DisplayName) $($program.DisplayVersion) is installed"
         $global:LASTEXITCODE = 0
     }
@@ -414,6 +518,12 @@ function Install-IisRequestRouting {
     param()
 
     if (-not (Test-IsElevated)) { Write-NotElevated 'Installing IIS Application Request Routing'; return }
+    if ((Get-InstalledProgram 'Microsoft Application Request Routing*') -and (Get-InstalledIisVersion) -and
+        (Test-IisModuleRegistered 'ApplicationRequestRouting') -eq $false) {
+        Write-Output ":IIS Application Request Routing isn't registered with IIS; reinstalling it"
+        Uninstall-WinGetPackage 'Microsoft.IIS.ApplicationRequestRouting'
+        if ($LASTEXITCODE -ne 0) { return }
+    }
     Install-WinGetPackage 'Microsoft.IIS.ApplicationRequestRouting'
 }
 
@@ -450,7 +560,11 @@ function Test-AspNetCoreHostingBundle {
     param([Parameter(Mandatory)][ValidateSet('6.0', '2.2')][string]$Version)
 
     $program = Get-HostingBundleProgram $Version
-    if ($program) {
+    if ($program -and (Get-InstalledIisVersion) -and (Test-IisModuleRegistered 'AspNetCoreModuleV2') -eq $false) {
+        Write-Output "!$($program.DisplayName) is installed but its IIS module isn't registered (IIS was reinstalled); reinstall it"
+        $global:LASTEXITCODE = 2
+    }
+    elseif ($program) {
         Write-Output ":$($program.DisplayName) ($($program.DisplayVersion)) is installed"
         $global:LASTEXITCODE = 0
     }
@@ -475,6 +589,13 @@ function Install-AspNetCoreHostingBundle {
     if (-not (Test-IsElevated)) { Write-NotElevated "Installing the ASP.NET Core $Version Hosting Bundle"; return }
 
     $existing = Get-HostingBundleProgram $Version
+    if ($existing -and (Get-InstalledIisVersion) -and (Test-IisModuleRegistered 'AspNetCoreModuleV2') -eq $false) {
+        # Installed before IIS was reinstalled: its module registration lived in the old applicationHost.config.
+        Write-Output ":The ASP.NET Core $Version Hosting Bundle isn't registered with IIS; reinstalling it"
+        Uninstall-AspNetCoreHostingBundle -Version $Version
+        if ($LASTEXITCODE -ne 0) { return }
+        $existing = $null
+    }
     if ($existing) {
         Write-Output ":$($existing.DisplayName) ($($existing.DisplayVersion)) is already installed"
         $global:LASTEXITCODE = 0
@@ -514,6 +635,7 @@ function Install-AspNetCoreHostingBundle {
 
     if ($code -eq $DismRebootRequired) {
         Write-Output ":A restart is required to finish installing the hosting bundle"
+        Write-Output "::RestartComputer"
         $code = 0
     }
     elseif ($code -ne 0) {
@@ -550,6 +672,7 @@ function Uninstall-AspNetCoreHostingBundle {
 
     if ($code -eq $DismRebootRequired) {
         Write-Output ":A restart is required to finish removing the hosting bundle"
+        Write-Output "::RestartComputer"
         $code = 0
     }
     elseif ($code -ne 0) {
@@ -558,7 +681,39 @@ function Uninstall-AspNetCoreHostingBundle {
     $global:LASTEXITCODE = $code
 }
 
+function Set-IisDefaultPermissions {
+    <#
+    .SYNOPSIS
+    Restores the default IIS permissions on a web root, as on a clean IIS install.
+    .DESCRIPTION
+    Grants Read & Execute (inherited by subfolders and files) to IIS_IUSRS and Users.
+    Only adds grants; nothing is removed. Fixes 401.3 errors from anonymous authentication.
+    #>
+    [CmdletBinding()]
+    param(
+        [string]$Path = 'C:\inetpub\wwwroot'
+    )
+
+    if (-not (Test-IsElevated)) { Write-NotElevated 'Setting IIS default permissions'; return }
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-Output "!Path not found: $Path"
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    foreach ($grant in 'BUILTIN\IIS_IUSRS:(OI)(CI)(RX)', 'BUILTIN\Users:(OI)(CI)(RX)') {
+        icacls $Path /grant $grant /T /C | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Output "!icacls failed to grant $grant on $Path (exit code $LASTEXITCODE)"
+            return
+        }
+        Write-Output ":Granted $grant on $Path"
+    }
+    $global:LASTEXITCODE = 0
+}
+
 Export-ModuleMember -Function Install-Iis, Uninstall-Iis, Test-IisVersion,
     Test-IisUrlRewrite, Install-IisUrlRewrite, Uninstall-IisUrlRewrite,
     Test-IisRequestRouting, Install-IisRequestRouting, Uninstall-IisRequestRouting,
-    Test-AspNetCoreHostingBundle, Install-AspNetCoreHostingBundle, Uninstall-AspNetCoreHostingBundle
+    Test-AspNetCoreHostingBundle, Install-AspNetCoreHostingBundle, Uninstall-AspNetCoreHostingBundle,
+    Set-IisDefaultPermissions

@@ -64,6 +64,28 @@ public partial class CategoryTreeNode : IDisposable
         }
     }
 
+    // Clears the run history of every task in this category and its descendants, then asks the page to rebuild the tree.
+    private async Task ResetCategory()
+    {
+        var keys = new HashSet<string>();
+        CollectKeys(Node, keys);
+        RunStore.ClearForEntries(ListId, keys);
+        await OnSaved.InvokeAsync();
+    }
+
+    private static void CollectKeys(CategoryNode node, HashSet<string> keys)
+    {
+        foreach (var task in node.Tasks)
+        {
+            keys.Add(KeyOf(task));
+        }
+
+        foreach (var child in node.Children.Values)
+        {
+            CollectKeys(child, keys);
+        }
+    }
+
     private void StartEdit(TaskListEntryView view)
     {
         var source = view.Source!;

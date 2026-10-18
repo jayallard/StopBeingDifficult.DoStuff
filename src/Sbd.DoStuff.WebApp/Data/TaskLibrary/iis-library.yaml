@@ -113,3 +113,15 @@
   command: |-
     Import-Module Sbd.Iis
     Uninstall-AspNetCoreHostingBundle -Version '2.2'
+- id: set-iis-default-permissions
+  name: Set Default Permissions
+  description: Restores the default IIS permissions on the web root, as on a clean IIS install. Grants Read & Execute (inherited by subfolders and files) to IIS_IUSRS and Users. Only adds grants; nothing is removed. Fixes 401.3 errors from anonymous authentication. Requires running as Administrator.
+  type: powershell
+  parameters:
+    - name: Path
+      defaultValue: C:\inetpub\wwwroot
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Iis
+    Set-IisDefaultPermissions -Path $Path

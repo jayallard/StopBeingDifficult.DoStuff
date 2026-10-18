@@ -26,4 +26,12 @@ internal sealed class InMemoryTaskRunStore : ITaskRunStore
             _runs.TryRemove(run.RunId, out _);
         }
     }
+
+    public void ClearForEntries(string listId, IReadOnlySet<string> entryKeys)
+    {
+        foreach (var run in _runs.Values.Where(r => r.ListId == listId && r.EntryKey is not null && entryKeys.Contains(r.EntryKey)))
+        {
+            _runs.TryRemove(run.RunId, out _);
+        }
+    }
 }

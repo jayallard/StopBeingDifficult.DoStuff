@@ -283,3 +283,6 @@ entries:
   - taskId: check-python-version
     categories:
       - prerequisites.python
+  - taskId: set-iis-default-permissions
+    categories:
+      - prerequisites.iis

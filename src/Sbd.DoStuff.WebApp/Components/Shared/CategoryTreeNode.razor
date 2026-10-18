@@ -17,7 +17,15 @@
 else
 {
     <details id="@CategoryAnchor.Id(Node.FullPath)" class="ml-2 scroll-mt-4 border-l border-slate-200 pl-3" open>
-        <summary class="cursor-pointer select-none font-medium text-slate-800 hover:text-indigo-700">@Node.Segment</summary>
+        <summary class="flex cursor-pointer select-none items-center justify-between font-medium text-slate-800 hover:text-indigo-700">
+            <span>@Node.Segment</span>
+            <button type="button"
+                    title="Reset all tasks in this category and its subcategories"
+                    class="rounded-md border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                    @onclick="ResetCategory" @onclick:preventDefault @onclick:stopPropagation>
+                Reset
+            </button>
+        </summary>
 
         <div class="mt-2 space-y-2 pb-2">
             @foreach (var child in Node.Children.Values)

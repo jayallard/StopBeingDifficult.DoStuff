@@ -54,6 +54,16 @@ internal sealed class YamlTaskRunStore : ITaskRunStore
         Save();
     }
 
+    public void ClearForEntries(string listId, IReadOnlySet<string> entryKeys)
+    {
+        foreach (var run in _runs.Values.Where(r => r.ListId == listId && r.EntryKey is not null && entryKeys.Contains(r.EntryKey)))
+        {
+            _runs.TryRemove(run.RunId, out _);
+        }
+
+        Save();
+    }
+
     private void Load()
     {
         if (!File.Exists(_filePath))

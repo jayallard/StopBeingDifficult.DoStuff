@@ -10,7 +10,8 @@
         'Install-Iis', 'Uninstall-Iis', 'Test-IisVersion',
         'Test-IisUrlRewrite', 'Install-IisUrlRewrite', 'Uninstall-IisUrlRewrite',
         'Test-IisRequestRouting', 'Install-IisRequestRouting', 'Uninstall-IisRequestRouting',
-        'Test-AspNetCoreHostingBundle', 'Install-AspNetCoreHostingBundle', 'Uninstall-AspNetCoreHostingBundle'
+        'Test-AspNetCoreHostingBundle', 'Install-AspNetCoreHostingBundle', 'Uninstall-AspNetCoreHostingBundle',
+        'Set-IisDefaultPermissions'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()
