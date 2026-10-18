@@ -70,6 +70,10 @@ else
                         {
                             <p class="mt-0.5 whitespace-pre-line text-sm text-slate-500">@task.Notes</p>
                         }
+                        @if (task.IsDisabled)
+                        {
+                            <p class="mt-0.5 text-sm font-medium text-amber-700">Disabled: @task.DisabledReason</p>
+                        }
                         @if (_runErrors.TryGetValue(task.Definition.Id, out var runError))
                         {
                             <p class="mt-0.5 text-sm text-red-600">@runError</p>
@@ -94,7 +98,9 @@ else
                             </button>
                         }
                         <button type="button"
-                                class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+                                class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300"
+                                disabled="@task.IsDisabled"
+                                title="@task.DisabledReason"
                                 @onclick="() => Run(task)">
                             Run
                         </button>

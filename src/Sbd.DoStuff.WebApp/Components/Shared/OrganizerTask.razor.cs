@@ -33,6 +33,8 @@ public partial class OrganizerTask
     // Edits are held here until Save, so Cancel leaves the entry untouched.
     private string _name = "";
     private string _notes = "";
+    private bool _disabled;
+    private string _disabledReason = "";
     private Dictionary<string, string> _draft = [];
 
     private string DefaultName => _effective?.Name ?? Entry.TaskId;
@@ -84,6 +86,8 @@ public partial class OrganizerTask
         _editError = null;
         _name = Entry.Name ?? "";
         _notes = Entry.Notes ?? "";
+        _disabled = Entry.Disabled;
+        _disabledReason = Entry.DisabledReason ?? "";
         _draft = _effective?.Parameters.ToDictionary(p => p.Name, CurrentValue) ?? [];
     }
 
@@ -127,6 +131,8 @@ public partial class OrganizerTask
 
         Entry.Name = string.IsNullOrWhiteSpace(_name) ? null : _name.Trim();
         Entry.Notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim();
+        Entry.Disabled = _disabled;
+        Entry.DisabledReason = string.IsNullOrWhiteSpace(_disabledReason) ? null : _disabledReason.Trim();
         Entry.Values.Clear();
         foreach (var (name, value) in values)
         {

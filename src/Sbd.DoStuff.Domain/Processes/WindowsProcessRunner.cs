@@ -18,7 +18,7 @@ internal sealed class WindowsProcessRunner(IEnumerable<string>? moduleDirectorie
         } 2>&1 3>&1 4>&1 5>&1 6>&1 | ForEach-Object {
             if ($_ -is [System.Management.Automation.ErrorRecord]) {
                 [Console]::Error.WriteLine($_.ToString())
-                if ($_.FullyQualifiedErrorId -ne 'NativeCommandError') { $hadError = $true }
+                if ($_.FullyQualifiedErrorId -notin 'NativeCommandError', 'NativeCommandErrorMessage') { $hadError = $true }
             } elseif ($_ -is [System.Management.Automation.WarningRecord]) {
                 [Console]::Error.WriteLine("WARNING: " + $_.Message)
             } elseif ($_ -is [System.Management.Automation.VerboseRecord] -or $_ -is [System.Management.Automation.DebugRecord]) {

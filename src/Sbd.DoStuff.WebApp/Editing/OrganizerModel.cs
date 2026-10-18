@@ -47,7 +47,7 @@ public sealed class OrganizerModel
         var model = new OrganizerModel();
         foreach (var source in list.Entries)
         {
-            var entry = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name);
+            var entry = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name, source.DisabledReason);
             if (source.Categories.Count == 0)
             {
                 // Kept at the root so an uncategorized entry is not silently lost on save.
@@ -233,7 +233,8 @@ public sealed class OrganizerModel
             categories[e],
             e.Values.Count == 0 ? null : new Dictionary<string, string>(e.Values),
             string.IsNullOrWhiteSpace(e.Notes) ? null : e.Notes.Trim(),
-            string.IsNullOrWhiteSpace(e.Name) ? null : e.Name.Trim())).ToList();
+            string.IsNullOrWhiteSpace(e.Name) ? null : e.Name.Trim(),
+            e.PersistedDisabledReason)).ToList();
     }
 
     private static bool HasChildNamed(OrganizerNode parent, string name) =>

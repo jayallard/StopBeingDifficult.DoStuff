@@ -41,6 +41,10 @@ else
                     {
                         <p class="mt-1 whitespace-pre-line text-sm text-slate-600">@entry.Entry.Notes</p>
                     }
+                    @if (entry.View.IsDisabled)
+                    {
+                        <p class="mt-1 text-sm font-medium text-amber-700">Disabled: @entry.View.DisabledReason</p>
+                    }
                     @if (entry.View.ParameterValues.Count > 0)
                     {
                         <dl class="mt-2 space-y-1">
@@ -55,7 +59,9 @@ else
                     }
                 </div>
                 <button type="button"
-                        class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500"
+                        class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300"
+                        disabled="@entry.View.IsDisabled"
+                        title="@entry.View.DisabledReason"
                         @onclick="() => Run(entry.View)">
                     Run
                 </button>

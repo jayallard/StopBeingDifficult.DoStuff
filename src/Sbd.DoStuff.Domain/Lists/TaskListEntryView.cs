@@ -8,4 +8,8 @@ public sealed record TaskListEntryView(
     IReadOnlyDictionary<string, string> ParameterValues,
     string? Notes = null,
     string? Name = null,
-    TaskListEntry? Source = null);
+    TaskListEntry? Source = null,
+    string? DisabledReason = null)
+{
+    public bool IsDisabled => DisabledReason is not null;
+}

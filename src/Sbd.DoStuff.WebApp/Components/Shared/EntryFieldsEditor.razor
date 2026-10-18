@@ -22,6 +22,21 @@
                   @bind:event="onchange"></textarea>
     </div>
 
+    <div>
+        <label class="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-indigo-600" @bind="Entry.Disabled"/>
+            Disabled <span class="text-xs font-normal text-slate-400">shown in the list, but can't be run</span>
+        </label>
+        @if (Entry.Disabled)
+        {
+            <input type="text"
+                   class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+                   placeholder="Why is this task disabled?"
+                   @bind="Entry.DisabledReason"
+                   @bind:event="onchange"/>
+        }
+    </div>
+
     @if (Effective.Parameters.Count == 0)
     {
         <p class="text-sm text-slate-500">This task has no parameters.</p>

@@ -52,6 +52,11 @@ public partial class CategoryTreeNode : IDisposable
     {
         _runErrors.Remove(view.Definition.Id);
 
+        if (view.IsDisabled)
+        {
+            return;
+        }
+
         try
         {
             var task = TaskFactory.Create(view.Definition, view.ParameterValues);
@@ -91,7 +96,7 @@ public partial class CategoryTreeNode : IDisposable
         var source = view.Source!;
         _editError = null;
         _editingView = view;
-        _editing = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name);
+        _editing = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name, source.DisabledReason);
     }
 
     private void CancelEdit()
@@ -121,7 +126,8 @@ public partial class CategoryTreeNode : IDisposable
             source.Categories,
             _editing.Values.Count == 0 ? null : new Dictionary<string, string>(_editing.Values),
             string.IsNullOrWhiteSpace(_editing.Notes) ? null : _editing.Notes.Trim(),
-            string.IsNullOrWhiteSpace(_editing.Name) ? null : _editing.Name.Trim());
+            string.IsNullOrWhiteSpace(_editing.Name) ? null : _editing.Name.Trim(),
+            _editing.PersistedDisabledReason);
 
         var entries = list.Entries.ToList();
         entries[index] = updated;
@@ -166,6 +172,11 @@ public partial class CategoryTreeNode : IDisposable
     private string RowClass(TaskListEntryView view)
     {
         const string baseClass = "flex items-center justify-between rounded border px-3 py-2 transition";
+
+        if (view.IsDisabled)
+        {
+            return $"{baseClass} border-slate-200 bg-slate-50 opacity-60";
+        }
 
         if (!_lastRuns.TryGetValue(KeyOf(view), out var lastRun) || lastRun.Status != TaskRunStatus.Succeeded && lastRun.Status != TaskRunStatus.Failed)
         {

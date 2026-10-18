@@ -37,13 +37,18 @@ public partial class TaskDetail
             var effective = TaskDefinitionResolver.Resolve(definition, Library);
             var values = TaskParameterResolver.Resolve(effective, entry.ParameterValues);
             _definition = effective;
-            _entries.Add((entry, new TaskListEntryView(effective, values, entry.Notes, entry.Name)));
+            _entries.Add((entry, new TaskListEntryView(effective, values, entry.Notes, entry.Name, entry, entry.DisabledReason)));
         }
     }
 
     private void Run(TaskListEntryView view)
     {
         _runError = null;
+
+        if (view.IsDisabled)
+        {
+            return;
+        }
 
         try
         {

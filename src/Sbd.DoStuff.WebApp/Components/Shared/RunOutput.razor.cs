@@ -12,6 +12,7 @@ public partial class RunOutput
 
     private ElementReference _output;
     private IJSObjectReference? _autoscroll;
+    private bool _copied;
 
     protected override void OnInitialized() => Engine.RunChanged += OnRunChanged;
 
@@ -24,6 +25,15 @@ public partial class RunOutput
 
         _autoscroll = await JS.InvokeAsync<IJSObjectReference>("import", "./js/autoscroll.js");
         await _autoscroll.InvokeVoidAsync("attach", _output);
+    }
+
+    private async Task CopyOutput()
+    {
+        var text = string.Join('\n', Run.OutputLines.Select(LineText));
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+        _copied = true;
+        await Task.Delay(1500);
+        _copied = false;
     }
 
     private void OnRunChanged(TaskRun run)
