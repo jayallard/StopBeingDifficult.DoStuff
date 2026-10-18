@@ -31,3 +31,33 @@
   command: |-
     Import-Module Sbd.Podman
     Test-PodmanVersion -MinVersion $MinVersion
+- id: podman-compose-up
+  name: Podman Compose Up
+  description: Starts the services in a compose file in the background (`podman compose up -d`). Requires Podman and Podman Compose.
+  type: powershell
+  parameters:
+    - name: ComposeFile
+      type: filePath
+      description: Full path to the compose file.
+      required: true
+      canOverride: true
+  command: |-
+    if (-not (Test-Path -LiteralPath $ComposeFile)) {
+        Write-Error "Compose file not found: $ComposeFile"
+        exit 1
+    }
+    Write-Output ":Starting services from $ComposeFile"
+    podman compose -f $ComposeFile up -d
+
+- id: allow-podman-insecure-registry
+  name: Allow Insecure Podman Registry
+  description: Allows plain-HTTP access to a container registry from Podman (it is prohibited by default). Does nothing if the registry is already allowed. Requires a running Podman machine.
+  type: powershell
+  parameters:
+    - name: DockerRegistryUrl
+      description: The registry to allow, e.g. nexus.example.org:18000 (a leading http:// is ignored).
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Podman
+    Add-PodmanInsecureRegistry -RegistryUrl $DockerRegistryUrl

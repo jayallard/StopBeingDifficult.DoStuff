@@ -181,6 +181,68 @@ function Install-PodmanCompose {
     $global:LASTEXITCODE = 0
 }
 
+function Add-PodmanInsecureRegistry {
+    <#
+    .SYNOPSIS
+    Allows plain-HTTP (and untrusted-TLS) access to a container registry from Podman.
+    .DESCRIPTION
+    Podman refuses http registries by default. Pulls run inside the Podman machine, so this writes a
+    registries.conf.d drop-in there marking the registry insecure and restarts the machine's podman service
+    so it takes effect. Does nothing if the registry is
+    already marked insecure. The registry URL may include a scheme and path (http://host:5000/); only
+    host[:port] is used. Sets $LASTEXITCODE to 0 on success.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RegistryUrl
+    )
+
+    $podman = Get-Podman
+    if (-not $podman) {
+        Write-Output "!Podman is not installed. Run the Install Podman task first."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $registry = ($RegistryUrl.Trim() -replace '^[a-zA-Z][a-zA-Z0-9+.-]*://', '' -replace '/.*$', '')
+    if ($registry -notmatch '^[A-Za-z0-9.-]+(:\d+)?$') {
+        Write-Output "!'$RegistryUrl' is not a valid registry address (expected host or host:port)."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $escaped = [regex]::Escape($registry)
+    $check = "grep -rhA3 -E '^[[:space:]]*location[[:space:]]*=[[:space:]]*`"$escaped`"' /etc/containers/registries.conf /etc/containers/registries.conf.d 2>/dev/null | grep -qE 'insecure[[:space:]]*=[[:space:]]*true'"
+    & $podman machine ssh $check
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output ":$registry is already allowed as an insecure registry"
+        $global:LASTEXITCODE = 0
+        return
+    }
+
+    $fileName = 'insecure-' + ($registry -replace '[^A-Za-z0-9.-]', '_') + '.conf'
+    $content = "[[registry]]`nlocation = `"$registry`"`ninsecure = true`n"
+    $encoded = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($content))
+
+    Write-Output ":Allowing insecure access to $registry"
+    & $podman machine ssh "sudo mkdir -p /etc/containers/registries.conf.d && echo $encoded | base64 -d | sudo tee /etc/containers/registries.conf.d/$fileName > /dev/null"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!Failed to write the registry configuration in the Podman machine (exit code $LASTEXITCODE). Is the machine running?"
+        return
+    }
+
+    # The machine's podman service caches registries.conf, so restart it (the socket re-activates it on
+    # demand); running containers are unaffected.
+    & $podman machine ssh 'sudo systemctl restart podman.socket; sudo systemctl stop podman.service' 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!The registry was configured, but restarting the Podman service failed (exit code $LASTEXITCODE). Restart the Podman machine to apply it."
+        return
+    }
+
+    Write-Output ":$registry is now allowed as an insecure registry"
+    $global:LASTEXITCODE = 0
+}
+
 function Test-PodmanVersion {
     <#
     .SYNOPSIS
@@ -220,4 +282,4 @@ function Test-PodmanVersion {
     $global:LASTEXITCODE = 0
 }
 
-Export-ModuleMember -Function Test-PodmanVersion, Install-Podman, Uninstall-Podman, Install-PodmanCompose
+Export-ModuleMember -Function Add-PodmanInsecureRegistry, Test-PodmanVersion, Install-Podman, Uninstall-Podman, Install-PodmanCompose

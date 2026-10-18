@@ -286,3 +286,13 @@ entries:
   - taskId: set-iis-default-permissions
     categories:
       - prerequisites.iis
+  - taskId: podman-compose-up
+    categories:
+      - prerequisites.podman
+    parameterValues:
+      ComposeFile: 'D:\git\readytimesetup\tasks\assets\docker-compose.yaml'
+  - taskId: allow-podman-insecure-registry
+    categories:
+      - prerequisites.podman
+    parameterValues:
+      DockerRegistryUrl: 'nexus.dev.proliant.org:18000'
