@@ -6,3 +6,5 @@ obj/
 .tools/
 .claude/settings.local.json
 TaskRuns.yaml
+NUL
+nul
