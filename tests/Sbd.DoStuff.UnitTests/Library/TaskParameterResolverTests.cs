@@ -12,6 +12,24 @@ public class TaskParameterResolverTests
         new("task", "Task", null, "powershell", "echo {X}", null, null, null, [parameter],
             pinned ?? new Dictionary<string, string>(), nonOverridable ?? new HashSet<string>());
 
+    private static TaskParameterDefinition Select() =>
+        new("X", null, Required: true, DefaultValue: null, Type: TaskParameterType.SelectList, Options: ["a", "b"]);
+
+    [Fact]
+    public void SelectList_DefaultsToFirstOption()
+    {
+        var resolved = TaskParameterResolver.Resolve(Effective(Select()), null);
+
+        resolved["X"].ShouldBe("a");
+    }
+
+    [Fact]
+    public void SelectList_SuppliedValueNotInOptions_Throws()
+    {
+        Should.Throw<InvalidParameterOptionException>(() =>
+            TaskParameterResolver.Resolve(Effective(Select()), new Dictionary<string, string> { ["X"] = "c" }));
+    }
+
     [Fact]
     public void SuppliedValue_WinsOverPinnedAndDefault()
     {

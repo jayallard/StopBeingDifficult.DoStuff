@@ -176,12 +176,12 @@ function Find-Devenv {
 function Build-DotnetSolution {
     <#
     .SYNOPSIS
-    Compiles a solution (or project) with `dotnet build`, or with MSBuild when -UseMsBuild is set.
+    Compiles a solution (or project) with `dotnet build`, or with MSBuild/devenv per -BuildTool.
     .DESCRIPTION
     SolutionPath is the .sln/.slnx/.csproj/.sqlproj file, or a directory containing exactly one.
-    Configuration is Debug or Release. UseMsBuild compiles with Visual Studio's MSBuild.exe instead
-    of dotnet (needed for .sqlproj). UseDevenv builds with Visual Studio's devenv.com (the IDE's own build, which also
-    populates a Website project's bin folder) and takes precedence over UseMsBuild. SuppressWarnings hides warnings from the build output (errors still show). Sets $LASTEXITCODE to the build tool's exit code (0 = succeeded).
+    Configuration is Debug or Release. BuildTool is dotnet (default), msbuild or devenv. msbuild compiles with Visual Studio's MSBuild.exe instead
+    of dotnet (needed for .sqlproj). devenv builds with Visual Studio's devenv.com (the IDE's own build, which also
+    populates a Website project's bin folder). SuppressWarnings hides warnings from the build output (errors still show). Sets $LASTEXITCODE to the build tool's exit code (0 = succeeded).
     #>
     [CmdletBinding()]
     param(
@@ -191,9 +191,8 @@ function Build-DotnetSolution {
         [ValidateSet('Debug', 'Release')]
         [string]$Configuration = 'Debug',
 
-        [switch]$UseMsBuild,
-
-        [switch]$UseDevenv,
+        [ValidateSet('dotnet', 'msbuild', 'devenv')]
+        [string]$BuildTool = 'dotnet',
 
         [switch]$SuppressWarnings
     )
@@ -208,7 +207,7 @@ function Build-DotnetSolution {
         return
     }
 
-    if ($UseDevenv) {
+    if ($BuildTool -eq 'devenv') {
         $devenv = Find-Devenv
         if (-not $devenv) {
             Write-Output "!devenv.com was not found. Install Visual Studio."
@@ -219,7 +218,7 @@ function Build-DotnetSolution {
         # devenv has no errors-only logger, so -SuppressWarnings has no effect here.
         Write-Output ":Building $SolutionPath ($Configuration) with Visual Studio: $devenv"
         & $devenv $SolutionPath /Build $Configuration
-    } elseif ($UseMsBuild) {
+    } elseif ($BuildTool -eq 'msbuild') {
         $msbuild = Find-MsBuild
         if (-not $msbuild) {
             Write-Output "!MSBuild was not found. Install Visual Studio (or the Build Tools) with the MSBuild component."

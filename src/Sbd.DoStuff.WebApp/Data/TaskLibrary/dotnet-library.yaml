@@ -40,7 +40,7 @@
     Install-DotnetLegacySdk -Version 2.2
 - id: build-dotnet-solution
   name: Build .NET Solution
-  description: Compiles a solution or project with `dotnet build` (or MSBuild, for .sqlproj) in the chosen configuration (Debug or Release).
+  description: Compiles a solution or project with `dotnet build` (or MSBuild/devenv, via the BuildTool parameter) in the chosen configuration (Debug or Release).
   type: powershell
   parameters:
     - name: SolutionPath
@@ -52,15 +52,13 @@
       description: Build configuration, Debug or Release
       defaultValue: Debug
       canOverride: true
-    - name: UseMsBuild
-      description: Compile with MSBuild instead of `dotnet build` (required for .sqlproj projects)
-      type: boolean
-      defaultValue: 'false'
-      canOverride: true
-    - name: UseDevenv
-      description: Build with Visual Studio's devenv.com (the IDE's own build; needed for Website projects, whose bin folder MSBuild doesn't populate). Overrides UseMsBuild and ignores SuppressWarnings
-      type: boolean
-      defaultValue: 'false'
+    - name: BuildTool
+      description: Build tool. dotnet runs `dotnet build`; msbuild uses Visual Studio's MSBuild (required for .sqlproj projects); devenv uses Visual Studio's devenv.com (the IDE's own build; needed for Website projects, whose bin folder MSBuild doesn't populate) and ignores SuppressWarnings
+      type: selectList
+      options:
+        - dotnet
+        - msbuild
+        - devenv
       canOverride: true
     - name: SuppressWarnings
       description: Hide compiler warnings from the build output to reduce noise (errors are still shown)
@@ -69,4 +67,4 @@
       canOverride: true
   command: |-
     Import-Module Sbd.Dotnet
-    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration -UseMsBuild:($UseMsBuild -eq 'true') -UseDevenv:($UseDevenv -eq 'true') -SuppressWarnings:($SuppressWarnings -eq 'true')
+    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration -BuildTool $BuildTool -SuppressWarnings:($SuppressWarnings -eq 'true')

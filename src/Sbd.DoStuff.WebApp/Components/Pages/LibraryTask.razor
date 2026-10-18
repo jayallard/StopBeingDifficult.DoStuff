@@ -73,6 +73,17 @@ else
                            disabled="@locked"
                            @onchange="e => SetChecked(parameter, e)"/>
                 }
+                else if (parameter.Type == TaskParameterType.SelectList)
+                {
+                    <select class="@InputClass(locked, parameter, value)"
+                            disabled="@locked"
+                            @onchange="e => SetValue(parameter, e.Value?.ToString() ?? string.Empty)">
+                        @foreach (var option in parameter.Options ?? Array.Empty<string>())
+                        {
+                            <option value="@option" selected="@(option == value)">@option</option>
+                        }
+                    </select>
+                }
                 else if (parameter.Type == TaskParameterType.FilePath)
                 {
                     <FilePathInput Value="@value"

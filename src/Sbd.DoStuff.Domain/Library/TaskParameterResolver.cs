@@ -22,6 +22,7 @@ public static class TaskParameterResolver
                     throw new ParameterNotOverridableException(effective.Id, parameter.Name);
                 }
 
+                ValidateOption(effective.Id, parameter, supplied);
                 resolved[parameter.Name] = supplied;
                 continue;
             }
@@ -38,6 +39,12 @@ public static class TaskParameterResolver
                 continue;
             }
 
+            if (parameter.Type == TaskParameterType.SelectList && parameter.Options is { Count: > 0 })
+            {
+                resolved[parameter.Name] = parameter.Options[0];
+                continue;
+            }
+
             if (parameter.Required)
             {
                 throw new MissingRequiredParameterException(effective.Id, parameter.Name);
@@ -47,5 +54,14 @@ public static class TaskParameterResolver
         }
 
         return resolved;
+    }
+
+    private static void ValidateOption(string taskId, TaskParameterDefinition parameter, string value)
+    {
+        if (parameter.Type == TaskParameterType.SelectList && parameter.Options is not null
+            && !parameter.Options.Contains(value))
+        {
+            throw new InvalidParameterOptionException(taskId, parameter.Name, value, parameter.Options);
+        }
     }
 }
