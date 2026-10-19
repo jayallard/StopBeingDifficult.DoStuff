@@ -13,6 +13,7 @@ public partial class OrganizerTask
     [Parameter] public EventCallback OnMoveUp { get; set; }
     [Parameter] public EventCallback OnMoveDown { get; set; }
     [Parameter] public EventCallback OnDelete { get; set; }
+    [Parameter] public EventCallback OnClone { get; set; }
 
     /// <summary>Categories this task can be moved to with the Move to… picker.</summary>
     [Parameter] public IEnumerable<OrganizerNode> Destinations { get; set; } = [];

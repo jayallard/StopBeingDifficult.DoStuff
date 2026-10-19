@@ -56,6 +56,7 @@
                                OnMoveDown="() => Shift(entry, 1)"
                                Destinations="Destinations(entry)"
                                OnMoveTo="id => MoveTo(entry, id)"
+                               OnClone="() => Clone(entry)"
                                OnDelete="() => Delete(entry)"
                                OnSaved="OnChanged"/>
             }

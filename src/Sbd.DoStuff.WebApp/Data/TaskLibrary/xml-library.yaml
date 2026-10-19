@@ -18,7 +18,7 @@
 
 - id: set-web-config-app-settings
   name: Set web.config App Settings
-  description: Adds or updates entries in the appSettings or connectionStrings section of a web.config (or of an extension file whose root is that section), chosen with SectionPath (which must already exist). Names and values are trimmed and the output reports each one as added, changed or unchanged. Settings are name=value pairs, one per line; existing keys have their value updated and missing keys are added. Fails if the file doesn't exist.
+  description: Adds, updates or deletes entries in the appSettings section of a web.config (or of an extension file whose root is that section). Fails if the file contains no appSettings element or more than one. Settings are commands, one per line - "set key value" or "delete key" - and the output reports each one as created, updated, not updated (value unchanged), deleted or not deleted (key doesn't exist). Fails if the file doesn't exist.
   type: powershell
   parameters:
     - name: FileName
@@ -26,16 +26,35 @@
       required: true
       type: filePath
       canOverride: true
-    - name: SectionPath
-      description: "Path of element names from the file's root to the section holding the add entries, e.g. configuration/appSettings, appSettings (extension file) or configuration/connectionStrings. Every element on the path must exist."
-      required: false
-      defaultValue: configuration/appSettings
-      canOverride: true
     - name: Settings
-      description: Multiline name=value pairs, one per line (for connectionStrings, name=connection string).
+      description: "Multiline commands, one per line: 'set key value' (adds or updates; the value is the rest of the line) or 'delete key'."
       required: true
       type: multilineText
       canOverride: true
   command: |-
     Import-Module Sbd.Xml
-    Set-WebConfigAppSettings -FileName $FileName -SectionPath $SectionPath -Settings $Settings
+    Set-WebConfigAppSettings -FileName $FileName -Settings $Settings
+
+- id: set-web-config-connection-strings
+  name: Set web.config Connection Strings
+  description: Adds, updates or deletes entries in the single connectionStrings section of a web.config (or of an extension file whose root is that section). Fails if the file contains no connectionStrings element or more than one. ConnectionStrings are commands, one per line - "set name connection string" or "delete name". Set adds a missing name with the given ProviderName, or updates an existing entry's connection string and provider. The output reports each one as created, updated, not updated (unchanged), deleted or not deleted (name doesn't exist). Fails if the file doesn't exist.
+  type: powershell
+  parameters:
+    - name: FileName
+      description: Path to the web.config file.
+      required: true
+      type: filePath
+      canOverride: true
+    - name: ProviderName
+      description: Value of the providerName attribute on each connection string.
+      required: false
+      defaultValue: Microsoft.Data.SqlClient
+      canOverride: true
+    - name: ConnectionStrings
+      description: "Multiline commands, one per line: 'set name connection string' (adds or updates; the connection string is the rest of the line) or 'delete name'."
+      required: true
+      type: multilineText
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Xml
+    Set-WebConfigConnectionStrings -FileName $FileName -ProviderName $ProviderName -ConnectionStrings $ConnectionStrings

@@ -259,8 +259,17 @@ entries:
     parameterValues:
       FileName: 'D:\path	o\web.config'
       Settings: |-
-        ExampleKey=example
-        AnotherKey=another
+        set ExampleKey example
+        set AnotherKey another
+        delete ObsoleteKey
+  - taskId: set-web-config-connection-strings
+    categories:
+      - demo.xml
+    parameterValues:
+      FileName: 'D:\path\to\web.config'
+      ConnectionStrings: |-
+        set Main Server=.;Database=Demo;Integrated Security=true
+        delete ObsoleteConnection
 
   - taskId: text-replace
     categories:

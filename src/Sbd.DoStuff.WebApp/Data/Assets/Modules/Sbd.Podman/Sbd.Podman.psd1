@@ -6,7 +6,7 @@
     Description          = 'Podman and Compose install tasks for Sbd.DoStuff.'
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
-    FunctionsToExport    = @('Test-PodmanVersion', 'Install-Podman', 'Uninstall-Podman', 'Install-PodmanCompose', 'Add-PodmanInsecureRegistry')
+    FunctionsToExport    = @('Test-PodmanVersion', 'Install-Podman', 'Uninstall-Podman', 'Install-PodmanCompose', 'Repair-PodmanDockerApi', 'Start-PodmanCompose', 'Add-PodmanInsecureRegistry')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

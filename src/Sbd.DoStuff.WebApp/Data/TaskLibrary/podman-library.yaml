@@ -2,9 +2,14 @@
   name: Install Podman
   description: Installs Podman via winget, if it isn't already installed, and creates and starts the default Podman machine.
   type: powershell
+  parameters:
+    - name: Version
+      defaultValue: 6.1.4
+      required: true
+      canOverride: true
   command: |-
     Import-Module Sbd.Podman
-    Install-Podman
+    Install-Podman -Version $Version
 - id: install-podman-compose
   name: Install Podman Compose
   description: Adds the compose component to Podman by installing Docker Compose (the provider used by `podman compose`) via winget. Requires Podman.
@@ -25,7 +30,7 @@
   type: powershell
   parameters:
     - name: MinVersion
-      defaultValue: 5.8.3
+      defaultValue: 6.1.4
       required: true
       canOverride: true
   command: |-
@@ -42,12 +47,8 @@
       required: true
       canOverride: true
   command: |-
-    if (-not (Test-Path -LiteralPath $ComposeFile)) {
-        Write-Error "Compose file not found: $ComposeFile"
-        exit 1
-    }
-    Write-Output ":Starting services from $ComposeFile"
-    podman compose -f $ComposeFile up -d
+    Import-Module Sbd.Podman
+    Start-PodmanCompose -ComposeFile $ComposeFile
 
 - id: allow-podman-insecure-registry
   name: Allow Insecure Podman Registry

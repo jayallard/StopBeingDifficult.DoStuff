@@ -29,10 +29,12 @@
   type: powershell
   parameters:
     - name: SourceFile
+      type: filePath
       description: The existing file to copy.
       required: true
       canOverride: true
     - name: TargetFile
+      type: filePath
       description: The full path of the copy. An existing file at this path is overwritten.
       required: true
       canOverride: true

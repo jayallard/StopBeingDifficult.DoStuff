@@ -73,6 +73,12 @@ public partial class OrganizerCategory
         }
     }
 
+    private async Task Clone(EntryEditModel entry)
+    {
+        Model.CloneEntry(entry, Node);
+        await OnChanged.InvokeAsync();
+    }
+
     private async Task Delete(EntryEditModel entry)
     {
         Model.RemoveEntry(entry, Node);

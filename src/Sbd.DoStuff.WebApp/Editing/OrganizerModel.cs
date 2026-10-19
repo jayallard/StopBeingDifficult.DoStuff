@@ -140,6 +140,19 @@ public sealed class OrganizerModel
         return entry;
     }
 
+    /// <summary>Copies the task into the same category, directly after the original.</summary>
+    public EntryEditModel CloneEntry(EntryEditModel entry, OrganizerNode category)
+    {
+        var clone = new EntryEditModel(entry.TaskId, category.IsRoot ? [] : [category.Path], entry.Values, entry.Notes, entry.Name)
+        {
+            Disabled = entry.Disabled,
+            DisabledReason = entry.DisabledReason,
+        };
+        var index = category.Entries.IndexOf(entry);
+        category.Entries.Insert(index < 0 ? category.Entries.Count : index + 1, clone);
+        return clone;
+    }
+
     /// <summary>Removes the task from one category; the task leaves the list once no category holds it.</summary>
     public void RemoveEntry(EntryEditModel entry, OrganizerNode category) => category.Entries.Remove(entry);
 

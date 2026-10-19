@@ -47,11 +47,15 @@ function Install-Podman {
     .DESCRIPTION
     Installs Podman if it isn't already installed, then initializes and starts the default
     Podman machine if none exists yet. Sets $LASTEXITCODE to 0 on success.
+    .PARAMETER Version
+    The Podman version to install. Defaults to 6.1.4.
     #>
     [CmdletBinding()]
-    param()
+    param(
+        [string]$Version = '6.1.4'
+    )
 
-    winget install --id RedHat.Podman -e --source winget
+    winget install --id RedHat.Podman -e --source winget --version $Version
     if ($LASTEXITCODE -eq $WinGetNoApplicableUpgrade) {
         Write-Output ":Podman is already installed and is up to date"
         $global:LASTEXITCODE = 0
@@ -171,6 +175,10 @@ function Install-PodmanCompose {
     if ($LASTEXITCODE -ne 0) { return }
 
     Update-SessionPath
+    Repair-PodmanDockerApi
+    if ($LASTEXITCODE -ne 0) { return }
+
+    $env:PODMAN_COMPOSE_WARNING_LOGS = 'false'
     $output = & $podman compose version 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) {
         Write-Output "!podman compose version failed with exit code ${LASTEXITCODE}: $($output.Trim())"
@@ -179,6 +187,90 @@ function Install-PodmanCompose {
 
     Write-Output ":Podman compose is ready: $($output.Trim())"
     $global:LASTEXITCODE = 0
+}
+
+function Repair-PodmanDockerApi {
+    <#
+    .SYNOPSIS
+    Makes sure the Docker API named pipe that compose providers connect to exists.
+    .DESCRIPTION
+    `podman compose` delegates to docker-compose, which reaches the machine through the
+    \\.\pipe\podman-machine-default named pipe served by win-sshproxy. After an unclean shutdown a stale
+    podman-machine-default-api.sock in %TEMP%\podman makes win-sshproxy fail to start, so the pipe is
+    missing ("failed to connect to the docker API"). If the pipe is missing, this deletes that stale socket
+    and restarts the machine (running containers are stopped; those with a restart policy come back).
+    Sets $LASTEXITCODE to 0 if the pipe exists afterwards.
+    #>
+    [CmdletBinding()]
+    param()
+
+    $podman = Get-Podman
+    if (-not $podman) {
+        Write-Output "!Podman is not installed. Run the Install Podman task first."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $pipeName = 'podman-machine-default'
+    $pipePath = '\\.\pipe\' + $pipeName
+    if ([IO.Directory]::GetFiles('\\.\pipe\') -contains $pipePath) {
+        $global:LASTEXITCODE = 0
+        return
+    }
+
+    Write-Output ":The Docker API pipe is missing; restarting the Podman machine to recreate it"
+    & $podman machine stop 2>&1 | Out-Null
+    Remove-Item -LiteralPath (Join-Path $env:TEMP "podman\$pipeName-api.sock") -Force -ErrorAction SilentlyContinue
+    & $podman machine start 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!podman machine start failed with exit code $LASTEXITCODE."
+        return
+    }
+
+    if ([IO.Directory]::GetFiles('\\.\pipe\') -notcontains $pipePath) {
+        Write-Output "!The Docker API pipe is still missing after restarting the Podman machine. Run 'podman machine start' to see why win-sshproxy fails."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $global:LASTEXITCODE = 0
+}
+
+function Start-PodmanCompose {
+    <#
+    .SYNOPSIS
+    Starts the services in a compose file in the background (`podman compose up -d`).
+    .PARAMETER ComposeFile
+    Full path to the compose file.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$ComposeFile
+    )
+
+    if (-not (Test-Path -LiteralPath $ComposeFile)) {
+        Write-Output "!Compose file not found: $ComposeFile"
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $podman = Get-Podman
+    if (-not $podman) {
+        Write-Output "!Podman is not installed. Run the Install Podman task first."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    Update-SessionPath   # docker-compose is installed by winget after the app may have started
+    Repair-PodmanDockerApi
+    if ($LASTEXITCODE -ne 0) { return }
+
+    $env:PODMAN_COMPOSE_WARNING_LOGS = 'false'
+    Write-Output ":Starting services from $ComposeFile"
+    & $podman compose -f $ComposeFile up -d
+    if ($LASTEXITCODE -ne 0) {
+        Write-Output "!podman compose up failed with exit code $LASTEXITCODE."
+    }
 }
 
 function Add-PodmanInsecureRegistry {
@@ -282,4 +374,4 @@ function Test-PodmanVersion {
     $global:LASTEXITCODE = 0
 }
 
-Export-ModuleMember -Function Add-PodmanInsecureRegistry, Test-PodmanVersion, Install-Podman, Uninstall-Podman, Install-PodmanCompose
+Export-ModuleMember -Function Add-PodmanInsecureRegistry, Test-PodmanVersion, Install-Podman, Uninstall-Podman, Install-PodmanCompose, Repair-PodmanDockerApi, Start-PodmanCompose

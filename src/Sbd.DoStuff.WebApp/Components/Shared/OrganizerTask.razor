@@ -30,6 +30,12 @@
                 @onclick="StartEdit">
             Edit
         </button>
+        <button type="button"
+                class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-600 hover:border-slate-400"
+                title="Copy this task in the same category"
+                @onclick="OnClone">
+            Clone
+        </button>
         @if (_confirmDelete)
         {
             <button type="button" class="rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-500" @onclick="OnDelete">Delete?</button>
