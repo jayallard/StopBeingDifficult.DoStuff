@@ -36,13 +36,14 @@ public sealed class IconUsageScannerTests : IDisposable
     }
 
     [Fact]
-    public void Scan_IgnoresTasksWithoutIcon_ButIncludesLibraryDefault()
+    public void Scan_TasksWithoutIcon_AreListedUnderLibraryDefault()
     {
         var result = Scan([Definition("a", null)]);
 
         var only = Assert.Single(result);
         Assert.Equal("default", only.Name);
-        Assert.Equal("Library default icon", Assert.Single(only.Usages).Description);
+        Assert.Contains(only.Usages, u => u.Description == "Definition: A");
+        Assert.Contains(only.Usages, u => u.Description == "Library default icon");
     }
 
     [Fact]

@@ -33,9 +33,23 @@ public sealed class IconUsageScanner(ITaskLibrary library, ITaskListRepository l
             list.Add(usage);
         }
 
+        // Tasks without an icon of their own show the inherited one, else the library default.
+        var effectiveIcons = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var definition in library.GetAll())
         {
-            Add(definition.Icon, new IconUsage($"Definition: {definition.Name}", null));
+            string? inherited;
+            try
+            {
+                inherited = TaskDefinitionResolver.Resolve(definition, library).Icon;
+            }
+            catch (Exception)
+            {
+                inherited = definition.Icon; // broken chain; startup validation reports it
+            }
+
+            var effective = string.IsNullOrWhiteSpace(inherited) ? catalog.DefaultIcon : inherited;
+            effectiveIcons[definition.Id] = effective;
+            Add(effective, new IconUsage($"Definition: {definition.Name}", null));
         }
 
         foreach (var list in lists.GetAll())
@@ -43,7 +57,10 @@ public sealed class IconUsageScanner(ITaskLibrary library, ITaskListRepository l
             foreach (var entry in list.Entries)
             {
                 var entryName = entry.Name ?? library.Find(entry.TaskId)?.Name ?? entry.TaskId;
-                Add(entry.Icon, new IconUsage($"List: {list.Name}, entry: {entryName}", $"lists/{Uri.EscapeDataString(list.Id)}"));
+                var icon = entry.Icon is { } own && !string.IsNullOrWhiteSpace(own)
+                    ? own
+                    : effectiveIcons.GetValueOrDefault(entry.TaskId, catalog.DefaultIcon);
+                Add(icon, new IconUsage($"List: {list.Name}, entry: {entryName}", $"lists/{Uri.EscapeDataString(list.Id)}"));
             }
         }
 

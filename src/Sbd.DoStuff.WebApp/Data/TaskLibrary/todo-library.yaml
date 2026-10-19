@@ -1,4 +1,5 @@
 - id: todo
+  icon: todo
   name: TODO
   description: A reminder for something that has to be done manually. Running it prints the reminder.
   type: powershell
