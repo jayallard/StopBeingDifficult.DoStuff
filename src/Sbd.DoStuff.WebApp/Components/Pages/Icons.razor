@@ -1,0 +1,111 @@
+@page "/icons"
+@using Sbd.DoStuff.Domain.Icons
+
+<PageTitle>Icons</PageTitle>
+
+<h1 class="mb-1 text-2xl font-semibold text-slate-900">Icons</h1>
+<p class="mb-6 text-sm text-slate-500">
+    Images from the <span class="font-mono">Icons</span> folder of the assets directories. A task definition or a task list entry
+    picks one by name with <span class="font-mono">icon:</span>; tasks with no icon, or whose icon doesn't exist, show the
+    default (<span class="font-mono">@Catalog.DefaultIcon</span>).
+</p>
+
+@if (_error is not null)
+{
+    <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">@_error</p>
+}
+
+@if (_missing.Count > 0)
+{
+    <h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Missing icons (@_missing.Count)</h2>
+    <p class="mb-2 text-sm text-slate-500">Named by a task but not found, so the default icon is shown instead.</p>
+    <div class="mb-8 divide-y divide-slate-100 rounded-lg border border-amber-200 bg-white">
+        @foreach (var reference in _missing)
+        {
+            <div class="flex flex-wrap items-start justify-between gap-3 px-3 py-3">
+                <div class="min-w-0">
+                    <span class="font-mono text-sm text-slate-900">@reference.Name</span>
+                    <IconUsageList Reference="reference"/>
+                </div>
+                @if (Catalog.CanCreate(reference.Name))
+                {
+                    <button type="button" @onclick="() => Create(reference.Name)"
+                            class="shrink-0 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                        Create placeholder
+                    </button>
+                }
+                else
+                {
+                    <span class="shrink-0 text-xs text-slate-400">Name can't be created as a file</span>
+                }
+            </div>
+        }
+    </div>
+}
+
+<div class="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-3">
+    <label class="text-sm text-slate-600">
+        Name
+        <input type="text" @bind="_newName" @bind:event="oninput" placeholder="e.g. docker"
+               class="mt-1 block rounded-md border border-slate-300 px-2 py-1.5 font-mono text-sm"/>
+    </label>
+    <label class="text-sm text-slate-600">
+        Image <span class="text-slate-400">(optional .svg / .png)</span>
+        <InputFile OnChange="OnFileChosen" accept=".svg,.png" class="mt-1 block text-sm"/>
+    </label>
+    <button type="button" @onclick="AddAsync" disabled="@(!Catalog.CanCreate(_newName))"
+            class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+        Add
+    </button>
+    <span class="text-xs text-slate-400">Without an image, a placeholder is generated.</span>
+</div>
+
+<h2 class="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Available icons (@_icons.Count)</h2>
+@if (_icons.Count == 0)
+{
+    <p class="text-sm text-slate-400">No icons found.</p>
+}
+<div class="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+    @foreach (var icon in _icons)
+    {
+        var usages = UsagesOf(icon.Name);
+        <div class="flex items-start gap-3 px-3 py-3">
+            <img src="@($"icons/{icon.FileName}")" alt="@icon.Name" class="h-12 w-12 shrink-0"/>
+            <div class="min-w-0">
+                <div class="font-mono text-sm text-slate-900">@icon.Name
+                    <span class="ml-1 text-xs text-slate-400" title="@icon.Path">@icon.FileName</span>
+                    @if (icon.Name.Equals(Catalog.DefaultIcon, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">default</span>
+                    }
+                </div>
+                @if (usages is null)
+                {
+                    <div class="text-xs text-slate-400">Not used by any task.</div>
+                }
+                else
+                {
+                    <IconUsageList Reference="usages"/>
+                }
+            </div>
+            @if (!icon.Name.Equals(Catalog.DefaultIcon, StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="ml-auto shrink-0 text-sm">
+                    @if (_confirmDelete == icon.Name)
+                    {
+                        <span class="mr-2 text-slate-500">@DeleteWarning(icon.Name)</span>
+                        <button type="button" @onclick="() => Delete(icon.Name)"
+                                class="rounded-md bg-red-600 px-3 py-1.5 font-medium text-white hover:bg-red-700">Delete</button>
+                        <button type="button" @onclick="() => _confirmDelete = null"
+                                class="rounded-md px-3 py-1.5 text-slate-600 hover:bg-slate-100">Cancel</button>
+                    }
+                    else
+                    {
+                        <button type="button" @onclick="() => _confirmDelete = icon.Name"
+                                class="rounded-md px-3 py-1.5 text-red-600 hover:bg-red-50">Delete</button>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,15 @@
+<ul class="mt-1 space-y-0.5 text-xs text-slate-500">
+    @foreach (var usage in Reference.Usages)
+    {
+        <li>
+            @if (usage.Link is not null)
+            {
+                <a href="@usage.Link" class="hover:text-indigo-700">@usage.Description</a>
+            }
+            else
+            {
+                @usage.Description
+            }
+        </li>
+    }
+</ul>

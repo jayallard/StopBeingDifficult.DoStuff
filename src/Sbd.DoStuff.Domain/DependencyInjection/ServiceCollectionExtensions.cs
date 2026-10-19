@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(new TaskIconCatalog(assetsDirectories, configuration["TaskLibrary:DefaultIcon"]));
 
+        services.AddSingleton<IconUsageScanner>();
         services.AddSingleton<ITaskFactory, Library.TaskFactory>();
 
         services.AddSingleton<ITaskLibrary>(provider => new YamlTaskLibrary(

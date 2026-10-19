@@ -6,6 +6,7 @@
   parameters:
     - name: FileName
       required: true
+      type: filePath
       canOverride: true
     - name: XPath
       required: true

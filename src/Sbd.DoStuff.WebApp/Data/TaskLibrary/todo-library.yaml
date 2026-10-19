@@ -1,0 +1,10 @@
+- id: todo
+  name: TODO
+  description: A reminder for something that has to be done manually. Running it prints the reminder.
+  type: powershell
+  parameters:
+    - name: Todo
+      description: What needs to be done
+      required: true
+  command: |-
+    Write-Output ":Don't forget! $Todo"

@@ -305,3 +305,8 @@ entries:
       - prerequisites.podman
     parameterValues:
       DockerRegistryUrl: 'nexus.dev.proliant.org:18000'
+  - taskId: todo
+    categories:
+      - demo.todo
+    parameterValues:
+      Todo: Install Kendo license
