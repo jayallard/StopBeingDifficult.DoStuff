@@ -35,6 +35,17 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.MapGet("/icons/{**name}", (string name, Sbd.DoStuff.Domain.Icons.TaskIconCatalog icons) =>
+{
+    if (!icons.TryFindFile(name, out var path) && !icons.TryFindFile(icons.DefaultIcon, out path))
+    {
+        return Results.NotFound();
+    }
+
+    var contentType = Path.GetExtension(path).Equals(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/svg+xml";
+    return Results.File(path, contentType, lastModified: File.GetLastWriteTimeUtc(path));
+});
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

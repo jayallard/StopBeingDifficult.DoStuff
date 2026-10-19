@@ -15,6 +15,9 @@ public sealed class EntryEditModel(string taskId, IEnumerable<string> categories
     /// <summary>Optional display name overriding the task definition's name in this list.</summary>
     public string? Name { get; set; } = name;
 
+    /// <summary>Optional icon name overriding the task definition's icon in this list.</summary>
+    public string? Icon { get; set; }
+
     /// <summary>Optional context about why this task is in the list.</summary>
     public string? Notes { get; set; } = notes;
 

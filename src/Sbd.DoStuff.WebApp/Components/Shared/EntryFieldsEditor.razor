@@ -12,6 +12,18 @@
     </div>
 
     <div>
+        <label class="text-sm font-medium text-slate-700" for="icon-@Entry.Key">
+            Icon <span class="text-xs font-normal text-slate-400">an icon name, e.g. "git"; leave as "@InheritedIcon" to keep inheriting</span>
+        </label>
+        <input id="icon-@Entry.Key"
+               type="text"
+               class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+               placeholder="@InheritedIcon"
+               value="@IconValue"
+               @onchange="e => SetIcon(e.Value?.ToString())"/>
+    </div>
+
+    <div>
         <label class="text-sm font-medium text-slate-700" for="notes-@Entry.Key">
             Notes <span class="text-xs font-normal text-slate-400">optional — why this task is in the list</span>
         </label>

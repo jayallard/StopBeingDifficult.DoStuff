@@ -71,6 +71,14 @@
                 </div>
                 <div>
                     <label class="text-sm font-medium text-slate-700">
+                        Icon <span class="text-xs font-normal text-slate-400">an icon name, e.g. "git"; leave as "@InheritedIcon" to keep inheriting</span>
+                        <input type="text" placeholder="@InheritedIcon"
+                               class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm font-normal focus:border-indigo-500 focus:outline-none"
+                               @bind="_icon" @bind:event="oninput"/>
+                    </label>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700">
                         Notes <span class="text-xs font-normal text-slate-400">optional</span>
                         <textarea rows="2"
                                   class="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm font-normal focus:border-indigo-500 focus:outline-none"

@@ -1,4 +1,5 @@
 - id: build-frontend
+  icon: build
   name: Build Frontend
   description: Runs the frontend production build
   type: powershell

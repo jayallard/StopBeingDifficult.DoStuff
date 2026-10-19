@@ -1,4 +1,5 @@
 - id: check-wsl-version
+  icon: wsl
   name: Check WSL Version
   description: Checks that the Windows Subsystem for Linux is installed and at least MinVersion (exit code 0 = passed, 1 = too old, 2 = not installed).
   type: powershell
@@ -11,6 +12,7 @@
     Import-Module Sbd.Wsl
     Test-WslVersion -MinVersion $MinVersion
 - id: install-wsl
+  icon: wsl
   name: Install WSL
   description: Installs the Windows Subsystem for Linux (no distribution) or updates it if already installed. Requires an elevated session; a restart may be needed.
   type: powershell
@@ -18,6 +20,7 @@
     Import-Module Sbd.Wsl
     Install-Wsl
 - id: enable-virtual-machine-platform
+  icon: wsl
   name: Enable Virtual Machine Platform
   description: Enables the Windows Virtual Machine Platform optional feature, which WSL 2 requires. Requires an elevated session; a restart may be needed.
   type: powershell
@@ -25,6 +28,7 @@
     Import-Module Sbd.Wsl
     Enable-VirtualMachinePlatform
 - id: shutdown-wsl
+  icon: wsl
   name: Shut Down WSL
   description: Runs `wsl --shutdown`, stopping every running WSL distribution (including Podman and Rancher Desktop) and the WSL 2 virtual machine. Useful when WSL is in a bad state. Succeeds if WSL isn't running.
   type: powershell

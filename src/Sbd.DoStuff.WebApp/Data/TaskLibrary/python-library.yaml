@@ -1,4 +1,5 @@
 - id: install-python
+  icon: python
   name: Install Python
   description: Installs Python via winget, if it isn't already installed. Version is the major.minor series to install.
   type: powershell
@@ -12,6 +13,7 @@
     Import-Module Sbd.Python
     Install-Python -Version $Version
 - id: check-python-version
+  icon: python
   name: Check Python Version
   description: Checks that Python is installed and at least MinVersion (exit code 0 = passed, 1 = too old, 2 = not installed).
   type: powershell

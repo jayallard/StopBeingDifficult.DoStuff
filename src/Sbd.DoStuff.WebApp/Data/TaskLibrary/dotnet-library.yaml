@@ -1,4 +1,5 @@
 - id: list-dotnet-sdks
+  icon: dotnet
   name: List .NET SDKs
   description: Lists the installed .NET SDKs (exit code 0 = at least one found, 1 = none).
   type: powershell
@@ -6,6 +7,7 @@
     Import-Module Sbd.Dotnet
     Get-DotnetSdks
 - id: install-dotnet-sdk
+  icon: dotnet
   name: Install .NET SDK
   description: Installs the given major version of the .NET SDK via winget, if it isn't already installed.
   type: powershell
@@ -32,6 +34,7 @@
   parameterValues:
     Major: 11
 - id: install-dotnet-core-2-2
+  icon: dotnet
   name: Install .NET Core 2.2
   description: Installs the .NET Core 2.2 SDK (2.2.207) by downloading Microsoft's installer, since winget has no package for it. Needs an elevated session.
   type: powershell
@@ -39,6 +42,7 @@
     Import-Module Sbd.Dotnet
     Install-DotnetLegacySdk -Version 2.2
 - id: build-dotnet-solution
+  icon: dotnet
   name: Build .NET Solution
   description: Compiles a solution or project with `dotnet build` (or MSBuild/devenv, via the BuildTool parameter) in the chosen configuration (Debug or Release).
   type: powershell

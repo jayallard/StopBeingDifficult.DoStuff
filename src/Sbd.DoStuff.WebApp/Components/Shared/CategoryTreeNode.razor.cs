@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Sbd.DoStuff.Domain.Execution;
+using Sbd.DoStuff.Domain.Icons;
 using Sbd.DoStuff.Domain.Lists;
 using Sbd.DoStuff.WebApp.Editing;
 
@@ -96,7 +97,7 @@ public partial class CategoryTreeNode : IDisposable
         var source = view.Source!;
         _editError = null;
         _editingView = view;
-        _editing = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name, source.DisabledReason);
+        _editing = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name, source.DisabledReason) { Icon = source.Icon };
     }
 
     private void CancelEdit()
@@ -127,7 +128,8 @@ public partial class CategoryTreeNode : IDisposable
             _editing.Values.Count == 0 ? null : new Dictionary<string, string>(_editing.Values),
             string.IsNullOrWhiteSpace(_editing.Notes) ? null : _editing.Notes.Trim(),
             string.IsNullOrWhiteSpace(_editing.Name) ? null : _editing.Name.Trim(),
-            _editing.PersistedDisabledReason);
+            _editing.PersistedDisabledReason,
+            string.IsNullOrWhiteSpace(_editing.Icon) ? null : _editing.Icon.Trim());
 
         var entries = list.Entries.ToList();
         entries[index] = updated;
@@ -166,6 +168,8 @@ public partial class CategoryTreeNode : IDisposable
 
         return -1;
     }
+
+    private string IconUrl(TaskListEntryView view) => $"icons/{Icons.Resolve(view.Icon)}";
 
     private static string KeyOf(TaskListEntryView view) => TaskRunKey.For(view.Definition.Id, view.ParameterValues);
 

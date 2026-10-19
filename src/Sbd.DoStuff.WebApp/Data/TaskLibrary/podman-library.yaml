@@ -1,4 +1,5 @@
 - id: install-podman
+  icon: podman
   name: Install Podman
   description: Installs Podman via winget, if it isn't already installed, and creates and starts the default Podman machine.
   type: powershell
@@ -11,6 +12,7 @@
     Import-Module Sbd.Podman
     Install-Podman -Version $Version
 - id: install-podman-compose
+  icon: podman
   name: Install Podman Compose
   description: Adds the compose component to Podman by installing Docker Compose (the provider used by `podman compose`) via winget. Requires Podman.
   type: powershell
@@ -18,6 +20,7 @@
     Import-Module Sbd.Podman
     Install-PodmanCompose
 - id: uninstall-podman
+  icon: podman
   name: Uninstall Podman
   description: Deletes every Podman machine (including all containers and images in them) and uninstalls Podman via winget. Succeeds if it isn't installed.
   type: powershell
@@ -25,6 +28,7 @@
     Import-Module Sbd.Podman
     Uninstall-Podman
 - id: check-podman-version
+  icon: podman
   name: Check Podman Version
   description: Checks that Podman is installed and at least MinVersion (exit code 0 = passed, 1 = too old, 2 = not installed).
   type: powershell
@@ -37,6 +41,7 @@
     Import-Module Sbd.Podman
     Test-PodmanVersion -MinVersion $MinVersion
 - id: podman-compose-up
+  icon: podman
   name: Podman Compose Up
   description: Starts the services in a compose file in the background (`podman compose up -d`). Requires Podman and Podman Compose.
   type: powershell
@@ -51,6 +56,7 @@
     Start-PodmanCompose -ComposeFile $ComposeFile
 
 - id: allow-podman-insecure-registry
+  icon: podman
   name: Allow Insecure Podman Registry
   description: Allows plain-HTTP access to a container registry from Podman (it is prohibited by default). Does nothing if the registry is already allowed. Requires a running Podman machine.
   type: powershell

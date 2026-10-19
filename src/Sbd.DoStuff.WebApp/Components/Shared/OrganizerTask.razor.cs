@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Sbd.DoStuff.Domain.Icons;
 using Sbd.DoStuff.Domain.Library;
 using Sbd.DoStuff.Domain.Lists;
 using Sbd.DoStuff.WebApp.Editing;
@@ -34,6 +35,11 @@ public partial class OrganizerTask
     // Edits are held here until Save, so Cancel leaves the entry untouched.
     private string _name = "";
     private string _notes = "";
+    private string _icon = "";
+
+    [Inject] private TaskIconCatalog Icons { get; set; } = null!;
+
+    private string InheritedIcon => _effective?.Icon ?? Icons.DefaultIcon;
     private bool _disabled;
     private string _disabledReason = "";
     private Dictionary<string, string> _draft = [];
@@ -87,6 +93,7 @@ public partial class OrganizerTask
         _editError = null;
         _name = Entry.Name ?? "";
         _notes = Entry.Notes ?? "";
+        _icon = Entry.Icon ?? InheritedIcon;
         _disabled = Entry.Disabled;
         _disabledReason = Entry.DisabledReason ?? "";
         _draft = _effective?.Parameters.ToDictionary(p => p.Name, CurrentValue) ?? [];
@@ -132,6 +139,7 @@ public partial class OrganizerTask
 
         Entry.Name = string.IsNullOrWhiteSpace(_name) ? null : _name.Trim();
         Entry.Notes = string.IsNullOrWhiteSpace(_notes) ? null : _notes.Trim();
+        Entry.Icon = string.IsNullOrWhiteSpace(_icon) || _icon.Trim() == InheritedIcon ? null : _icon.Trim();
         Entry.Disabled = _disabled;
         Entry.DisabledReason = string.IsNullOrWhiteSpace(_disabledReason) ? null : _disabledReason.Trim();
         Entry.Values.Clear();

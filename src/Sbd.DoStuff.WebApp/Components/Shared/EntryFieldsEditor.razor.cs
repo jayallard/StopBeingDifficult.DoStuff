@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Sbd.DoStuff.Domain.Execution;
+using Sbd.DoStuff.Domain.Icons;
 using Sbd.DoStuff.Domain.Library;
 using Sbd.DoStuff.WebApp.Editing;
 
@@ -10,6 +11,20 @@ public partial class EntryFieldsEditor
 {
     [Parameter, EditorRequired] public EntryEditModel Entry { get; set; } = null!;
     [Parameter, EditorRequired] public EffectiveTaskDefinition Effective { get; set; } = null!;
+
+    [Inject] private TaskIconCatalog Icons { get; set; } = null!;
+
+    // What the entry shows if it has no icon of its own: the definition's (inherited) icon, else the library default.
+    private string InheritedIcon => Effective.Icon ?? Icons.DefaultIcon;
+
+    private string IconValue => Entry.Icon ?? InheritedIcon;
+
+    // Only a real override is stored; entering the inherited value (or nothing) keeps inheriting.
+    private void SetIcon(string? value)
+    {
+        var icon = value?.Trim();
+        Entry.Icon = string.IsNullOrEmpty(icon) || icon == InheritedIcon ? null : icon;
+    }
 
     // What the task will use if the user doesn't override: pinned by inheritance, else the declared default.
     private string BaseValue(TaskParameterDefinition parameter) =>

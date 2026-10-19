@@ -1,4 +1,5 @@
 - id: install-powershell
+  icon: powershell
   name: Install or Update PowerShell
   description: Installs PowerShell 7+, or updates it if it's already installed. Runs under Windows PowerShell 5.1 so it works before PowerShell 7 exists.
   type: windows-powershell
@@ -6,6 +7,7 @@
     Import-Module Sbd.PowerShell
     Install-PowerShell
 - id: get-powershell-version
+  icon: powershell
   name: Get PowerShell Version
   description: Prints the version of PowerShell 7+ (pwsh)
   type: powershell
@@ -18,6 +20,7 @@
     Import-Module Sbd.PowerShell
     Test-PowerShellVersion -MinVersion $MinVersion
 - id: run-powershell-script
+  icon: powershell
   name: Run PowerShell Script
   description: Runs a PowerShell script file. The working directory is the script's folder, and its exit code becomes the task's result.
   type: powershell
@@ -41,12 +44,14 @@
     $scriptArguments = @($Arguments -split '\r?\n' | Where-Object { $_.Trim() })
     & $ScriptPath @scriptArguments
 - id: get-windows-powershell-version
+  icon: powershell
   name: Get Windows PowerShell Version
   description: Prints the version of Windows PowerShell 5.1 (powershell.exe)
   type: windows-powershell
   command: |-
     Write-Output ":Windows PowerShell Version: $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
 - id: run-windows-powershell-script
+  icon: powershell
   name: Run Windows PowerShell Script
   description: Runs a PowerShell script file under Windows PowerShell 5.1. The working directory is the script's folder, and its exit code becomes the task's result.
   type: windows-powershell

@@ -1,4 +1,5 @@
 - id: create-symbolic-link
+  icon: filesystem
   name: Create Symbolic Link
   description: Creates a symbolic link (or junction) at LinkPath that maps to the existing folder TargetPath, so anything that reads LinkPath sees the contents of TargetPath. Missing parent folders of LinkPath are created. Re-running is safe; a link that already points at TargetPath is left alone. An existing link to a different folder is replaced only when Force is true, and a real file or folder at LinkPath is never removed. SymbolicLink requires an elevated session or Windows Developer Mode; Junction does not.
   type: powershell
@@ -24,6 +25,7 @@
     New-FolderLink -LinkPath $LinkPath -TargetPath $TargetPath -LinkType $LinkType -Force ($Force -eq 'true')
 
 - id: copy-file
+  icon: filesystem
   name: Copy File
   description: Copies SourceFile to TargetFile. If TargetFile already exists it is overwritten. Missing parent folders of TargetFile are created. TargetFile must be a file path, not an existing folder.
   type: powershell
@@ -43,6 +45,7 @@
     Copy-FileOverwrite -SourceFile $SourceFile -TargetFile $TargetFile
 
 - id: text-replace
+  icon: filesystem
   name: Text Replace
   description: Replaces every occurrence of FindText with ReplaceText in a file. FindText is matched literally, not as a regular expression. The file's encoding is preserved, and the file is left untouched when FindText isn't found.
   type: powershell

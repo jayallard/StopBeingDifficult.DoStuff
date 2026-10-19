@@ -1,4 +1,5 @@
 ﻿- id: install-git
+  icon: git
   name: Install Git
   description: Install git, if it isn't already installed.
   type: powershell
@@ -6,6 +7,7 @@
     Import-Module Sbd.Git
     Install-Git
 - id: get-git-version
+  icon: git
   name: Get Git CLI Version
   description: Prints the version of git
   type: powershell
@@ -18,6 +20,7 @@
     Import-Module Sbd.Git
     Test-GitVersion -MinVersion $MinVersion
 - id: git-clone
+  icon: git
   name: Git Clone
   description: Clones each listed repository into the work directory. Repositories that already exist are reported and skipped; a failed clone is an error. HistoryDays limits each clone to recent history (a shallow clone).
   type: powershell
@@ -40,6 +43,7 @@
     Import-Module Sbd.Git
     Copy-GitRepository -WorkDirectory $WorkDirectory -Repositories $Repositories -HistoryDays $HistoryDays
 - id: enable-git-long-paths
+  icon: git
   name: Enable Git Long Paths
   description: Sets git's core.longpaths in the user's global config, so files whose full path exceeds 259 characters aren't silently skipped when cloning or checking out on Windows. Does not change Windows' own long path setting.
   type: powershell

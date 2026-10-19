@@ -8,6 +8,7 @@ public static class TaskDefinitionResolver
         var pinned = new Dictionary<string, string>();
         var nonOverridable = new HashSet<string>();
         var current = definition;
+        var icon = definition.Icon;
 
         while (current.BaseTaskId is not null)
         {
@@ -32,6 +33,7 @@ public static class TaskDefinitionResolver
 
             chain.Add(baseDefinition.Id);
             current = baseDefinition;
+            icon ??= current.Icon;
         }
 
         if (current.Type is null)
@@ -61,7 +63,8 @@ public static class TaskDefinitionResolver
             current.EnvironmentVariables,
             current.Parameters ?? Array.Empty<TaskParameterDefinition>(),
             pinned,
-            nonOverridable);
+            nonOverridable,
+            icon);
     }
 
     // A parameter locked to false anywhere in the chain stays locked: this only ever adds

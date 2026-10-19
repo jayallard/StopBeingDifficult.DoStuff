@@ -47,7 +47,7 @@ public sealed class OrganizerModel
         var model = new OrganizerModel();
         foreach (var source in list.Entries)
         {
-            var entry = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name, source.DisabledReason);
+            var entry = new EntryEditModel(source.TaskId, source.Categories, source.ParameterValues, source.Notes, source.Name, source.DisabledReason) { Icon = source.Icon };
             if (source.Categories.Count == 0)
             {
                 // Kept at the root so an uncategorized entry is not silently lost on save.
@@ -147,6 +147,7 @@ public sealed class OrganizerModel
         {
             Disabled = entry.Disabled,
             DisabledReason = entry.DisabledReason,
+            Icon = entry.Icon,
         };
         var index = category.Entries.IndexOf(entry);
         category.Entries.Insert(index < 0 ? category.Entries.Count : index + 1, clone);
@@ -247,7 +248,8 @@ public sealed class OrganizerModel
             e.Values.Count == 0 ? null : new Dictionary<string, string>(e.Values),
             string.IsNullOrWhiteSpace(e.Notes) ? null : e.Notes.Trim(),
             string.IsNullOrWhiteSpace(e.Name) ? null : e.Name.Trim(),
-            e.PersistedDisabledReason)).ToList();
+            e.PersistedDisabledReason,
+            string.IsNullOrWhiteSpace(e.Icon) ? null : e.Icon.Trim())).ToList();
     }
 
     private static bool HasChildNamed(OrganizerNode parent, string name) =>

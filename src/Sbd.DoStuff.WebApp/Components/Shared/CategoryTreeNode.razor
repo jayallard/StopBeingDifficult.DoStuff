@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject ITaskListRepository ListRepository
 @inject ITaskLibrary Library
+@inject TaskIconCatalog Icons
 
 @if (string.IsNullOrEmpty(Node.Segment))
 {
@@ -62,7 +63,8 @@ else
                 }
 
                 <div id="@CategoryAnchor.TaskId(Node.FullPath, i)" class="@(RowClass(task) + " scroll-mt-4")">
-                    <div>
+                    <img src="@IconUrl(task)" alt="" aria-hidden="true" class="mr-3 h-8 w-8 shrink-0 self-start" />
+                    <div class="mr-auto">
                         <a href="@($"lists/{ListId}/tasks/{task.Definition.Id}")" class="text-slate-900 hover:text-indigo-700 hover:underline">
                             @(task.Name ?? task.Definition.Name)
                         </a>

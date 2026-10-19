@@ -1,5 +1,6 @@
 namespace Sbd.DoStuff.Domain.Lists;
 
+/// <param name="Icon">Optional icon name overriding the task definition's icon in this list.</param>
 /// <param name="DisabledReason">When non-null the entry is disabled: still shown, but it can't be run. The text explains why.</param>
 public sealed record TaskListEntry(
     string TaskId,
@@ -7,4 +8,5 @@ public sealed record TaskListEntry(
     IReadOnlyDictionary<string, string>? ParameterValues,
     string? Notes = null,
     string? Name = null,
-    string? DisabledReason = null);
+    string? DisabledReason = null,
+    string? Icon = null);

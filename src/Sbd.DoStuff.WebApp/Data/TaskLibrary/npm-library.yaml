@@ -1,4 +1,5 @@
 - id: execute-npm
+  icon: npm
   name: Execute npm Commands
   description: Runs the given npm commands, one per line, in a working directory. Fails on the first command that fails. Version "auto" switches Node via fnm to the version in the working directory's .nvmrc (and fails if there is none); another value is passed to fnm as the version to use; blank uses the Node already on PATH.
   type: powershell

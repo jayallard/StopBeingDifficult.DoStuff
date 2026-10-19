@@ -15,6 +15,9 @@ namespace Sbd.DoStuff.Domain.Library;
 /// false. It is inherited down the chain and is one-way: once a level sets a parameter to
 /// false, no more-derived level can set it back to true (TaskDefinitionResolver treats false
 /// as sticky regardless of chain order).
+///
+/// Icon names an image under the Icons asset folder (see TaskIconCatalog). A derived definition
+/// that sets none inherits its base's icon; with none anywhere the library default is used.
 /// </summary>
 public sealed record TaskDefinition(
     string Id,
@@ -28,4 +31,5 @@ public sealed record TaskDefinition(
     string? WorkingDirectory,
     IReadOnlyDictionary<string, string>? EnvironmentVariables,
     IReadOnlyList<TaskParameterDefinition>? Parameters,
-    IReadOnlyDictionary<string, bool>? CanOverride = null);
+    IReadOnlyDictionary<string, bool>? CanOverride = null,
+    string? Icon = null);

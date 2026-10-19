@@ -1,4 +1,5 @@
 - id: get-iis-version
+  icon: iis
   name: Get IIS Version
   description: Prints the version of IIS, if it's installed
   type: powershell
@@ -11,6 +12,7 @@
     Import-Module Sbd.Iis
     Test-IisVersion -MinVersion $MinVersion
 - id: install-iis
+  icon: iis
   name: Install or Update IIS
   description: Installs IIS, or enables any missing IIS features if it's already installed. Requires running as Administrator. IIS itself is updated through Windows Update.
   type: powershell
@@ -23,6 +25,7 @@
     Import-Module Sbd.Iis
     Install-Iis -Feature $Features
 - id: remove-iis
+  icon: iis
   name: Remove IIS
   description: Completely uninstalls IIS and every IIS feature (including any added since it was installed) and the Windows Process Activation Service. Site content under inetpub is not deleted. Requires running as Administrator.
   type: powershell
@@ -30,6 +33,7 @@
     Import-Module Sbd.Iis
     Uninstall-Iis
 - id: check-url-rewrite
+  icon: iis
   name: Check IIS URL Rewrite
   description: Checks whether IIS URL Rewrite is installed (exit code 0 = installed, 2 = not installed).
   type: powershell
@@ -37,6 +41,7 @@
     Import-Module Sbd.Iis
     Test-IisUrlRewrite
 - id: install-url-rewrite
+  icon: iis
   name: Install IIS URL Rewrite
   description: Installs IIS URL Rewrite, if it isn't already installed. Requires running as Administrator.
   type: powershell
@@ -44,6 +49,7 @@
     Import-Module Sbd.Iis
     Install-IisUrlRewrite
 - id: uninstall-url-rewrite
+  icon: iis
   name: Uninstall IIS URL Rewrite
   description: Uninstalls IIS URL Rewrite. Succeeds if it isn't installed. Requires running as Administrator.
   type: powershell
@@ -51,6 +57,7 @@
     Import-Module Sbd.Iis
     Uninstall-IisUrlRewrite
 - id: check-request-routing
+  icon: iis
   name: Check IIS Request Routing (ARR)
   description: Checks whether IIS Request Routing (ARR) is installed (exit code 0 = installed, 2 = not installed).
   type: powershell
@@ -58,6 +65,7 @@
     Import-Module Sbd.Iis
     Test-IisRequestRouting
 - id: install-request-routing
+  icon: iis
   name: Install IIS Request Routing (ARR)
   description: Installs IIS Request Routing (ARR), if it isn't already installed. Requires running as Administrator.
   type: powershell
@@ -65,6 +73,7 @@
     Import-Module Sbd.Iis
     Install-IisRequestRouting
 - id: uninstall-request-routing
+  icon: iis
   name: Uninstall IIS Request Routing (ARR)
   description: Uninstalls IIS Request Routing (ARR). Succeeds if it isn't installed. Requires running as Administrator.
   type: powershell
@@ -72,6 +81,7 @@
     Import-Module Sbd.Iis
     Uninstall-IisRequestRouting
 - id: check-dotnet-6-hosting-bundle
+  icon: dotnet
   name: Check .NET 6 Hosting Bundle
   description: Checks whether .NET 6 Hosting Bundle is installed (exit code 0 = installed, 2 = not installed).
   type: powershell
@@ -79,6 +89,7 @@
     Import-Module Sbd.Iis
     Test-AspNetCoreHostingBundle -Version '6.0'
 - id: install-dotnet-6-hosting-bundle
+  icon: dotnet
   name: Install .NET 6 Hosting Bundle
   description: Installs .NET 6 Hosting Bundle, if it isn't already installed. Requires running as Administrator.
   type: powershell
@@ -86,6 +97,7 @@
     Import-Module Sbd.Iis
     Install-AspNetCoreHostingBundle -Version '6.0'
 - id: uninstall-dotnet-6-hosting-bundle
+  icon: dotnet
   name: Uninstall .NET 6 Hosting Bundle
   description: Uninstalls .NET 6 Hosting Bundle. Succeeds if it isn't installed. Requires running as Administrator.
   type: powershell
@@ -93,6 +105,7 @@
     Import-Module Sbd.Iis
     Uninstall-AspNetCoreHostingBundle -Version '6.0'
 - id: check-aspnetcore-2-2-hosting-bundle
+  icon: dotnet
   name: Check ASP.NET Core 2.2 Hosting Bundle
   description: Checks whether ASP.NET Core 2.2 Hosting Bundle is installed (exit code 0 = installed, 2 = not installed).
   type: powershell
@@ -100,6 +113,7 @@
     Import-Module Sbd.Iis
     Test-AspNetCoreHostingBundle -Version '2.2'
 - id: install-aspnetcore-2-2-hosting-bundle
+  icon: dotnet
   name: Install ASP.NET Core 2.2 Hosting Bundle
   description: Installs ASP.NET Core 2.2 Hosting Bundle, if it isn't already installed. Requires running as Administrator.
   type: powershell
@@ -107,6 +121,7 @@
     Import-Module Sbd.Iis
     Install-AspNetCoreHostingBundle -Version '2.2'
 - id: uninstall-aspnetcore-2-2-hosting-bundle
+  icon: dotnet
   name: Uninstall ASP.NET Core 2.2 Hosting Bundle
   description: Uninstalls ASP.NET Core 2.2 Hosting Bundle. Succeeds if it isn't installed. Requires running as Administrator.
   type: powershell
@@ -114,6 +129,7 @@
     Import-Module Sbd.Iis
     Uninstall-AspNetCoreHostingBundle -Version '2.2'
 - id: set-iis-default-permissions
+  icon: iis
   name: Set Default Permissions
   description: Restores the default IIS permissions on the web root, as on a clean IIS install. Grants Read & Execute (inherited by subfolders and files) to IIS_IUSRS and Users. Only adds grants; nothing is removed. Fixes 401.3 errors from anonymous authentication. Requires running as Administrator.
   type: powershell

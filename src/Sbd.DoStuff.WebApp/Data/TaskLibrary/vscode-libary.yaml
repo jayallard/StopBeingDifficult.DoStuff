@@ -1,4 +1,5 @@
 ﻿- id: is-vscode-installed
+  icon: vscode
   name: Is VsCode Installed?
   description: fails if VsCode is not installed.
   type: powershell

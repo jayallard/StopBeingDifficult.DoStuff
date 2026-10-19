@@ -1,4 +1,5 @@
 ﻿- id: get-winget-version
+  icon: winget
   name: Get Winget Version
   description: Prints the version of winget
   type: powershell
@@ -11,6 +12,7 @@
     Import-Module Sbd.WinGet
     Test-WinGetVersion -MinVersion $MinVersion
 - id: install-winget
+  icon: winget
   name: Install WinGet
   description: Install WinGet, if it isn't already installed.
   type: powershell

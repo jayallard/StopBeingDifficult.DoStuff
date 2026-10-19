@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sbd.DoStuff.Domain.DataSources;
 using Sbd.DoStuff.Domain.Execution;
+using Sbd.DoStuff.Domain.Icons;
 using Sbd.DoStuff.Domain.Library;
 using Sbd.DoStuff.Domain.Lists;
 using Sbd.DoStuff.Domain.Processes;
@@ -28,6 +29,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IProcessRunner>(_ => RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? new WindowsProcessRunner(moduleDirectories)
             : new UnixProcessRunner(moduleDirectories));
+
+        services.AddSingleton(new TaskIconCatalog(assetsDirectories, configuration["TaskLibrary:DefaultIcon"]));
 
         services.AddSingleton<ITaskFactory, Library.TaskFactory>();
 

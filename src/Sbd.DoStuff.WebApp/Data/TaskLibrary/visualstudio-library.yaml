@@ -1,4 +1,5 @@
 - id: get-visual-studio-versions
+  icon: visualstudio
   name: Get Visual Studio Versions
   description: Lists every installed version of Visual Studio (including previews) with its version number and install path. Fails if no version at least MinVersion is installed (17.0 = Visual Studio 2022).
   type: powershell
@@ -11,6 +12,7 @@
     Import-Module Sbd.VisualStudio
     Get-VisualStudioVersions -MinVersion $MinVersion
 - id: set-visual-studio-run-as-admin
+  icon: visualstudio
   name: Run Visual Studio as Admin
   description: Sets every installed Visual Studio to always start as administrator (per-user compatibility flag on devenv.exe; takes effect the next time Visual Studio is launched).
   type: powershell

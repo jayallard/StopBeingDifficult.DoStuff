@@ -19,7 +19,7 @@ public sealed class ListEditModel
         var model = new ListEditModel { Id = list.Id, Name = list.Name, Description = list.Description, Scope = scope };
         foreach (var entry in list.Entries)
         {
-            model.Entries.Add(new EntryEditModel(entry.TaskId, entry.Categories, entry.ParameterValues, entry.Notes, entry.Name, entry.DisabledReason));
+            model.Entries.Add(new EntryEditModel(entry.TaskId, entry.Categories, entry.ParameterValues, entry.Notes, entry.Name, entry.DisabledReason) { Icon = entry.Icon });
         }
 
         return model;
@@ -35,7 +35,8 @@ public sealed class ListEditModel
             e.Values.Count == 0 ? null : new Dictionary<string, string>(e.Values),
             string.IsNullOrWhiteSpace(e.Notes) ? null : e.Notes.Trim(),
             string.IsNullOrWhiteSpace(e.Name) ? null : e.Name.Trim(),
-            e.PersistedDisabledReason)).ToList());
+            e.PersistedDisabledReason,
+            string.IsNullOrWhiteSpace(e.Icon) ? null : e.Icon.Trim())).ToList());
 
     public IEnumerable<string> AllCategories =>
         Entries.SelectMany(e => e.Categories).Concat(EmptyCategories).Distinct(StringComparer.OrdinalIgnoreCase).Order();
