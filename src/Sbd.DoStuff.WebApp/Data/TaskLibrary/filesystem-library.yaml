@@ -69,3 +69,17 @@
   command: |-
     Import-Module Sbd.FileSystem
     Update-FileText -FilePath $FilePath -FindText $FindText -ReplaceText $ReplaceText -CaseSensitive ($CaseSensitive -eq 'true')
+
+- id: create-folder
+  icon: filesystem
+  name: Create Folder
+  description: Makes sure the folder at FolderPath exists, creating any missing parts of the path. The output shows which leading part of the path already existed and which parts were created. A folder that already exists is success; the task fails only if the path can't be created (e.g. a part of it is a file, or access is denied).
+  type: powershell
+  parameters:
+    - name: FolderPath
+      description: The full path of the folder to create.
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.FileSystem
+    New-Folder -Path $FolderPath

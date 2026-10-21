@@ -38,7 +38,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITaskLibrary>(provider => new YamlTaskLibrary(
             ExistingSubdirectories(sources, FileDataSource.TaskLibraryFolder),
             assetsDirectories,
-            provider.GetRequiredService<ILogger<YamlTaskLibrary>>()));
+            provider.GetRequiredService<ILogger<YamlTaskLibrary>>(),
+            sources.Select(source => Path.Combine(source, FileDataSource.TaskLibraryFolder))));
         services.AddSingleton<ITaskListRepository>(provider => new YamlTaskListRepository(
             ExistingSubdirectories(sources, FileDataSource.TaskListsFolder),
             provider.GetRequiredService<ILogger<YamlTaskListRepository>>(),

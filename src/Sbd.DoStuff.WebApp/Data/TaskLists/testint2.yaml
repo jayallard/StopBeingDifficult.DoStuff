@@ -245,6 +245,11 @@ entries:
     parameterValues:
       LinkPath: 'D:\svn\Proliant\ePayEntry.root\trunk\ePayEntry II\ReadyPayOnline'
       TargetPath: 'D:\git\rpo.app\ReadyPayOnline'
+  - taskId: create-folder
+    categories:
+      - demo.filesystem
+    parameterValues:
+      FolderPath: 'D:\path\to\new\folder'
   - taskId: copy-file
     categories:
       - demo.filesystem

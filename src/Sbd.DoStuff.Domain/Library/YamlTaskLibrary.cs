@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Sbd.DoStuff.Domain.Lists;
 using Sbd.DoStuff.Domain.Serialization;
 using YamlDotNet.Serialization;
 
@@ -15,8 +16,16 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
     private readonly Dictionary<string, TaskDefinition> _definitions = new();
     private readonly List<TaskLibraryGroup> _groups = [];
 
-    public YamlTaskLibrary(IEnumerable<string> directories, IEnumerable<string> assetsDirectories, ILogger<YamlTaskLibrary> logger)
+    private readonly string[] _storageDirectories;
+    private readonly object _gate = new();
+
+    public YamlTaskLibrary(
+        IEnumerable<string> directories,
+        IEnumerable<string> assetsDirectories,
+        ILogger<YamlTaskLibrary> logger,
+        IEnumerable<string>? storageDirectories = null)
     {
+        _storageDirectories = (storageDirectories ?? []).Select(Path.GetFullPath).ToArray();
         var assetsDirectoryList = assetsDirectories.ToList();
 
         foreach (var directory in directories)
@@ -68,7 +77,42 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
 
     public IReadOnlyList<TaskDefinition> GetAll() => _definitions.Values.ToList();
 
-    public IReadOnlyList<TaskLibraryGroup> GetGroups() => _groups;
+    public IReadOnlyList<TaskLibraryGroup> GetGroups()
+    {
+        lock (_gate)
+        {
+            return _groups.ToList();
+        }
+    }
+
+    public IReadOnlyList<string> StorageDirectories => _storageDirectories;
+
+    public TaskLibraryGroup CreateGroup(string name, string storageDirectory)
+    {
+        var storage = _storageDirectories.FirstOrDefault(d => string.Equals(d, Path.GetFullPath(storageDirectory), StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidOperationException($"'{storageDirectory}' is not a configured task library folder.");
+        if (!TaskListValidator.IsValidId(name))
+        {
+            throw new ArgumentException($"'{name}' is not a valid task library name.", nameof(name));
+        }
+
+        lock (_gate)
+        {
+            var file = Path.Combine(storage, name + ".yaml");
+            if (File.Exists(file) || _groups.Any(g => string.Equals(g.Id, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException($"A task library named '{name}' already exists.");
+            }
+
+            Directory.CreateDirectory(storage);
+            File.WriteAllText(file, "[]" + Environment.NewLine);
+
+            var group = new TaskLibraryGroup(name, FormatName(name), [], file);
+            _groups.Add(group);
+            _groups.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+            return group;
+        }
+    }
 
     // "git-library" -> "Git"; "vscode-libary" (sic) -> "Vscode".
     private static string FormatName(string fileName)

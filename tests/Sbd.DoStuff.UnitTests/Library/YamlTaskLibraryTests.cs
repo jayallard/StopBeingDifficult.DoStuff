@@ -270,6 +270,22 @@ public class YamlTaskLibraryTests : IDisposable
 
     private void WriteFile(string name, string content) => File.WriteAllText(Path.Combine(_directory, name), content);
 
+    [Fact]
+    public void CreateGroup_WritesEmptyLibraryFile_AndReloadsCleanly()
+    {
+        var storage = Path.Combine(_directory, "new-root");
+        var library = new YamlTaskLibrary([], [_assetsDirectory], NullLogger<YamlTaskLibrary>.Instance, [storage]);
+
+        var group = library.CreateGroup("my-tools", storage);
+
+        group.Tasks.ShouldBeEmpty();
+        library.GetGroups().ShouldContain(g => g.Id == "my-tools");
+        File.Exists(Path.Combine(storage, "my-tools.yaml")).ShouldBeTrue();
+        CreateLibrary([storage], [_assetsDirectory]).GetGroups().Single().Id.ShouldBe("my-tools");
+        Should.Throw<InvalidOperationException>(() => library.CreateGroup("my-tools", storage));
+        Should.Throw<InvalidOperationException>(() => library.CreateGroup("other", _directory));
+    }
+
     private static YamlTaskLibrary CreateLibrary(IEnumerable<string> directories, IEnumerable<string> assetsDirectories) =>
         new(directories, assetsDirectories, NullLogger<YamlTaskLibrary>.Instance);
 }

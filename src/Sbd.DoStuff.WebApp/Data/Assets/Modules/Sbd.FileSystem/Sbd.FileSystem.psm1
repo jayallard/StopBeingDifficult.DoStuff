@@ -213,3 +213,67 @@ function Update-FileText {
     Write-Output ":Replaced $count occurrence(s) in $path"
     $global:LASTEXITCODE = 0
 }
+
+function New-Folder {
+    <#
+    .SYNOPSIS
+    Ensures the folder at Path exists, creating any missing parts of the path.
+    .DESCRIPTION
+    Reports which leading parts of the path already existed and which were created. A path that
+    already exists as a folder is success. It fails only if the path (or one of its parts) is an
+    existing file, or a missing part cannot be created.
+
+    Sets $LASTEXITCODE to 0 on success, 1 on failure.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Path
+    )
+
+    $global:LASTEXITCODE = 1
+
+    try {
+        $full = [System.IO.Path]::GetFullPath($Path)
+    }
+    catch {
+        Write-Output "!Invalid path '$Path': $($_.Exception.Message)"
+        return
+    }
+    $root = [System.IO.Path]::GetPathRoot($full)
+    if ($full.Length -gt $root.Length) { $full = $full.TrimEnd('\', '/') }
+
+    # Walk up to the deepest part that already exists, collecting the missing parts below it.
+    $missing = New-Object System.Collections.Generic.List[string]
+    $current = $full
+    while ($current -and -not (Test-Path -LiteralPath $current)) {
+        $missing.Insert(0, $current)
+        $current = Split-Path -Path $current -Parent
+    }
+
+    if (-not $current) {
+        Write-Output "!Cannot create $full : its root '$root' does not exist."
+        return
+    }
+    if (-not (Test-Path -LiteralPath $current -PathType Container)) {
+        Write-Output "!Cannot create $full : $current exists but is a file, not a folder."
+        return
+    }
+
+    Write-Output ":Already existed: $current"
+    if ($missing.Count -eq 0) {
+        $global:LASTEXITCODE = 0
+        return
+    }
+
+    foreach ($part in $missing) {
+        try {
+            New-Item -ItemType Directory -Path $part -ErrorAction Stop | Out-Null
+            Write-Output ":Created: $part"
+        }
+        catch {
+            Write-Output "!Could not create $part : $($_.Exception.Message)"
+            return
+        }
+    }
+    $global:LASTEXITCODE = 0
+}
