@@ -286,6 +286,66 @@ public class YamlTaskLibraryTests : IDisposable
         Should.Throw<InvalidOperationException>(() => library.CreateGroup("other", _directory));
     }
 
+    [Fact]
+    public void AddDefinitions_AppendsToFile_KeepsComments_AndReloads()
+    {
+        WriteFile("a.yaml", """
+            # keep me
+            - id: base
+              name: Base
+              type: powershell
+              command: echo a
+            """);
+        var library = CreateLibrary([_directory], [_assetsDirectory]);
+
+        library.AddDefinitions("a", [new TaskDefinition("derived", "Derived", null, "base", null, null, null, null, null, null, null)]);
+
+        library.Find("derived").ShouldNotBeNull();
+        library.GetGroups().Single().Tasks.Count.ShouldBe(2);
+        File.ReadAllText(Path.Combine(_directory, "a.yaml")).ShouldContain("# keep me");
+        var reloaded = CreateLibrary([_directory], [_assetsDirectory]);
+        reloaded.Find("derived")!.BaseTaskId.ShouldBe("base");
+        Should.Throw<InvalidOperationException>(() =>
+            library.AddDefinitions("a", [new TaskDefinition("derived", "Dup", null, "base", null, null, null, null, null, null, null)]));
+    }
+
+    [Fact]
+    public void Inheritance_AllowedFromSystemOrOwnFolder_ButNotFromAnotherFolder()
+    {
+        var system = Path.Combine(_directory, "sys");
+        var a = Path.Combine(_directory, "a");
+        var b = Path.Combine(_directory, "b");
+        foreach (var d in new[] { system, a, b }) Directory.CreateDirectory(d);
+        File.WriteAllText(Path.Combine(system, "s.yaml"), """
+            - id: sys-base
+              name: S
+              type: powershell
+              command: echo
+            """);
+        File.WriteAllText(Path.Combine(a, "a.yaml"), """
+            - id: a-base
+              name: A
+              type: powershell
+              command: echo
+            - id: a-derived
+              name: AD
+              baseTaskId: a-base
+            - id: a-from-sys
+              name: AS
+              baseTaskId: sys-base
+            """);
+        File.WriteAllText(Path.Combine(b, "b.yaml"), """
+            - id: b-derived
+              name: BD
+              baseTaskId: a-base
+            """);
+
+        Should.NotThrow(() => new YamlTaskLibrary([system, a], [], NullLogger<YamlTaskLibrary>.Instance, [system, a, b]));
+        Should.Throw<InvalidOperationException>(() =>
+            new YamlTaskLibrary([system, a, b], [], NullLogger<YamlTaskLibrary>.Instance, [system, a, b]))
+            .Message.ShouldContain("b-derived");
+    }
+
     private static YamlTaskLibrary CreateLibrary(IEnumerable<string> directories, IEnumerable<string> assetsDirectories) =>
         new(directories, assetsDirectories, NullLogger<YamlTaskLibrary>.Instance);
 }

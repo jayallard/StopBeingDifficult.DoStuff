@@ -45,6 +45,8 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<ILogger<YamlTaskListRepository>>(),
             sources.Select(source => Path.Combine(source, FileDataSource.TaskListsFolder))));
 
+        services.AddSingleton<TaskListConverter>();
+
         foreach (var source in sources)
         {
             services.AddSingleton<IDataSource>(provider => new FileDataSource(

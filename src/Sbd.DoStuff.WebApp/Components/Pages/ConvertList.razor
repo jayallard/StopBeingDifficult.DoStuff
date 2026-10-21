@@ -1,0 +1,115 @@
+@page "/convert"
+@inject ITaskListRepository ListRepository
+@inject ITaskLibrary Library
+@inject TaskListConverter Converter
+
+<PageTitle>Convert tasks</PageTitle>
+
+<h1 class="mb-1 text-2xl font-semibold text-slate-900">Convert tasks to definitions</h1>
+<p class="mb-6 text-sm text-slate-500">
+    Turn a list's tasks into reusable definitions in a task library, so other lists can use them too.
+    The list is updated to point at the new definitions.
+</p>
+
+<div class="mb-6 grid gap-4 sm:grid-cols-2">
+    <label class="block text-sm font-medium text-slate-700">
+        Task list
+        <select value="@_listId" @onchange="OnListChanged"
+                class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+            <option value="">Choose a list&hellip;</option>
+            @foreach (var list in ListRepository.GetAll().OrderBy(l => l.Name))
+            {
+                <option value="@list.Id">@list.Name</option>
+            }
+        </select>
+    </label>
+    <label class="block text-sm font-medium text-slate-700">
+        Target library
+        <select value="@_libraryId" @onchange="OnLibraryChanged"
+                class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+            <option value="">Choose a library&hellip;</option>
+            @if (_eligible.System.Count > 0)
+            {
+                <optgroup label="System">
+                    @foreach (var group in _eligible.System)
+                    {
+                        <option value="@group.Id">@group.Name</option>
+                    }
+                </optgroup>
+            }
+            @if (_eligible.SameFolder.Count > 0)
+            {
+                <optgroup label="Other (this list's folder)">
+                    @foreach (var group in _eligible.SameFolder)
+                    {
+                        <option value="@group.Id">@group.Name</option>
+                    }
+                </optgroup>
+            }
+        </select>
+    </label>
+</div>
+
+@if (_message is not null)
+{
+    <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">@_message</p>
+}
+@if (_error is not null)
+{
+    <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">@_error</p>
+}
+
+@if (_plan is not null)
+{
+    <ul class="mb-4 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+        @foreach (var row in _plan)
+        {
+            var convertible = row.Status == EntryConversionStatus.Convertible;
+            <li class="px-3 py-2">
+                <div class="flex items-start gap-3">
+                    <input type="checkbox" class="mt-1 h-4 w-4 shrink-0 @(convertible ? "" : "invisible")"
+                           checked="@_selected.Contains(row.Index)" disabled="@(!convertible)"
+                           @onchange="e => Toggle(row.Index, (bool)e.Value!)"
+                           aria-label="Convert @DisplayName(row)"/>
+                    <details class="min-w-0 flex-1">
+                        <summary class="cursor-pointer list-none">
+                            <span class="font-medium text-slate-900">@DisplayName(row)</span>
+                            @if (StatusNote(row) is { } note)
+                            {
+                                <span class="ml-2 text-xs text-slate-400">@note</span>
+                            }
+                        </summary>
+                        <dl class="mt-2 space-y-1 text-xs text-slate-600">
+                            <div><dt class="inline text-slate-400">Task: </dt><dd class="inline font-mono">@row.Entry.TaskId</dd></div>
+                            <div><dt class="inline text-slate-400">Categories: </dt><dd class="inline">@string.Join(", ", row.Entry.Categories)</dd></div>
+                            @if (row.Proposed is not null)
+                            {
+                                <div><dt class="inline text-slate-400">New definition: </dt><dd class="inline font-mono">@row.Proposed.Id</dd></div>
+                            }
+                            @if (row.Entry.ParameterValues is { Count: > 0 })
+                            {
+                                foreach (var (name, value) in row.Entry.ParameterValues)
+                                {
+                                    <div><dt class="inline text-slate-400">@name: </dt><dd class="inline whitespace-pre-wrap font-mono">@value</dd></div>
+                                }
+                            }
+                            @if (!string.IsNullOrWhiteSpace(row.Entry.Notes))
+                            {
+                                <div><dt class="inline text-slate-400">Notes: </dt><dd class="inline">@row.Entry.Notes</dd></div>
+                            }
+                        </dl>
+                    </details>
+                </div>
+            </li>
+        }
+    </ul>
+
+    <button type="button" @onclick="ConvertSelected" disabled="@(_selected.Count == 0)"
+            class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+        Convert@(_selected.Count > 0 ? $" {_selected.Count}" : "")
+    </button>
+}
+else
+{
+    <p class="text-sm text-slate-400">Choose a list and a library to see what can be converted.</p>
+}

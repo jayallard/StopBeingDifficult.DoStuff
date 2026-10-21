@@ -12,10 +12,12 @@ namespace Sbd.DoStuff.Domain.Library;
 internal sealed class YamlTaskLibrary : ITaskLibrary
 {
     private static readonly IDeserializer Deserializer = YamlDeserializerFactory.Create();
+    private static readonly ISerializer Serializer = YamlSerializerFactory.Create();
 
     private readonly Dictionary<string, TaskDefinition> _definitions = new();
     private readonly List<TaskLibraryGroup> _groups = [];
 
+    private readonly Dictionary<string, string?> _rootById = new();
     private readonly string[] _storageDirectories;
     private readonly object _gate = new();
 
@@ -58,6 +60,7 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
                             $"Duplicate task definition id '{resolved.Id}' (found in '{file}').");
                     }
 
+                    _rootById[resolved.Id] = RootOf(file);
                     fileDefinitions.Add(resolved);
                 }
 
@@ -73,6 +76,14 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
         }
 
         _groups.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var group in _groups)
+        {
+            foreach (var definition in group.Tasks)
+            {
+                ValidateBaseFolder(definition, RootOf(group.Source), group.Source!);
+            }
+        }
     }
 
     public IReadOnlyList<TaskDefinition> GetAll() => _definitions.Values.ToList();
@@ -114,6 +125,69 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
         }
     }
 
+    public void AddDefinitions(string groupId, IReadOnlyList<TaskDefinition> definitions)
+    {
+        lock (_gate)
+        {
+            var index = _groups.FindIndex(g => g.Id == groupId);
+            if (index < 0)
+            {
+                throw new InvalidOperationException($"Unknown task library '{groupId}'.");
+            }
+
+            var group = _groups[index];
+            if (group.Source is null)
+            {
+                throw new InvalidOperationException($"Task library '{groupId}' has no file to write to.");
+            }
+
+            var newIds = new HashSet<string>();
+            foreach (var definition in definitions)
+            {
+                Validate(definition, group.Source);
+                ValidateBaseFolder(definition, RootOf(group.Source), group.Source);
+                if (_definitions.ContainsKey(definition.Id) || !newIds.Add(definition.Id))
+                {
+                    throw new InvalidOperationException($"Duplicate task definition id '{definition.Id}'.");
+                }
+            }
+
+            if (definitions.Count == 0)
+            {
+                return;
+            }
+
+            // Append text rather than re-serializing the file, so hand-written comments and formatting survive.
+            var existing = File.ReadAllText(group.Source);
+            var trimmed = existing.Trim();
+            var addition = Serializer.Serialize(definitions.ToArray());
+            string content;
+            if (trimmed.Length == 0 || trimmed == "[]")
+            {
+                content = addition;
+            }
+            else if (trimmed.StartsWith('['))
+            {
+                throw new InvalidOperationException($"Task library file '{group.Source}' uses flow style and can't be appended to.");
+            }
+            else
+            {
+                content = existing.TrimEnd() + Environment.NewLine + addition;
+            }
+
+            File.WriteAllText(group.Source, content);
+
+            var root = RootOf(group.Source);
+            foreach (var definition in definitions)
+            {
+                _definitions.Add(definition.Id, definition);
+                _rootById[definition.Id] = root;
+            }
+
+            _groups[index] = group with { Tasks = group.Tasks.Concat(definitions).ToList() };
+        }
+    }
+
     // "git-library" -> "Git"; "vscode-libary" (sic) -> "Vscode".
     private static string FormatName(string fileName)
     {
@@ -130,6 +204,41 @@ internal sealed class YamlTaskLibrary : ITaskLibrary
         name = name.Replace('-', ' ').Replace('_', ' ');
         return name.Length == 0 ? fileName : char.ToUpperInvariant(name[0]) + name[1..];
     }
+
+    // A derived definition may only inherit from the system folder (the first configured one, which every
+    // install has) or from its own folder, so a library never depends on a folder that may not exist elsewhere.
+    // Not enforced when no storage directories are configured. A missing base is reported elsewhere.
+    private void ValidateBaseFolder(TaskDefinition definition, string? root, string file)
+    {
+        if (definition.BaseTaskId is null || _storageDirectories.Length == 0
+            || !_rootById.TryGetValue(definition.BaseTaskId, out var baseRoot))
+        {
+            return;
+        }
+
+        var system = _storageDirectories[0];
+        if (!SamePath(baseRoot, system) && !SamePath(baseRoot, root))
+        {
+            throw new InvalidOperationException(
+                $"Task definition '{definition.Id}' (in '{file}') inherits '{definition.BaseTaskId}' from '{baseRoot}', " +
+                $"which is neither the system folder ('{system}') nor its own folder.");
+        }
+    }
+
+    private string? RootOf(string? file)
+    {
+        if (file is null)
+        {
+            return null;
+        }
+
+        var full = Path.GetFullPath(file);
+        return _storageDirectories.FirstOrDefault(d =>
+            full.StartsWith(d.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool SamePath(string? a, string? b) =>
+        a is not null && b is not null && string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
 
     public TaskDefinition? Find(string taskId) => _definitions.GetValueOrDefault(taskId);
 

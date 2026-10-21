@@ -33,6 +33,8 @@
 <p class="mb-6 text-sm text-slate-500">
     Where the task library, task lists and assets come from. Sources are listed in load order;
     new public lists are saved to the first, private lists to the last.
+    The first source is the <strong>system</strong> folder: it ships with the app, so anything may rely on it.
+    Task definitions can inherit only from the system folder or their own folder.
 </p>
 
 <div class="space-y-8">
@@ -43,6 +45,11 @@
         <section id="@SourceAnchor(index)">
             <div class="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-slate-500">@source.Type</span>
+                @if (index == 0)
+                {
+                    <span class="rounded bg-indigo-100 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-indigo-700"
+                          title="Delivered with the app and available to every install. Tasks may inherit from here, or from their own folder, but not from other folders.">System</span>
+                }
                 <h2 class="break-all font-mono text-sm text-slate-900">@source.Location</h2>
             </div>
 

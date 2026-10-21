@@ -19,4 +19,11 @@ public interface ITaskLibrary
     /// (one of <see cref="StorageDirectories"/>) and returns its group. Throws if the name is invalid or already used.
     /// </summary>
     TaskLibraryGroup CreateGroup(string name, string storageDirectory);
+
+    /// <summary>
+    /// Appends <paramref name="definitions"/> to the library file behind group <paramref name="groupId"/> and
+    /// makes them findable. Existing file content (comments, formatting) is left untouched. Throws if an id is
+    /// already used anywhere in the library, or the group is unknown.
+    /// </summary>
+    void AddDefinitions(string groupId, IReadOnlyList<TaskDefinition> definitions);
 }

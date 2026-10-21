@@ -17,4 +17,12 @@ internal sealed class FakeTaskLibrary(params TaskDefinition[] definitions) : ITa
 
     public TaskLibraryGroup CreateGroup(string name, string storageDirectory) =>
         new(name, name, []);
+
+    public void AddDefinitions(string groupId, IReadOnlyList<TaskDefinition> definitions)
+    {
+        foreach (var definition in definitions)
+        {
+            _definitions.Add(definition.Id, definition);
+        }
+    }
 }
