@@ -30,6 +30,25 @@ public class YamlTaskRunStoreTests : IDisposable
         store.Get(run.RunId).ShouldBeSameAs(run);
     }
 
+    [Theory]
+    [InlineData(TaskRunStatus.Pending)]
+    [InlineData(TaskRunStatus.Running)]
+    public void Load_RunSavedAsActive_IsMarkedFailedAndPersisted(TaskRunStatus savedStatus)
+    {
+        var store = new YamlTaskRunStore(_filePath);
+        var run = NewRun();
+        store.Add(run);
+        run.Status = savedStatus;
+        store.Add(run);
+
+        var reloaded = new YamlTaskRunStore(_filePath).Get(run.RunId)!;
+
+        reloaded.Status.ShouldBe(TaskRunStatus.Failed);
+        reloaded.CompletedAt.ShouldNotBeNull();
+        reloaded.ErrorMessage.ShouldNotBeNull();
+        new YamlTaskRunStore(_filePath).Get(run.RunId)!.Status.ShouldBe(TaskRunStatus.Failed);
+    }
+
     [Fact]
     public void Get_UnknownRunId_ReturnsNull()
     {
@@ -126,6 +145,23 @@ public class YamlTaskRunStoreTests : IDisposable
         loaded.ResultMessage.ShouldBe("done");
         loaded.OutputLines.Count.ShouldBe(1);
         loaded.OutputLines[0].Text.ShouldBe("hello");
+    }
+
+    [Theory]
+    [InlineData("\t\tScriptName  VARCHAR(255) NOT NULL")]
+    [InlineData("\t  , DatabaseName  NVARCHAR(128) NOT NULL")]
+    [InlineData("\t);")]
+    [InlineData("  leading spaces")]
+    public void Constructor_LoadsOutputLinesWithLeadingWhitespaceIntact(string text)
+    {
+        var run = NewRun();
+        run.AppendOutputLine(new TaskOutputLine(DateTimeOffset.UtcNow, OutputStream.StandardOutput, text));
+        new YamlTaskRunStore(_filePath).Add(run);
+
+        var loaded = new YamlTaskRunStore(_filePath).Get(run.RunId);
+
+        loaded.ShouldNotBeNull();
+        loaded.OutputLines[0].Text.ShouldBe(text);
     }
 
     public void Dispose() => Directory.Delete(_directory, recursive: true);

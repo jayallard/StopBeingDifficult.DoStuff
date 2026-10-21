@@ -9,18 +9,18 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
     private static readonly IDeserializer Deserializer = YamlDeserializerFactory.Create();
     private static readonly ISerializer Serializer = YamlSerializerFactory.Create();
 
-    private readonly record struct Stored(TaskListDefinition List, string FilePath, TaskListScope Scope);
+    private readonly record struct Stored(TaskListDefinition List, string FilePath, string? StorageDirectory);
 
     private readonly Dictionary<string, Stored> _lists = new();
-    private readonly TaskListStorageOptions? _storage;
+    private readonly string[] _storageDirectories;
     private readonly object _gate = new();
 
     public YamlTaskListRepository(
         IEnumerable<string> directories,
         ILogger<YamlTaskListRepository> logger,
-        TaskListStorageOptions? storage = null)
+        IEnumerable<string>? storageDirectories = null)
     {
-        _storage = storage;
+        _storageDirectories = (storageDirectories ?? []).Select(Path.GetFullPath).ToArray();
 
         foreach (var directory in directories)
         {
@@ -36,7 +36,7 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
                 var list = Deserializer.Deserialize<TaskListDefinition>(yaml)
                     ?? throw new InvalidOperationException($"Task list file '{file}' did not deserialize.");
 
-                if (!_lists.TryAdd(list.Id, new Stored(list, file, ScopeOf(file))))
+                if (!_lists.TryAdd(list.Id, new Stored(list, file, StorageDirectoryOf(file))))
                 {
                     throw new InvalidOperationException($"Duplicate task list id '{list.Id}' (found in '{file}').");
                 }
@@ -60,11 +60,13 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
         }
     }
 
-    public TaskListScope? GetScope(string listId)
+    public IReadOnlyList<string> StorageDirectories => _storageDirectories;
+
+    public string? GetStorageDirectory(string listId)
     {
         lock (_gate)
         {
-            return _lists.TryGetValue(listId, out var stored) ? stored.Scope : null;
+            return _lists.TryGetValue(listId, out var stored) ? stored.StorageDirectory : null;
         }
     }
 
@@ -76,9 +78,10 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
         }
     }
 
-    public void Save(TaskListDefinition list, TaskListScope scope, string? originalId = null)
+    public void Save(TaskListDefinition list, string storageDirectory, string? originalId = null)
     {
-        var storage = _storage ?? throw new InvalidOperationException("Task list storage directories are not configured.");
+        var storage = _storageDirectories.FirstOrDefault(d => SamePath(d, storageDirectory))
+            ?? throw new InvalidOperationException($"'{storageDirectory}' is not a configured task list folder.");
         if (!TaskListValidator.IsValidId(list.Id))
         {
             throw new ArgumentException($"'{list.Id}' is not a valid task list id.", nameof(list));
@@ -94,11 +97,11 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
                 throw new InvalidOperationException($"A task list with id '{list.Id}' already exists.");
             }
 
-            // An edit that keeps its id and scope rewrites its own file (whatever it is named);
-            // anything else goes to <scope directory>/<id>.yaml.
-            var target = hasOriginal && list.Id == originalId && original.Scope == scope
+            // An edit that keeps its id and folder rewrites its own file (whatever it is named);
+            // anything else goes to <storage directory>/<id>.yaml.
+            var target = hasOriginal && list.Id == originalId && original.StorageDirectory is not null && SamePath(original.StorageDirectory, storage)
                 ? original.FilePath
-                : Path.Combine(storage.DirectoryFor(scope), list.Id + ".yaml");
+                : Path.Combine(storage, list.Id + ".yaml");
 
             if (File.Exists(target) && !(hasOriginal && SamePath(target, original.FilePath)))
             {
@@ -118,7 +121,7 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
                 _lists.Remove(originalId!);
             }
 
-            _lists[list.Id] = new Stored(list, target, scope);
+            _lists[list.Id] = new Stored(list, target, storage);
         }
     }
 
@@ -133,8 +136,8 @@ internal sealed class YamlTaskListRepository : ITaskListRepository
         }
     }
 
-    private TaskListScope ScopeOf(string file) =>
-        _storage is not null && IsUnder(file, _storage.PrivateDirectory) ? TaskListScope.Private : TaskListScope.Public;
+    private string? StorageDirectoryOf(string file) =>
+        _storageDirectories.FirstOrDefault(directory => IsUnder(file, directory));
 
     private static bool IsUnder(string file, string directory)
     {

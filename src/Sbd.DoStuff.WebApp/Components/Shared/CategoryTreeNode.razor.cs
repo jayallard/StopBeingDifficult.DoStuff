@@ -144,7 +144,7 @@ public partial class CategoryTreeNode : IDisposable
 
         try
         {
-            ListRepository.Save(definition, ListRepository.GetScope(ListId) ?? TaskListScope.Private, ListId);
+            ListRepository.Save(definition, ListRepository.GetStorageDirectory(ListId) ?? ListRepository.StorageDirectories[0], ListId);
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException)
         {

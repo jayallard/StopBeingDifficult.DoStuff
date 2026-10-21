@@ -157,12 +157,11 @@
 - id: publish-dacpac
   icon: sql
   name: Publish DacPac
-  description: Publishes a .dacpac to a SQL Server database with SqlPackage, taking the deployment options (drop objects not in source, block on data loss, SQLCMD variables, ...) from a publish profile (.publish.xml). The target is the configured connection string, not whatever the profile names. Set ScriptOnly to true to print the deployment script without changing anything. Requires SqlPackage (dotnet tool install -g microsoft.sqlpackage).
+  description: Publishes a .dacpac to a SQL Server database with SqlPackage, taking the deployment options (drop objects not in source, block on data loss, SQLCMD variables, ...) from a publish profile (.publish.xml). The server and login come from the configured connection string (the profile's own connection string is ignored) and the database from the profile, unless TargetDatabaseName overrides it; if no connection string setting is given, the profile's own target is used. Set ScriptOnly to true to print the deployment script without changing anything. Requires SqlPackage (dotnet tool install -g microsoft.sqlpackage).
   type: powershell
   parameters:
     - name: ConnectionStringSetting
-      description: Name of the configuration setting holding the target connection string, e.g. ConnectionStrings:Main. Its login needs permission to create/alter objects in the target database. Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__Main).
-      required: true
+      description: Name of the configuration setting holding the target connection string, e.g. ConnectionStrings:Main. Its login needs permission to create/alter objects in the target database. Set it in appsettings.json, user secrets or an environment variable (ConnectionStrings__Main). Optional - leave blank to deploy to the target named in the publish profile, which then needs a working TargetConnectionString.
       canOverride: true
       configurationSetting: true
     - name: DacPacPath
@@ -176,7 +175,7 @@
       required: true
       canOverride: true
     - name: TargetDatabaseName
-      description: Optional database name; overrides the one in the connection string and in the profile.
+      description: Optional database name; overrides the one in the publish profile (and in the connection string). Leave blank to use the profile's.
       canOverride: true
     - name: SqlCmdVariables
       type: multilineText
@@ -187,6 +186,7 @@
       defaultValue: '300'
       canOverride: true
     - name: ScriptOnly
+      type: boolean
       description: 'When true, generates and prints the deployment script instead of running it (a safe preview: nothing is changed). Default false.'
       defaultValue: 'false'
       canOverride: true

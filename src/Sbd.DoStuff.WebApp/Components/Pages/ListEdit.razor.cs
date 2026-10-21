@@ -38,6 +38,10 @@ public partial class ListEdit
     private void ShowCategoryOf(string category) => _activeCategory = category.Split('.')[0];
 
     private bool IsNew => ListId is null;
+
+    // A task list folder's parent is the configured data directory, which is what the user recognises.
+    private static string DirectoryLabel(string storageDirectory) =>
+        Path.GetDirectoryName(storageDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? storageDirectory;
     private string? SelectedTaskName => _selectedTaskId is null ? null : Library.Find(_selectedTaskId)?.Name ?? _selectedTaskId;
     private string CancelHref => IsNew ? "" : $"lists/{ListId}";
 
@@ -54,7 +58,7 @@ public partial class ListEdit
         if (IsNew)
         {
             _notFound = false;
-            _model = new ListEditModel();
+            _model = new ListEditModel { StorageDirectory = ListRepository.StorageDirectories.FirstOrDefault() ?? "" };
             return;
         }
 
@@ -62,7 +66,7 @@ public partial class ListEdit
         _notFound = list is null;
         if (list is not null)
         {
-            _model = ListEditModel.From(list, ListRepository.GetScope(list.Id) ?? TaskListScope.Private);
+            _model = ListEditModel.From(list, ListRepository.GetStorageDirectory(list.Id) ?? ListRepository.StorageDirectories.FirstOrDefault() ?? "");
         }
     }
 
@@ -173,7 +177,7 @@ public partial class ListEdit
 
         try
         {
-            ListRepository.Save(definition, _model.Scope, ListId);
+            ListRepository.Save(definition, _model.StorageDirectory, ListId);
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException)
         {

@@ -7,7 +7,7 @@
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
     FunctionsToExport    = @(
-        'Install-Iis', 'Uninstall-Iis', 'Test-IisVersion',
+        'Start-Iis', 'Stop-Iis', 'Restart-Iis', 'Install-Iis', 'Uninstall-Iis', 'Test-IisVersion',
         'Test-IisUrlRewrite', 'Install-IisUrlRewrite', 'Uninstall-IisUrlRewrite',
         'Test-IisRequestRouting', 'Install-IisRequestRouting', 'Uninstall-IisRequestRouting',
         'Test-AspNetCoreHostingBundle', 'Install-AspNetCoreHostingBundle', 'Uninstall-AspNetCoreHostingBundle',

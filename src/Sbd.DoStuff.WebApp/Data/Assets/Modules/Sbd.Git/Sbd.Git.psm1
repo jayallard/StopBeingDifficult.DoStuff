@@ -233,6 +233,103 @@ function Copy-GitRepository {
     }
 }
 
+function Update-GitRepository {
+    <#
+    .SYNOPSIS
+    Runs git pull in each of the given repositories under a work directory.
+    .DESCRIPTION
+    Each repository is expected in a folder under WorkDirectory named after the repository (the last
+    segment of its URL, without any .git suffix), as created by Copy-GitRepository. A repository that is
+    missing or whose pull fails is reported and counted, and the remaining repositories are still pulled.
+    Sets $LASTEXITCODE to 0 if every pull succeeded, or 1 if any failed.
+    .PARAMETER Repositories
+    Repository URLs (or paths), one per line. Lines are trimmed; blank lines and lines starting with # are ignored.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$WorkDirectory,
+        [Parameter(Mandatory)]
+        [string]$Repositories
+    )
+
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        Write-Output "!Git is not installed."
+        $global:LASTEXITCODE = 2
+        return
+    }
+
+    $urls = @($Repositories -split '[\r\n]+' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
+    if ($urls.Count -eq 0) {
+        Write-Output "!No repositories were specified."
+        $global:LASTEXITCODE = 1
+        return
+    }
+
+    $failed = 0
+    foreach ($url in $urls) {
+        $name = ($url.TrimEnd('/', '\') -split '[/\\:]')[-1] -replace '\.git$', ''
+        if (-not $name) {
+            Write-Output "!Could not determine a folder name for '$url'."
+            $failed++
+            continue
+        }
+
+        $target = Join-Path $WorkDirectory $name
+        if (-not (Test-Path -LiteralPath $target)) {
+            Write-Output "!Failed to pull $url - $target does not exist"
+            $failed++
+            continue
+        }
+
+        Write-Output ":Pulling $url in $target"
+        # Run through Process so git's stderr (where it writes progress and errors) isn't turned into
+        # PowerShell error records, which would fail the whole run before the remaining repositories are tried.
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = 'git'
+        $psi.Arguments = '-C "{0}" pull' -f $target.Replace('"', '\"')
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $psi
+        try {
+            [void]$process.Start()
+            $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+            $stderrTask = $process.StandardError.ReadToEndAsync()
+            $process.WaitForExit()
+            $stdout = $stdoutTask.Result
+            $stderr = $stderrTask.Result
+            $exitCode = $process.ExitCode
+        }
+        finally {
+            $process.Dispose()
+        }
+
+        foreach ($line in @(($stdout + "`n" + $stderr) -split '[\r\n]+')) {
+            if ($line.Trim()) { Write-Output $line.Trim() }
+        }
+
+        if ($exitCode -ne 0) {
+            Write-Output "!Failed to pull $url (git exit code $exitCode)"
+            $failed++
+        }
+        else {
+            Write-Output ":Pulled $url"
+        }
+    }
+
+    if ($failed -gt 0) {
+        Write-Output "!$failed of $($urls.Count) repositories failed to pull."
+        $global:LASTEXITCODE = 1
+    }
+    else {
+        $global:LASTEXITCODE = 0
+    }
+}
+
 function Enable-GitLongPaths {
     <#
     .SYNOPSIS
@@ -265,4 +362,4 @@ function Enable-GitLongPaths {
     Write-Output ":Enabled core.longpaths in the global git config"
 }
 
-Export-ModuleMember -Function Install-Git, Test-GitVersion, Copy-GitRepository, Enable-GitLongPaths
+Export-ModuleMember -Function Install-Git, Test-GitVersion, Copy-GitRepository, Update-GitRepository, Enable-GitLongPaths

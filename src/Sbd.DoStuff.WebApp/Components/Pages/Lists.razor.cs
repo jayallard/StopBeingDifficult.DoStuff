@@ -47,8 +47,8 @@ public partial class Lists
 
         try
         {
-            var scope = ListRepository.GetScope(list.Id) ?? TaskListScope.Public;
-            ListRepository.Save(list with { Name = name }, scope, list.Id);
+            var directory = ListRepository.GetStorageDirectory(list.Id) ?? ListRepository.StorageDirectories[0];
+            ListRepository.Save(list with { Name = name }, directory, list.Id);
             CancelRename();
         }
         catch (Exception ex)

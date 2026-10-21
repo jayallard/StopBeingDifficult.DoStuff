@@ -181,7 +181,7 @@ function Build-DotnetSolution {
     SolutionPath is the .sln/.slnx/.csproj/.sqlproj file, or a directory containing exactly one.
     Configuration is Debug or Release. BuildTool is dotnet (default), msbuild or devenv. msbuild compiles with Visual Studio's MSBuild.exe instead
     of dotnet (needed for .sqlproj). devenv builds with Visual Studio's devenv.com (the IDE's own build, which also
-    populates a Website project's bin folder). SuppressWarnings hides warnings from the build output (errors still show). Sets $LASTEXITCODE to the build tool's exit code (0 = succeeded).
+    populates a Website project's bin folder). SuppressWarnings hides warnings from the build output (errors still show). MSBuildArguments are extra MSBuild switches, one per line (msbuild only), e.g. /p:PreBuildEvent= to skip a project's pre-build event. Sets $LASTEXITCODE to the build tool's exit code (0 = succeeded).
     #>
     [CmdletBinding()]
     param(
@@ -194,8 +194,13 @@ function Build-DotnetSolution {
         [ValidateSet('dotnet', 'msbuild', 'devenv')]
         [string]$BuildTool = 'dotnet',
 
-        [switch]$SuppressWarnings
+        [switch]$SuppressWarnings,
+
+        [string]$MSBuildArguments = ''
     )
+
+    # One switch per line; blank lines are ignored. Only used when BuildTool is msbuild.
+    [string[]]$extraArgs = @($MSBuildArguments -split '\r?\n' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 
     # ErrorsOnly drops warnings (and informational messages) from the console output; errors still show.
     # Typed as string[] so a single element isn't unrolled to a string, which @loggerArgs would splat char by char.
@@ -227,7 +232,7 @@ function Build-DotnetSolution {
         }
 
         Write-Output ":Building $SolutionPath ($Configuration) with MSBuild: $msbuild"
-        & $msbuild $SolutionPath /restore /p:Configuration=$Configuration /nologo /verbosity:minimal @loggerArgs
+        & $msbuild $SolutionPath /restore /p:Configuration=$Configuration /nologo /verbosity:minimal @loggerArgs @extraArgs
     } else {
         if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { Update-SessionPath }
         if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {

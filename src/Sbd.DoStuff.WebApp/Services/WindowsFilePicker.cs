@@ -13,8 +13,17 @@ public sealed class WindowsFilePicker : IFilePicker
     private const string Script = """
         Add-Type -AssemblyName System.Windows.Forms
         [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+        # A background process can't take the foreground, so the dialog would open hidden behind the browser.
+        # Showing a tiny offscreen, topmost owner form and activating it gives the dialog a visible parent.
         $owner = New-Object System.Windows.Forms.Form
         $owner.TopMost = $true
+        $owner.ShowInTaskbar = $false
+        $owner.FormBorderStyle = 'None'
+        $owner.StartPosition = 'Manual'
+        $owner.Location = New-Object System.Drawing.Point(-32000, -32000)
+        $owner.Size = New-Object System.Drawing.Size(1, 1)
+        $owner.Show()
+        $owner.Activate()
         $dialog = New-Object System.Windows.Forms.OpenFileDialog
         $dialog.Filter = 'All files (*.*)|*.*'
         $dialog.CheckFileExists = $true
@@ -29,6 +38,7 @@ public sealed class WindowsFilePicker : IFilePicker
         if ($dialog.ShowDialog($owner) -eq [System.Windows.Forms.DialogResult]::OK) {
             [Console]::Out.Write($dialog.FileName)
         }
+        $owner.Dispose()
         """;
 
     public bool IsSupported => OperatingSystem.IsWindows();
@@ -43,6 +53,7 @@ public sealed class WindowsFilePicker : IFilePicker
         var startInfo = new ProcessStartInfo("powershell.exe")
         {
             RedirectStandardOutput = true,
+            RedirectStandardError = true,
             StandardOutputEncoding = Encoding.UTF8,
             UseShellExecute = false,
             CreateNoWindow = true,
@@ -60,8 +71,14 @@ public sealed class WindowsFilePicker : IFilePicker
             ?? throw new InvalidOperationException("Could not start PowerShell to show the file dialog.");
         try
         {
+            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
             var output = await process.StandardOutput.ReadToEndAsync(cancellationToken);
             await process.WaitForExitAsync(cancellationToken);
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"The file dialog failed: {(await errorTask).Trim()}");
+            }
+
             var path = output.Trim();
             return path.Length == 0 ? null : path;
         }

@@ -69,6 +69,11 @@
       type: boolean
       defaultValue: 'true'
       canOverride: true
+    - name: MSBuildArguments
+      description: Extra switches passed to MSBuild, one per line (BuildTool msbuild only). For example /p:PreBuildEvent= and /p:PostBuildEvent= skip every project's pre- and post-build events. Blank lines are ignored.
+      type: multilineText
+      defaultValue: ''
+      canOverride: true
   command: |-
     Import-Module Sbd.Dotnet
-    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration -BuildTool $BuildTool -SuppressWarnings:($SuppressWarnings -eq 'true')
+    Build-DotnetSolution -SolutionPath $SolutionPath -Configuration $Configuration -BuildTool $BuildTool -SuppressWarnings:($SuppressWarnings -eq 'true') -MSBuildArguments $MSBuildArguments

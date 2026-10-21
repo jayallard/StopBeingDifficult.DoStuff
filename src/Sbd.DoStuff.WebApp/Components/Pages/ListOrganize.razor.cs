@@ -11,7 +11,7 @@ public partial class ListOrganize
     [Parameter] public string ListId { get; set; } = "";
 
     private TaskListDefinition? _list;
-    private TaskListScope _scope = TaskListScope.Private;
+    private string _storageDirectory = "";
     private OrganizerModel _model = new();
     private string? _loadedFor;
     private string? _error;
@@ -34,7 +34,7 @@ public partial class ListOrganize
         _list = ListRepository.Find(ListId);
         if (_list is not null)
         {
-            _scope = ListRepository.GetScope(ListId) ?? TaskListScope.Private;
+            _storageDirectory = ListRepository.GetStorageDirectory(ListId) ?? ListRepository.StorageDirectories[0];
             _model = OrganizerModel.From(_list);
         }
     }
@@ -119,7 +119,7 @@ public partial class ListOrganize
 
         try
         {
-            ListRepository.Save(definition, _scope, ListId);
+            ListRepository.Save(definition, _storageDirectory, ListId);
             _list = definition;
         }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or IOException or UnauthorizedAccessException)

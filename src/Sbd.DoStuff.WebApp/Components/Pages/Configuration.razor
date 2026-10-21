@@ -71,10 +71,6 @@
                                         }
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-2 text-right align-top text-xs text-slate-400">
-                                        @if (item.Scope is not null)
-                                        {
-                                            <span class="mr-2 rounded bg-slate-100 px-1.5 py-0.5 text-slate-500">@item.Scope</span>
-                                        }
                                         @FormatSize(item.SizeBytes)
                                     </td>
                                 </tr>

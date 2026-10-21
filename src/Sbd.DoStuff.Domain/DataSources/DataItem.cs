@@ -6,11 +6,9 @@ namespace Sbd.DoStuff.Domain.DataSources;
 /// <param name="Location">The full path, URI or key that identifies it in its source.</param>
 /// <param name="Provides">Ids of the definitions or lists loaded from it; empty for assets.</param>
 /// <param name="SizeBytes">Size, when the source knows it.</param>
-/// <param name="Scope">Whether a task list is public or private; null for other kinds.</param>
 public sealed record DataItem(
     DataItemKind Kind,
     string Name,
     string Location,
     IReadOnlyList<string> Provides,
-    long? SizeBytes = null,
-    string? Scope = null);
+    long? SizeBytes = null);

@@ -42,9 +42,24 @@ internal sealed class TaskExecutionEngine(IProcessRunner processRunner, ITaskRun
         return false;
     }
 
+    public async Task CancelAllRunsAsync(TimeSpan timeout)
+    {
+        foreach (var cts in _cancellationSources.Values)
+        {
+            cts.Cancel();
+        }
+
+        var deadline = DateTime.UtcNow + timeout;
+        while (!_cancellationSources.IsEmpty && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(50);
+        }
+    }
+
     private async Task ExecuteAsync(ITask task, TaskRun run, CancellationToken cancellationToken)
     {
         run.Status = TaskRunStatus.Running;
+        runStore.Add(run);
         RunChanged?.Invoke(run);
 
         var context = new TaskExecutionContext(run, processRunner, r => RunChanged?.Invoke(r));

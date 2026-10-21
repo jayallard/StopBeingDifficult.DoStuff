@@ -39,17 +39,10 @@ public static class ServiceCollectionExtensions
             ExistingSubdirectories(sources, FileDataSource.TaskLibraryFolder),
             assetsDirectories,
             provider.GetRequiredService<ILogger<YamlTaskLibrary>>()));
-        services.AddSingleton<ITaskListRepository>(provider =>
-        {
-            // New public lists are saved under the first source, new private lists under the last.
-            var storage = new TaskListStorageOptions(
-                PublicDirectory: Path.Combine(sources[0], FileDataSource.TaskListsFolder),
-                PrivateDirectory: Path.Combine(sources[^1], FileDataSource.TaskListsFolder));
-
-            return new YamlTaskListRepository(
-                ExistingSubdirectories(sources, FileDataSource.TaskListsFolder),
-                provider.GetRequiredService<ILogger<YamlTaskListRepository>>(), storage);
-        });
+        services.AddSingleton<ITaskListRepository>(provider => new YamlTaskListRepository(
+            ExistingSubdirectories(sources, FileDataSource.TaskListsFolder),
+            provider.GetRequiredService<ILogger<YamlTaskListRepository>>(),
+            sources.Select(source => Path.Combine(source, FileDataSource.TaskListsFolder))));
 
         foreach (var source in sources)
         {
@@ -61,6 +54,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITaskExecutionEngine, TaskExecutionEngine>();
 
         services.AddHostedService<TaskListValidationHostedService>();
+        services.AddHostedService<CancelRunsOnShutdownHostedService>();
 
         return services;
     }

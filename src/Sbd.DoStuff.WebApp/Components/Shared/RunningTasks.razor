@@ -1,0 +1,48 @@
+@implements IDisposable
+@inject ITaskRunStore RunStore
+@inject ITaskExecutionEngine Engine
+@inject ITaskLibrary Library
+@inject ITaskListRepository ListRepository
+@inject TaskIconCatalog Icons
+
+<div class="relative flex justify-end border-b border-slate-200 bg-white px-4 py-2 sm:px-8 lg:px-10">
+    <button type="button" @onclick="Toggle"
+            class="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition hover:bg-slate-100 @(_running.Count > 0 ? "text-indigo-700" : "text-slate-500")">
+        @if (_running.Count > 0)
+        {
+            <span class="h-2 w-2 animate-pulse rounded-full bg-indigo-500"></span>
+            <span>Running tasks (@_running.Count)</span>
+        }
+        else
+        {
+            <span class="h-2 w-2 rounded-full bg-slate-300"></span>
+            <span>No tasks running</span>
+        }
+    </button>
+
+    @if (_open)
+    {
+        <div class="absolute right-4 top-full z-40 mt-1 w-80 rounded-md border border-slate-200 bg-white p-1 shadow-lg sm:right-8 lg:right-10">
+            @if (_running.Count == 0)
+            {
+                <p class="px-3 py-2 text-sm text-slate-500">No tasks are running.</p>
+            }
+            else
+            {
+                @foreach (var item in _running)
+                {
+                    var run = item.Run;
+                    <a href="@($"lists/{run.ListId}/tasks/{run.TaskId}/runs/{run.RunId}")" @onclick="Close"
+                       class="flex items-center gap-3 rounded px-3 py-2 text-sm hover:bg-slate-100">
+                        <img src="@item.IconUrl" alt="" aria-hidden="true" class="h-6 w-6 shrink-0" />
+                        <span class="min-w-0">
+                            <span class="block truncate font-medium text-slate-800">@item.Name</span>
+                            <span class="block truncate text-xs text-slate-500">@run.ListId · started @run.StartedAt.LocalDateTime.ToString("T")</span>
+                        </span>
+                        <span class="ml-auto shrink-0 font-mono text-xs text-indigo-700">@Elapsed(run)</span>
+                    </a>
+                }
+            }
+        </div>
+    }
+</div>

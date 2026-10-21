@@ -712,7 +712,78 @@ function Set-IisDefaultPermissions {
     $global:LASTEXITCODE = 0
 }
 
-Export-ModuleMember -Function Install-Iis, Uninstall-Iis, Test-IisVersion,
+function Start-Iis {
+    <#
+    .SYNOPSIS
+    Starts IIS (the World Wide Web Publishing Service and its dependency, the Windows Process Activation Service).
+    #>
+    [CmdletBinding()]
+    param()
+
+    if (-not (Test-IsElevated)) { Write-NotElevated 'Starting IIS'; return }
+    if (-not (Get-Service W3SVC -ErrorAction SilentlyContinue)) {
+        Write-Output '!IIS is not installed (W3SVC service not found).'
+        $global:LASTEXITCODE = 2
+        return
+    }
+
+    try {
+        Start-Service W3SVC -ErrorAction Stop
+    }
+    catch {
+        Write-Output "!Failed to start IIS: $($_.Exception.Message)"
+        $global:LASTEXITCODE = 1
+        return
+    }
+    Write-Output ':IIS started.'
+    $global:LASTEXITCODE = 0
+}
+
+function Stop-Iis {
+    <#
+    .SYNOPSIS
+    Stops IIS (the World Wide Web Publishing Service and the Windows Process Activation Service). Succeeds if it is already stopped.
+    #>
+    [CmdletBinding()]
+    param()
+
+    if (-not (Test-IsElevated)) { Write-NotElevated 'Stopping IIS'; return }
+    if (-not (Get-Service W3SVC -ErrorAction SilentlyContinue)) {
+        Write-Output '!IIS is not installed (W3SVC service not found).'
+        $global:LASTEXITCODE = 2
+        return
+    }
+
+    try {
+        foreach ($name in 'W3SVC', 'WAS') {
+            if (Get-Service $name -ErrorAction SilentlyContinue) {
+                Stop-Service $name -Force -ErrorAction Stop
+            }
+        }
+    }
+    catch {
+        Write-Output "!Failed to stop IIS: $($_.Exception.Message)"
+        $global:LASTEXITCODE = 1
+        return
+    }
+    Write-Output ':IIS stopped.'
+    $global:LASTEXITCODE = 0
+}
+
+function Restart-Iis {
+    <#
+    .SYNOPSIS
+    Restarts IIS: stops W3SVC and WAS, then starts W3SVC again (like iisreset).
+    #>
+    [CmdletBinding()]
+    param()
+
+    Stop-Iis
+    if ($LASTEXITCODE -ne 0) { return }
+    Start-Iis
+}
+
+Export-ModuleMember -Function Start-Iis, Stop-Iis, Restart-Iis, Install-Iis, Uninstall-Iis, Test-IisVersion,
     Test-IisUrlRewrite, Install-IisUrlRewrite, Uninstall-IisUrlRewrite,
     Test-IisRequestRouting, Install-IisRequestRouting, Uninstall-IisRequestRouting,
     Test-AspNetCoreHostingBundle, Install-AspNetCoreHostingBundle, Uninstall-AspNetCoreHostingBundle,

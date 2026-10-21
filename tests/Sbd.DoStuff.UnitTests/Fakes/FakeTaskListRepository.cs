@@ -10,11 +10,13 @@ internal sealed class FakeTaskListRepository(params TaskListDefinition[] lists) 
 
     public TaskListDefinition? Find(string listId) => _lists.GetValueOrDefault(listId);
 
-    public TaskListScope? GetScope(string listId) => _lists.ContainsKey(listId) ? TaskListScope.Public : null;
+    public IReadOnlyList<string> StorageDirectories => ["lists"];
+
+    public string? GetStorageDirectory(string listId) => _lists.ContainsKey(listId) ? "lists" : null;
 
     public string? GetLocation(string listId) => null;
 
-    public void Save(TaskListDefinition list, TaskListScope scope, string? originalId = null)
+    public void Save(TaskListDefinition list, string storageDirectory, string? originalId = null)
     {
         _lists.Remove(originalId ?? list.Id);
         _lists[list.Id] = list;

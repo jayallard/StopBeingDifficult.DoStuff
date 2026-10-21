@@ -1,0 +1,18 @@
+<div class="flex justify-end px-6 pt-3">
+    @if (IsElevated)
+    {
+        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700"
+              title="This app is running with administrator rights.">
+            <span class="h-2.5 w-2.5 rounded-full bg-emerald-600"></span>
+            Elevated
+        </span>
+    }
+    else
+    {
+        <span class="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700"
+              title="Tasks that need administrator rights may fail. Restart the app as administrator to run them.">
+            <span class="h-2.5 w-2.5 rounded-full bg-amber-600"></span>
+            Not elevated
+        </span>
+    }
+</div>

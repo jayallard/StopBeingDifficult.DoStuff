@@ -141,3 +141,27 @@
   command: |-
     Import-Module Sbd.Iis
     Set-IisDefaultPermissions -Path $Path
+- id: start-iis
+  icon: iis
+  name: Start IIS
+  description: Starts IIS (the World Wide Web Publishing Service and the Windows Process Activation Service). Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Start-Iis
+- id: stop-iis
+  icon: iis
+  name: Stop IIS
+  description: Stops IIS and the Windows Process Activation Service. Succeeds if already stopped. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Stop-Iis
+- id: restart-iis
+  icon: iis
+  name: Restart IIS
+  description: Stops and then starts IIS, like iisreset. Requires running as Administrator.
+  type: powershell
+  command: |-
+    Import-Module Sbd.Iis
+    Restart-Iis

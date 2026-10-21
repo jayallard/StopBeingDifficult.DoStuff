@@ -42,6 +42,24 @@
   command: |-
     Import-Module Sbd.Git
     Copy-GitRepository -WorkDirectory $WorkDirectory -Repositories $Repositories -HistoryDays $HistoryDays
+- id: git-pull
+  icon: git
+  name: Git Pull
+  description: Runs git pull in each listed repository under the work directory. A repository that is missing or fails to pull is reported and the rest are still pulled; the task fails at the end if any failed.
+  type: powershell
+  parameters:
+    - name: WorkDirectory
+      description: The directory containing the cloned repositories.
+      required: true
+      canOverride: true
+    - name: Repositories
+      type: multilineText
+      description: The repositories to pull, one URL per line. Blank lines and lines starting with # are ignored.
+      required: true
+      canOverride: true
+  command: |-
+    Import-Module Sbd.Git
+    Update-GitRepository -WorkDirectory $WorkDirectory -Repositories $Repositories
 - id: enable-git-long-paths
   icon: git
   name: Enable Git Long Paths

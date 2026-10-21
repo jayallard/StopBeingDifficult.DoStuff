@@ -13,7 +13,7 @@ public class YamlTaskListRepositorySaveTests : IDisposable
     private YamlTaskListRepository CreateRepository() => new(
         [PublicDir, PrivateDir],
         NullLogger<YamlTaskListRepository>.Instance,
-        new TaskListStorageOptions(PublicDir, PrivateDir));
+        [PublicDir, PrivateDir]);
 
     private static TaskListDefinition List(string id, string name = "Name") => new(
         id, name, "desc",
@@ -25,11 +25,11 @@ public class YamlTaskListRepositorySaveTests : IDisposable
     {
         var repository = CreateRepository();
 
-        repository.Save(List("mine"), TaskListScope.Private);
+        repository.Save(List("mine"), PrivateDir);
 
         File.Exists(Path.Combine(PrivateDir, "mine.yaml")).ShouldBeTrue();
         var reloaded = CreateRepository();
-        reloaded.GetScope("mine").ShouldBe(TaskListScope.Private);
+        reloaded.GetStorageDirectory("mine").ShouldBe(PrivateDir);
         var list = reloaded.Find("mine")!;
         list.Entries.Count.ShouldBe(2);
         list.Entries[0].Categories.ShouldBe(["a.b", "c"]);
@@ -40,10 +40,10 @@ public class YamlTaskListRepositorySaveTests : IDisposable
     [Fact]
     public void Save_NewPublic_WritesIntoPublicDirectory()
     {
-        CreateRepository().Save(List("shared"), TaskListScope.Public);
+        CreateRepository().Save(List("shared"), PublicDir);
 
         File.Exists(Path.Combine(PublicDir, "shared.yaml")).ShouldBeTrue();
-        CreateRepository().GetScope("shared").ShouldBe(TaskListScope.Public);
+        CreateRepository().GetStorageDirectory("shared").ShouldBe(PublicDir);
     }
 
     [Fact]
@@ -53,32 +53,32 @@ public class YamlTaskListRepositorySaveTests : IDisposable
         File.WriteAllText(Path.Combine(PublicDir, "oddly-named.yaml"), "id: x\nname: X\nentries: []\n");
         var repository = CreateRepository();
 
-        repository.Save(List("x", "Renamed"), TaskListScope.Public, originalId: "x");
+        repository.Save(List("x", "Renamed"), PublicDir, originalId: "x");
 
         Directory.GetFiles(PublicDir).Length.ShouldBe(1);
         CreateRepository().Find("x")!.Name.ShouldBe("Renamed");
     }
 
     [Fact]
-    public void Save_ChangingScope_MovesFile()
+    public void Save_ChangingStorageDirectory_MovesFile()
     {
         var repository = CreateRepository();
-        repository.Save(List("moving"), TaskListScope.Private);
+        repository.Save(List("moving"), PrivateDir);
 
-        repository.Save(List("moving"), TaskListScope.Public, originalId: "moving");
+        repository.Save(List("moving"), PublicDir, originalId: "moving");
 
         File.Exists(Path.Combine(PrivateDir, "moving.yaml")).ShouldBeFalse();
         File.Exists(Path.Combine(PublicDir, "moving.yaml")).ShouldBeTrue();
-        repository.GetScope("moving").ShouldBe(TaskListScope.Public);
+        repository.GetStorageDirectory("moving").ShouldBe(PublicDir);
     }
 
     [Fact]
     public void Save_ChangingId_RenamesFile()
     {
         var repository = CreateRepository();
-        repository.Save(List("old"), TaskListScope.Private);
+        repository.Save(List("old"), PrivateDir);
 
-        repository.Save(List("new"), TaskListScope.Private, originalId: "old");
+        repository.Save(List("new"), PrivateDir, originalId: "old");
 
         repository.Find("old").ShouldBeNull();
         repository.Find("new").ShouldNotBeNull();
@@ -90,22 +90,29 @@ public class YamlTaskListRepositorySaveTests : IDisposable
     public void Save_DuplicateIdForNewList_Throws()
     {
         var repository = CreateRepository();
-        repository.Save(List("dup"), TaskListScope.Private);
+        repository.Save(List("dup"), PrivateDir);
 
-        Should.Throw<InvalidOperationException>(() => repository.Save(List("dup"), TaskListScope.Public));
+        Should.Throw<InvalidOperationException>(() => repository.Save(List("dup"), PublicDir));
+    }
+
+    [Fact]
+    public void Save_UnconfiguredDirectory_Throws()
+    {
+        Should.Throw<InvalidOperationException>(
+            () => CreateRepository().Save(List("stray"), Path.Combine(_root, "elsewhere")));
     }
 
     [Fact]
     public void Save_InvalidId_Throws()
     {
-        Should.Throw<ArgumentException>(() => CreateRepository().Save(List("../evil"), TaskListScope.Private));
+        Should.Throw<ArgumentException>(() => CreateRepository().Save(List("../evil"), PrivateDir));
     }
 
     [Fact]
     public void Delete_RemovesListAndFile()
     {
         var repository = CreateRepository();
-        repository.Save(List("gone"), TaskListScope.Private);
+        repository.Save(List("gone"), PrivateDir);
 
         repository.Delete("gone");
 

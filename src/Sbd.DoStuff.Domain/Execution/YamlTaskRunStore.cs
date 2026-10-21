@@ -78,9 +78,25 @@ internal sealed class YamlTaskRunStore : ITaskRunStore
         }
 
         var records = Deserializer.Deserialize<List<TaskRunRecord>>(yaml) ?? [];
+        var interrupted = false;
         foreach (var record in records)
         {
-            _runs[record.RunId] = record.ToTaskRun();
+            var run = record.ToTaskRun();
+            _runs[record.RunId] = run;
+
+            // Runs execute in-process, so nothing saved as Pending/Running can still be driven after a restart.
+            if (run.Status is TaskRunStatus.Pending or TaskRunStatus.Running)
+            {
+                run.Status = TaskRunStatus.Failed;
+                run.CompletedAt = DateTimeOffset.UtcNow;
+                run.ErrorMessage = "Interrupted: the app stopped while this run was in progress.";
+                interrupted = true;
+            }
+        }
+
+        if (interrupted)
+        {
+            Save();
         }
     }
 

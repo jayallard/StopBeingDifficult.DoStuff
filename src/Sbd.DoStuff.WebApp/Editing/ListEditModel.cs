@@ -8,15 +8,16 @@ public sealed class ListEditModel
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public string? Description { get; set; }
-    public TaskListScope Scope { get; set; } = TaskListScope.Private;
+    /// <summary>The task list folder the list is saved into; empty until chosen.</summary>
+    public string StorageDirectory { get; set; } = "";
     public List<EntryEditModel> Entries { get; } = [];
 
     /// <summary>Categories created in the editor that don't hold any entry yet (so there is somewhere to drop into). Not persisted.</summary>
     public SortedSet<string> EmptyCategories { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public static ListEditModel From(TaskListDefinition list, TaskListScope scope)
+    public static ListEditModel From(TaskListDefinition list, string storageDirectory)
     {
-        var model = new ListEditModel { Id = list.Id, Name = list.Name, Description = list.Description, Scope = scope };
+        var model = new ListEditModel { Id = list.Id, Name = list.Name, Description = list.Description, StorageDirectory = storageDirectory };
         foreach (var entry in list.Entries)
         {
             model.Entries.Add(new EntryEditModel(entry.TaskId, entry.Categories, entry.ParameterValues, entry.Notes, entry.Name, entry.DisabledReason) { Icon = entry.Icon });

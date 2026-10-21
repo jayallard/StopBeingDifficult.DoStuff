@@ -862,16 +862,22 @@ function Publish-DacPac {
     Publishes a .dacpac to a SQL Server database with SqlPackage, using a publish profile (.publish.xml).
     .DESCRIPTION
     Runs `sqlpackage /Action:Publish` with the .dacpac as the source and the publish profile for the
-    deployment options (drop objects not in source, block on data loss, SQLCMD variables, ...). The target
-    comes from the connection string named by ConnectionStringSetting (read from the environment variable
-    of the same name, ':' as '__'); TargetDatabaseName, if given, overrides the database in it. SqlCmdVariables
+    deployment options (drop objects not in source, block on data loss, SQLCMD variables, ...). If
+    ConnectionStringSetting is given, the server and login come from the connection string it names (read from
+    the environment variable of the same name, ':' as '__') and the profile's own TargetConnectionString is
+    ignored. The database is the profile's TargetDatabaseName, or TargetDatabaseName if given (which overrides
+    it), or the connection string's own database if neither names one. (SqlPackage rejects a connection string
+    combined with other target arguments such as /TargetTimeout or /TargetDatabaseName, so the module passes the
+    timeout as the CommandTimeout deployment property and puts the database into the connection string.) If
+    ConnectionStringSetting is omitted, the target is whatever the profile names (so it must hold a working
+    connection string), and TargetDatabaseName, if given, overrides the profile's database. SqlCmdVariables
     are NAME=VALUE entries separated by commas or new lines and override the profile's variable values.
     With -ScriptOnly nothing is changed: the deployment script is generated and printed instead.
     Sets $LASTEXITCODE to SqlPackage's exit code (0 = success), or 1 if it couldn't be started.
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string]$ConnectionStringSetting,
+        [string]$ConnectionStringSetting,
         [Parameter(Mandatory)][string]$DacPacPath,
         [Parameter(Mandatory)][string]$PublishProfilePath,
         [string]$TargetDatabaseName,
@@ -882,10 +888,13 @@ function Publish-DacPac {
 
     $global:LASTEXITCODE = 1
 
-    $connectionString = Get-SqlConnectionString -Setting $ConnectionStringSetting
-    if (-not $connectionString) {
-        Write-Output (Get-MissingConnectionStringMessage -Setting $ConnectionStringSetting)
-        return
+    $connectionString = $null
+    if ($ConnectionStringSetting) {
+        $connectionString = Get-SqlConnectionString -Setting $ConnectionStringSetting
+        if (-not $connectionString) {
+            Write-Output (Get-MissingConnectionStringMessage -Setting $ConnectionStringSetting)
+            return
+        }
     }
 
     foreach ($file in @(@('DacPac', $DacPacPath), @('Publish profile', $PublishProfilePath))) {
@@ -911,15 +920,42 @@ function Publish-DacPac {
         }
     }
 
+    # With /TargetConnectionString on the command line, SqlPackage still takes the profile's deployment
+    # options and (when the connection string has no database of its own) its TargetDatabaseName, but it
+    # rejects any other target argument, /TargetTimeout and /TargetDatabaseName included. So the timeout
+    # goes in as the CommandTimeout deployment property, and the database goes into the connection string:
+    # the TargetDatabaseName parameter if given, else the profile's TargetDatabaseName (so a database in the
+    # configured connection string doesn't win over the one the profile intends).
+    $databaseName = $TargetDatabaseName
+    if ($connectionString) {
+        try {
+            if (-not $databaseName) {
+                $xml = New-Object System.Xml.XmlDocument
+                $xml.Load($profilePath)
+                $profileDatabase = $xml.SelectSingleNode("//*[local-name()='TargetDatabaseName']")
+                if ($profileDatabase -and $profileDatabase.InnerText.Trim()) { $databaseName = $profileDatabase.InnerText.Trim() }
+            }
+            if ($databaseName) {
+                $builder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder $connectionString
+                $builder['Initial Catalog'] = $databaseName
+                $connectionString = $builder.ConnectionString
+            }
+        }
+        catch {
+            Write-Output "!Could not prepare the connection string or read publish profile '$profilePath': $($_.Exception.Message)"
+            return
+        }
+    }
+
     $action = if ($ScriptOnly) { 'Script' } else { 'Publish' }
     $arguments = @(
         "/Action:$action",
         "/SourceFile:$dacPac",
         "/Profile:$profilePath",
-        "/TargetConnectionString:$connectionString",
-        "/TargetTimeout:$CommandTimeout"
+        "/p:CommandTimeout=$CommandTimeout"
     )
-    if ($TargetDatabaseName) { $arguments += "/TargetDatabaseName:$TargetDatabaseName" }
+    if ($connectionString) { $arguments += "/TargetConnectionString:$connectionString" }
+    elseif ($TargetDatabaseName) { $arguments += "/TargetDatabaseName:$TargetDatabaseName" }
     foreach ($variable in $variables) { $arguments += "/Variables:$variable" }
 
     $scriptFile = $null
@@ -931,7 +967,9 @@ function Publish-DacPac {
     Write-Output ":SqlPackage: $sqlPackage"
     Write-Output ":DacPac: $dacPac"
     Write-Output ":Publish profile: $profilePath"
-    if ($TargetDatabaseName) { Write-Output ":Target database: $TargetDatabaseName" }
+    if ($connectionString) { Write-Output ':Server and login come from the configured connection string; the publish profile''s own connection string is ignored.' }
+    else { Write-Output ':No connection string setting given; the target comes from the publish profile.' }
+    if ($databaseName) { Write-Output ":Target database: $databaseName$(if ($TargetDatabaseName) { ' (override)' } elseif ($connectionString) { ' (from the publish profile)' })" }
     foreach ($variable in $variables) { Write-Output ":SQLCMD variable: $variable" }
     if ($ScriptOnly) { Write-Output ':Script only: generating the deployment script, nothing will be changed.' }
 

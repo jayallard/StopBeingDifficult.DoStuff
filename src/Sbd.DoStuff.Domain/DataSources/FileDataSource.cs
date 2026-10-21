@@ -45,8 +45,7 @@ internal sealed class FileDataSource(string directory, ITaskLibrary library, ITa
                     Path.GetRelativePath(listsRoot, location),
                     location,
                     [list.Id],
-                    SizeOf(location),
-                    lists.GetScope(list.Id)?.ToString()));
+                    SizeOf(location)));
             }
         }
 

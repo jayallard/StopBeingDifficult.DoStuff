@@ -146,6 +146,12 @@ entries:
     parameterValues:
       WorkDirectory: 'C:\temp\sbd-dostuff-demo\repos'
       Repositories: 'https://github.com/octocat/Hello-World.git'
+  - taskId: git-pull
+    categories:
+      - demo.git
+    parameterValues:
+      WorkDirectory: 'C:\temp\sbd-dostuff-demo\repos'
+      Repositories: 'https://github.com/octocat/Hello-World.git'
   - taskId: execute-sql-script
     categories:
       - demo.sql
@@ -293,6 +299,15 @@ entries:
     categories:
       - prerequisites.python
   - taskId: set-iis-default-permissions
+    categories:
+      - prerequisites.iis
+  - taskId: start-iis
+    categories:
+      - prerequisites.iis
+  - taskId: stop-iis
+    categories:
+      - prerequisites.iis
+  - taskId: restart-iis
     categories:
       - prerequisites.iis
   - taskId: podman-compose-up
