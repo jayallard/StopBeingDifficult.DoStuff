@@ -10,7 +10,7 @@ public partial class ConvertList
     private string _libraryId = "";
     private IReadOnlyList<EntryConversion>? _plan;
     private readonly HashSet<int> _selected = [];
-    private (IReadOnlyList<TaskLibraryGroup> System, IReadOnlyList<TaskLibraryGroup> SameFolder) _eligible = ([], []);
+    private IReadOnlyList<TaskLibraryGroup> _eligible = [];
     private string? _message;
     private string? _error;
 
@@ -18,8 +18,8 @@ public partial class ConvertList
     {
         _listId = (string?)e.Value ?? "";
         _message = null;
-        _eligible = ListRepository.Find(_listId) is null ? ([], []) : Converter.EligibleLibraries(_listId);
-        if (!_eligible.System.Concat(_eligible.SameFolder).Any(g => g.Id == _libraryId))
+        _eligible = ListRepository.Find(_listId) is null ? [] : Converter.EligibleLibraries(_listId);
+        if (!_eligible.Any(g => g.Id == _libraryId))
         {
             _libraryId = "";
         }
@@ -81,7 +81,7 @@ public partial class ConvertList
     private static string? StatusNote(EntryConversion row) => row.Status switch
     {
         EntryConversionStatus.InTargetLibrary => "already in this library",
-        EntryConversionStatus.PlainReference => "already a shared definition",
+        EntryConversionStatus.PlainReference => "plain reference, nothing to convert",
         EntryConversionStatus.OutsideSharedFolders => "from another data folder; can't be shared into this library",
         EntryConversionStatus.UnknownTask => "unknown task",
         _ => null,

@@ -1,5 +1,5 @@
 @using Sbd.DoStuff.WebApp.Services
-@inject IFilePicker FilePicker
+@inject IFileSystemBrowser FileSystem
 
 <div class="flex items-stretch gap-2">
     <input type="text"
@@ -8,18 +8,54 @@
            disabled="@Disabled"
            readonly="@Disabled"
            @onchange="OnTyped"/>
-    @if (FilePicker.IsSupported && !Disabled)
+    @if (!Disabled)
     {
         <button type="button"
-                class="mt-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-600 hover:border-slate-400 disabled:opacity-50"
-                disabled="@_browsing"
-                title="Choose a file on this machine"
-                @onclick="Browse">
-            @(_browsing ? "Choosing…" : "Browse…")
+                class="mt-1 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-600 hover:border-slate-400"
+                title="Browse files on this machine"
+                @onclick="ToggleBrowser">
+            Browse…
         </button>
     }
 </div>
-@if (_error is not null)
+@if (_listing is not null)
 {
-    <p class="mt-1 text-xs text-red-600">@_error</p>
+    <div class="mt-1 rounded-md border border-slate-300 bg-white text-sm shadow-sm">
+        <div class="flex items-center gap-2 border-b border-slate-200 px-2 py-1">
+            <button type="button"
+                    class="rounded px-2 py-0.5 text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                    disabled="@(_listing.Parent is null)"
+                    title="Up one level"
+                    @onclick="GoUp">↑ Up</button>
+            <span class="min-w-0 flex-1 truncate font-mono text-xs text-slate-600" title="@_listing.Path">
+                @(_listing.Path.Length == 0 ? "Drives" : _listing.Path)
+            </span>
+            <button type="button"
+                    class="rounded px-2 py-0.5 text-slate-500 hover:bg-slate-100"
+                    title="Close"
+                    @onclick="Close">✕</button>
+        </div>
+        @if (_listing.Error is not null)
+        {
+            <p class="px-2 py-1 text-xs text-red-600">@_listing.Error</p>
+        }
+        <ul class="max-h-64 overflow-y-auto">
+            @foreach (var item in _listing.Items)
+            {
+                var captured = item;
+                <li>
+                    <button type="button"
+                            class="flex w-full items-center gap-2 px-2 py-1 text-left hover:bg-slate-100"
+                            @onclick="() => Select(captured)">
+                        <span aria-hidden="true">@(captured.IsDirectory ? "📁" : "📄")</span>
+                        <span class="truncate">@captured.Name</span>
+                    </button>
+                </li>
+            }
+            @if (_listing.Items.Count == 0 && _listing.Error is null)
+            {
+                <li class="px-2 py-1 text-xs text-slate-500">Empty folder</li>
+            }
+        </ul>
+    </div>
 }

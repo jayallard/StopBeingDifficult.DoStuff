@@ -46,12 +46,36 @@ public partial class TaskRunView
         }
     }
 
-    protected override void OnInitialized()
+    protected override void OnInitialized() => Engine.RunChanged += OnRunChanged;
+
+    // Also runs when a rerun navigates to the new run's URL, which reuses this component instance.
+    protected override void OnParametersSet()
     {
         _run = RunStore.Get(RunId);
         _entry = FindEntry();
-        Engine.RunChanged += OnRunChanged;
+        _rerunError = null;
         UpdateTicker();
+    }
+
+    private string? _rerunError;
+
+    private void Rerun()
+    {
+        if (_entry is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var task = TaskFactory.Create(_entry.Definition, _entry.ParameterValues);
+            var run = Engine.StartRun(task, _run!.ListId, TaskRunKey.For(_entry.Definition.Id, _entry.ParameterValues));
+            Navigation.NavigateTo($"lists/{run.ListId}/tasks/{TaskId}/runs/{run.RunId}");
+        }
+        catch (Exception ex)
+        {
+            _rerunError = ex.Message;
+        }
     }
 
     // Re-renders once a second while the run is active so the Run Time counter advances;

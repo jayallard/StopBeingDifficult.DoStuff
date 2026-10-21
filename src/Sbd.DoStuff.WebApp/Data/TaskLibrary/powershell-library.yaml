@@ -74,3 +74,27 @@
     Set-Location -LiteralPath (Split-Path -Parent (Resolve-Path -LiteralPath $ScriptPath).ProviderPath)
     $scriptArguments = @($Arguments -split '\r?\n' | Where-Object { $_.Trim() })
     & $ScriptPath @scriptArguments
+- id: run-batch-file
+  icon: batch
+  name: Run Batch File
+  description: Runs a .bat or .cmd file via cmd.exe. The working directory is the file's folder, and its exit code becomes the task's result.
+  type: powershell
+  parameters:
+    - name: BatchPath
+      type: filePath
+      description: Full path to the .bat or .cmd file to run.
+      required: true
+      canOverride: true
+    - name: Arguments
+      type: multilineText
+      description: Optional arguments passed to the batch file, one per line. Blank lines are ignored.
+      defaultValue: ''
+      canOverride: true
+  command: |-
+    if (-not (Test-Path -LiteralPath $BatchPath -PathType Leaf)) {
+        Write-Error "Batch file not found: $BatchPath"
+        exit 2
+    }
+    Set-Location -LiteralPath (Split-Path -Parent (Resolve-Path -LiteralPath $BatchPath).ProviderPath)
+    $batchArguments = @($Arguments -split '\r?\n' | Where-Object { $_.Trim() })
+    & cmd.exe /c $BatchPath @batchArguments

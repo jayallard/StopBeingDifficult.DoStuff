@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <rect width="48" height="48" rx="10" fill="#000"/>
+  <rect x="1.5" y="1.5" width="45" height="45" rx="8.5" fill="none" stroke="#c0c0c0" stroke-width="3"/>
+  <text x="8" y="19" font-family="Consolas, 'Courier New', monospace" font-size="13" font-weight="700" fill="#c0c0c0" dominant-baseline="central">C:\&gt;</text>
+  <text x="8" y="35" font-family="Consolas, 'Courier New', monospace" font-size="13" font-weight="700" fill="#c0c0c0" dominant-baseline="central">.BAT</text>
+  <rect x="35" y="30" width="7" height="3.5" fill="#c0c0c0"/>
+</svg>

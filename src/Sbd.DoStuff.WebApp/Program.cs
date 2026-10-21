@@ -18,7 +18,7 @@ builder.Services.AddDoStuffDomain(builder.Configuration);
 builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.AppRestarter>();
 builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.PendingCommands>();
 builder.Services.AddHostedService(provider => provider.GetRequiredService<Sbd.DoStuff.WebApp.Services.PendingCommands>());
-builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.IFilePicker,Sbd.DoStuff.WebApp.Services.WindowsFilePicker>();
+builder.Services.AddSingleton<Sbd.DoStuff.WebApp.Services.IFileSystemBrowser,Sbd.DoStuff.WebApp.Services.FileSystemBrowser>();
 
 var app = builder.Build();
 

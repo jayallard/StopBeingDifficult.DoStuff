@@ -21,7 +21,7 @@
         Save in folder
         <select class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
                 @bind="_storageDirectory">
-            @foreach (var directory in Library.StorageDirectories)
+            @foreach (var directory in Library.StorageDirectories.Skip(1))
             {
                 <option value="@directory">@DirectoryLabel(directory)</option>
             }

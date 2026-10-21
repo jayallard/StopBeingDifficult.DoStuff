@@ -75,6 +75,7 @@ public class TaskListConverterTests
         lists.Find("list")!.Entries.Select(e => e.TaskId).ShouldBe(["delete-folder-2", "delete-folder-3"]);
     }
 
+    private static readonly string PrivateFolder = Path.Combine(Path.GetTempPath(), "private", "TaskLibrary");
     private static readonly string Folder = Path.Combine(Path.GetTempPath(), "sys", "TaskLibrary");
 
     [Fact]
@@ -115,11 +116,11 @@ public class TaskListConverterTests
         public IReadOnlyList<TaskDefinition> GetAll() => inner.GetAll().Concat(_added).ToList();
 
         public IReadOnlyList<TaskLibraryGroup> GetGroups() =>
-            [.. inner.GetGroups().Select(g => g with { Source = Path.Combine(Folder, "fake.yaml") }), new TaskLibraryGroup("target", "Target", _added.ToList(), Path.Combine(Folder, "target.yaml"))];
+            [.. inner.GetGroups().Select(g => g with { Source = Path.Combine(Folder, "fake.yaml") }), new TaskLibraryGroup("target", "Target", _added.ToList(), Path.Combine(PrivateFolder, "target.yaml"))];
 
         public TaskDefinition? Find(string taskId) => GetAll().FirstOrDefault(d => d.Id == taskId);
 
-        public IReadOnlyList<string> StorageDirectories => [Folder];
+        public IReadOnlyList<string> StorageDirectories => [Folder, PrivateFolder];
 
         public TaskLibraryGroup CreateGroup(string name, string storageDirectory) => inner.CreateGroup(name, storageDirectory);
 

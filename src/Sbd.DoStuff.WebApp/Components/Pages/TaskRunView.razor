@@ -4,6 +4,8 @@
 @inject ITaskExecutionEngine Engine
 @inject ITaskLibrary Library
 @inject ITaskListRepository ListRepository
+@inject ITaskFactory TaskFactory
+@inject NavigationManager Navigation
 
 <PageTitle>@DisplayName</PageTitle>
 
@@ -36,6 +38,22 @@ else
                         @onclick="Cancel">
                     Cancel
                 </button>
+            }
+            else if (!IsActive && _entry is not null)
+            {
+                <button type="button"
+                        title="Run again"
+                        aria-label="Run again"
+                        class="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-600 text-white transition hover:bg-emerald-500"
+                        @onclick="Rerun">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M5.6 15a8 8 0 0013.8 2M18.4 9A8 8 0 004.6 7"/>
+                    </svg>
+                </button>
+            }
+            @if (_rerunError is not null)
+            {
+                <p class="text-sm text-red-600">@_rerunError</p>
             }
         </div>
     </div>

@@ -28,23 +28,9 @@
         <select value="@_libraryId" @onchange="OnLibraryChanged"
                 class="mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
             <option value="">Choose a library&hellip;</option>
-            @if (_eligible.System.Count > 0)
+            @foreach (var group in _eligible)
             {
-                <optgroup label="System">
-                    @foreach (var group in _eligible.System)
-                    {
-                        <option value="@group.Id">@group.Name</option>
-                    }
-                </optgroup>
-            }
-            @if (_eligible.SameFolder.Count > 0)
-            {
-                <optgroup label="Other (this list's folder)">
-                    @foreach (var group in _eligible.SameFolder)
-                    {
-                        <option value="@group.Id">@group.Name</option>
-                    }
-                </optgroup>
+                <option value="@group.Id">@group.Name</option>
             }
         </select>
     </label>

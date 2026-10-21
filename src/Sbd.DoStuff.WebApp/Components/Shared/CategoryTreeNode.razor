@@ -100,11 +100,20 @@ else
                             </button>
                         }
                         <button type="button"
-                                class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300"
+                                class="@(PlayButtonClass + " bg-emerald-600 text-white hover:bg-emerald-500")"
                                 disabled="@task.IsDisabled"
-                                title="@task.DisabledReason"
-                                @onclick="() => Run(task)">
-                            Run
+                                title="@(task.IsDisabled ? task.DisabledReason : "Run and show output")"
+                                aria-label="Run and show output"
+                                @onclick="() => Run(task, true)">
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4" aria-hidden="true"><path d="M6 4l10 6-10 6z"/></svg>
+                        </button>
+                        <button type="button"
+                                class="@(PlayButtonClass + " border border-emerald-600 bg-white text-emerald-600 hover:bg-emerald-50")"
+                                disabled="@task.IsDisabled"
+                                title="@(task.IsDisabled ? task.DisabledReason : "Run in the background")"
+                                aria-label="Run in the background"
+                                @onclick="() => Run(task, false)">
+                            <svg viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4" aria-hidden="true"><path d="M6 4l10 6-10 6z"/></svg>
                         </button>
                     </div>
                 </div>

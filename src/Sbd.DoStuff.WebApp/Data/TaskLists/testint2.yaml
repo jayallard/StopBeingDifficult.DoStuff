@@ -51,6 +51,13 @@ entries:
       Arguments: |-
         Jay
         Claude
+  - taskId: run-batch-file
+    categories:
+      - demo.powershell
+    parameterValues:
+      BatchPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Assets\Demo\hello.bat'
+      Arguments: |-
+        Jay
   - taskId: is-vscode-installed
     categories:
       - prerequisites.vscode

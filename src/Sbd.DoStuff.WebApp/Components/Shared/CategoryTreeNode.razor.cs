@@ -49,7 +49,10 @@ public partial class CategoryTreeNode : IDisposable
         }
     }
 
-    private void Run(TaskListEntryView view)
+    private const string PlayButtonClass = "flex h-8 w-8 items-center justify-center rounded-md transition disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-300 disabled:text-white disabled:hover:bg-slate-300";
+
+    // showOutput navigates to the run page; otherwise the run just starts and the user stays on the list.
+    private void Run(TaskListEntryView view, bool showOutput)
     {
         _runErrors.Remove(view.Definition.Id);
 
@@ -62,7 +65,10 @@ public partial class CategoryTreeNode : IDisposable
         {
             var task = TaskFactory.Create(view.Definition, view.ParameterValues);
             var run = Engine.StartRun(task, ListId, KeyOf(view));
-            Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+            if (showOutput)
+            {
+                Navigation.NavigateTo($"lists/{ListId}/tasks/{view.Definition.Id}/runs/{run.RunId}");
+            }
         }
         catch (Exception ex)
         {
@@ -180,6 +186,11 @@ public partial class CategoryTreeNode : IDisposable
         if (view.IsDisabled)
         {
             return $"{baseClass} border-slate-200 bg-slate-50 opacity-60";
+        }
+
+        if (_lastRuns.TryGetValue(KeyOf(view), out var running) && running.Status is TaskRunStatus.Pending or TaskRunStatus.Running)
+        {
+            return $"{baseClass} animate-pulse border-amber-300 bg-amber-50 hover:border-amber-400";
         }
 
         if (!_lastRuns.TryGetValue(KeyOf(view), out var lastRun) || lastRun.Status != TaskRunStatus.Succeeded && lastRun.Status != TaskRunStatus.Failed)

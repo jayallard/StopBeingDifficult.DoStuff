@@ -10,7 +10,7 @@ public partial class LibraryNew
     private string? _error;
 
     protected override void OnInitialized() =>
-        _storageDirectory = Library.StorageDirectories.FirstOrDefault() ?? "";
+        _storageDirectory = Library.StorageDirectories.Skip(1).FirstOrDefault() ?? "";
 
     // A task library folder's parent is the configured data directory, which is what the user recognises.
     private static string DirectoryLabel(string storageDirectory) =>

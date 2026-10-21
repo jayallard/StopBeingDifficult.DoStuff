@@ -173,6 +173,21 @@ function Find-Devenv {
     return $null
 }
 
+function Invoke-WithVsEnvironment {
+    # The host app runs under the dotnet SDK, whose MSBuild/SDK-resolver variables leak into children and
+    # point Visual Studio's MSBuild/devenv at the wrong runtime ("the .NET Runtime Task Host could not be
+    # found"). Hide them for the duration of the call.
+    param([scriptblock]$Script)
+
+    $saved = @{}
+    foreach ($item in Get-ChildItem Env: | Where-Object { $_.Name -match '^(MSBUILD|DOTNET_MSBUILD_SDK_RESOLVER_|DOTNET_HOST_PATH)' }) {
+        $saved[$item.Name] = $item.Value
+        Remove-Item "Env:$($item.Name)"
+    }
+    try { & $Script }
+    finally { foreach ($name in $saved.Keys) { Set-Item "Env:$name" $saved[$name] } }
+}
+
 function Build-DotnetSolution {
     <#
     .SYNOPSIS
@@ -220,9 +235,28 @@ function Build-DotnetSolution {
             return
         }
 
+        # Headless, devenv's own NuGet restore fails ("The IErrorList service is unavailable") because it
+        # needs the IDE's UI services. Restore beforehand: nuget.exe handles packages.config projects
+        # (which MSBuild's restore ignores); otherwise MSBuild's restore covers PackageReference.
+        $nuget = Get-Command nuget.exe -ErrorAction SilentlyContinue
+        if ($nuget) {
+            Write-Output ":Restoring NuGet packages with $($nuget.Source)"
+            & $nuget.Source restore $SolutionPath -NonInteractive
+        } else {
+            $msbuild = Find-MsBuild
+            if ($msbuild) {
+                Write-Output ":Restoring NuGet packages with MSBuild: $msbuild"
+                Invoke-WithVsEnvironment { & $msbuild $SolutionPath /t:Restore /nologo /verbosity:minimal }
+            }
+        }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Output "!NuGet restore failed (exit code $LASTEXITCODE)."
+            return
+        }
+
         # devenv has no errors-only logger, so -SuppressWarnings has no effect here.
         Write-Output ":Building $SolutionPath ($Configuration) with Visual Studio: $devenv"
-        & $devenv $SolutionPath /Build $Configuration
+        Invoke-WithVsEnvironment { & $devenv $SolutionPath /Build $Configuration }
     } elseif ($BuildTool -eq 'msbuild') {
         $msbuild = Find-MsBuild
         if (-not $msbuild) {
@@ -232,7 +266,7 @@ function Build-DotnetSolution {
         }
 
         Write-Output ":Building $SolutionPath ($Configuration) with MSBuild: $msbuild"
-        & $msbuild $SolutionPath /restore /p:Configuration=$Configuration /nologo /verbosity:minimal @loggerArgs @extraArgs
+        Invoke-WithVsEnvironment { & $msbuild $SolutionPath /restore /p:Configuration=$Configuration /nologo /verbosity:minimal @loggerArgs @extraArgs }
     } else {
         if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { Update-SessionPath }
         if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {

@@ -3,7 +3,7 @@ using Sbd.DoStuff.WebApp.Services;
 
 namespace Sbd.DoStuff.WebApp.Components.Shared;
 
-/// <summary>A text box for a file path, with an optional Browse button that opens a native file dialog.</summary>
+/// <summary>A text box for a file path, with a Browse button that navigates the server's file system.</summary>
 public partial class FilePathInput
 {
     [Parameter] public string Value { get; set; } = "";
@@ -11,30 +11,31 @@ public partial class FilePathInput
     [Parameter] public string InputClass { get; set; } = "";
     [Parameter] public bool Disabled { get; set; }
 
-    private bool _browsing;
-    private string? _error;
+    private DirectoryListing? _listing;
 
     private Task OnTyped(ChangeEventArgs e) => ValueChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty);
 
-    private async Task Browse()
+    private void ToggleBrowser() => _listing = _listing is null ? FileSystem.List(Value) : null;
+
+    private void Close() => _listing = null;
+
+    private void GoUp()
     {
-        _error = null;
-        _browsing = true;
-        try
+        if (_listing?.Parent is { } parent)
         {
-            var path = await FilePicker.PickFileAsync(Value);
-            if (path is not null)
-            {
-                await ValueChanged.InvokeAsync(path);
-            }
+            _listing = FileSystem.List(parent);
         }
-        catch (Exception ex)
+    }
+
+    private async Task Select(FileSystemItem item)
+    {
+        if (item.IsDirectory)
         {
-            _error = ex.Message;
+            _listing = FileSystem.List(item.FullPath);
+            return;
         }
-        finally
-        {
-            _browsing = false;
-        }
+
+        await ValueChanged.InvokeAsync(item.FullPath);
+        _listing = null;
     }
 }

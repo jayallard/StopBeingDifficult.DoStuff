@@ -47,22 +47,21 @@ public sealed partial class TaskListConverter(ITaskLibrary library, ITaskListRep
     private static partial Regex NonIdCharacters();
 
     /// <summary>
-    /// The libraries a list's tasks may be converted into: those in the system folder, and those in the
-    /// same data folder as the list itself (empty when the list is itself in the system folder).
+    /// The libraries a list's tasks may be converted into: those in the same data folder as the list itself,
+    /// never the system folder (which ships with the app and isn't edited). Empty when the list is in the
+    /// system folder.
     /// </summary>
-    public (IReadOnlyList<TaskLibraryGroup> System, IReadOnlyList<TaskLibraryGroup> SameFolder) EligibleLibraries(string listId)
+    public IReadOnlyList<TaskLibraryGroup> EligibleLibraries(string listId)
     {
-        var groups = library.GetGroups();
-        var systemRoot = library.StorageDirectories.Count > 0 ? DataFolderOf(library.StorageDirectories[0]) : null;
         var listStorage = lists.GetStorageDirectory(listId);
         var listRoot = listStorage is null ? null : DataFolderOf(listStorage);
-
-        var system = groups.Where(g => SameFolder(DataFolderOf(RootOf(g.Source)), systemRoot)).ToList();
-        var same = SameFolder(listRoot, systemRoot)
+        return IsSystemFolder(listRoot)
             ? []
-            : groups.Where(g => SameFolder(DataFolderOf(RootOf(g.Source)), listRoot)).ToList();
-        return (system, same);
+            : library.GetGroups().Where(g => SameFolder(DataFolderOf(RootOf(g.Source)), listRoot)).ToList();
     }
+
+    private bool IsSystemFolder(string? dataFolder) =>
+        library.StorageDirectories.Count > 0 && SameFolder(dataFolder, DataFolderOf(library.StorageDirectories[0]));
 
     // "<data folder>/TaskLibrary" or "<data folder>/TaskLists" -> "<data folder>".
     private static string? DataFolderOf(string? storageDirectory) =>
@@ -75,6 +74,11 @@ public sealed partial class TaskListConverter(ITaskLibrary library, ITaskListRep
     {
         var target = library.GetGroups().FirstOrDefault(g => g.Id == targetLibraryId)
             ?? throw new InvalidOperationException($"Unknown task library '{targetLibraryId}'.");
+        if (IsSystemFolder(DataFolderOf(RootOf(target.Source))))
+        {
+            throw new InvalidOperationException($"Task library '{targetLibraryId}' is a system library and can't be converted into.");
+        }
+
         var targetRoot = RootOf(target.Source);
         var systemRoot = library.StorageDirectories.Count > 0 ? Normalize(library.StorageDirectories[0]) : null;
         var rootById = library.GetGroups()
