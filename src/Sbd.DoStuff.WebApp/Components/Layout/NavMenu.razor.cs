@@ -21,8 +21,15 @@ public partial class NavMenu : IDisposable
     protected override void OnInitialized()
     {
         Navigation.LocationChanged += OnLocationChanged;
+        Favorites.Changed += OnFavoritesChanged;
         BuildOutline();
     }
+
+    private void OnFavoritesChanged() => InvokeAsync(StateHasChanged);
+
+    // Favorites whose list no longer exists are skipped.
+    private IEnumerable<TaskListDefinition> FavoriteListItems() =>
+        ListRepository.GetAll().Where(l => Favorites.IsFavorite(l.Id)).OrderBy(l => l.Name);
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
@@ -67,5 +74,9 @@ public partial class NavMenu : IDisposable
         _outlineRoot = CategoryTreeBuilder.Build(list.Entries, Library);
     }
 
-    public void Dispose() => Navigation.LocationChanged -= OnLocationChanged;
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+        Favorites.Changed -= OnFavoritesChanged;
+    }
 }

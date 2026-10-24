@@ -123,6 +123,19 @@ public class TaskFactoryTests
         task.Edition.ShouldBe(PowerShellEdition.Windows);
     }
 
+    [Theory]
+    [InlineData("PowerShell", PowerShellEdition.Core)]
+    [InlineData("Windows PowerShell", PowerShellEdition.Windows)]
+    public void TypeReferencingParameter_PicksEditionFromParameterValue(string shell, PowerShellEdition expected)
+    {
+        var factory = new TaskFactory();
+        var effective = Effective("npm run build", type: "{Shell}");
+
+        var task = (ShellCommandTask)factory.Create(effective, new Dictionary<string, string> { ["Shell"] = shell });
+
+        task.Edition.ShouldBe(expected);
+    }
+
     [Fact]
     public void PowerShellType_CreatesCoreEditionTask()
     {

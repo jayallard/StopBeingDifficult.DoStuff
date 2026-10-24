@@ -43,14 +43,6 @@ entries:
       Arguments: |-
         Jay
         Claude
-  - taskId: run-windows-powershell-script
-    categories:
-      - demo.powershell
-    parameterValues:
-      ScriptPath: 'D:\oss\StopBeingDifficult.DoStuff\src\Sbd.DoStuff.WebApp\Data\Assets\Demo\hello.ps1'
-      Arguments: |-
-        Jay
-        Claude
   - taskId: run-batch-file
     categories:
       - demo.powershell
@@ -210,6 +202,9 @@ entries:
     parameterValues:
       ConnectionStringSetting: ConnectionStrings:LocalSqlServer
   - taskId: list-dotnet-sdks
+    categories:
+      - prerequisites.dotnet
+  - taskId: install-dotnet-5
     categories:
       - prerequisites.dotnet
   - taskId: install-dotnet-8

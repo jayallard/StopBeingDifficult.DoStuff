@@ -9,6 +9,8 @@ namespace Sbd.DoStuff.Domain.Library;
 /// Type "powershell" runs in PowerShell 7+ (pwsh.exe); "windows-powershell" runs in Windows
 /// PowerShell 5.1 (powershell.exe), for tasks that depend on 5.1-only modules or behavior.
 /// Neither falls back to the other: running a task whose shell isn't installed fails.
+/// Type may reference a selectList parameter (e.g. "{Shell}" with options "PowerShell" and
+/// "Windows PowerShell") to let the user pick the shell per run.
 ///
 /// CanOverride lets any level of the BaseTaskId chain — base or derived — forbid a Task List
 /// entry from overriding a parameter's resolved value, by mapping the parameter name to

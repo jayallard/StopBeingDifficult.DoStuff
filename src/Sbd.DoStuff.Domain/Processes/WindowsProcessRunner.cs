@@ -51,6 +51,39 @@ internal sealed class WindowsProcessRunner(IEnumerable<string>? moduleDirectorie
         return (fileName, $"-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand {encodedCommand}");
     }
 
+    // An inherited PSModulePath usually comes from a PowerShell 7 session (the app is typically started
+    // from one) and lists PowerShell 7's module folders. Windows PowerShell 5.1 started with that value
+    // comes up without its Cert: drive (and other built-in providers), so the inherited value is dropped
+    // and 5.1's own defaults are used instead: the user's WindowsPowerShell folder plus the user- and
+    // machine-level PSModulePath settings from the environment.
+    protected override string? GetBaseModulePath(PowerShellEdition edition, string? inheritedModulePath)
+    {
+        if (edition != PowerShellEdition.Windows)
+        {
+            return inheritedModulePath;
+        }
+
+        var systemModules = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows), "System32", "WindowsPowerShell", "v1.0", "Modules");
+        var machineModulePath = Environment.GetEnvironmentVariable("PSModulePath", EnvironmentVariableTarget.Machine);
+        if (string.IsNullOrEmpty(machineModulePath))
+        {
+            machineModulePath = string.Join(
+                Path.PathSeparator,
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "WindowsPowerShell", "Modules"),
+                systemModules);
+        }
+
+        return string.Join(
+            Path.PathSeparator,
+            new[]
+            {
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "WindowsPowerShell", "Modules"),
+                Environment.GetEnvironmentVariable("PSModulePath", EnvironmentVariableTarget.User),
+                machineModulePath,
+            }.Where(path => !string.IsNullOrEmpty(path)));
+    }
+
     private static bool IsOnPath(string fileName)
     {
         var pathEnvironmentVariable = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;

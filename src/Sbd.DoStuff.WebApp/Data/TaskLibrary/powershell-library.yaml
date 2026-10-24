@@ -22,9 +22,17 @@
 - id: run-powershell-script
   icon: powershell
   name: Run PowerShell Script
-  description: Runs a PowerShell script file. The working directory is the script's folder, and its exit code becomes the task's result.
-  type: powershell
+  description: Runs a PowerShell script file, under PowerShell 7+ or Windows PowerShell 5.1 as selected. The working directory is the script's folder, and its exit code becomes the task's result.
+  type: '{Shell}'
   parameters:
+    - name: Shell
+      type: selectList
+      description: Which PowerShell runs the script. Fails if the selected one isn't installed.
+      options:
+        - PowerShell
+        - Windows PowerShell
+      defaultValue: PowerShell
+      canOverride: true
     - name: ScriptPath
       type: filePath
       description: Full path to the .ps1 file to run.
@@ -50,30 +58,6 @@
   type: windows-powershell
   command: |-
     Write-Output ":Windows PowerShell Version: $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
-- id: run-windows-powershell-script
-  icon: powershell
-  name: Run Windows PowerShell Script
-  description: Runs a PowerShell script file under Windows PowerShell 5.1. The working directory is the script's folder, and its exit code becomes the task's result.
-  type: windows-powershell
-  parameters:
-    - name: ScriptPath
-      type: filePath
-      description: Full path to the .ps1 file to run.
-      required: true
-      canOverride: true
-    - name: Arguments
-      type: multilineText
-      description: Optional arguments passed to the script, one per line. Blank lines are ignored.
-      defaultValue: ''
-      canOverride: true
-  command: |-
-    if (-not (Test-Path -LiteralPath $ScriptPath -PathType Leaf)) {
-        Write-Error "Script not found: $ScriptPath"
-        exit 2
-    }
-    Set-Location -LiteralPath (Split-Path -Parent (Resolve-Path -LiteralPath $ScriptPath).ProviderPath)
-    $scriptArguments = @($Arguments -split '\r?\n' | Where-Object { $_.Trim() })
-    & $ScriptPath @scriptArguments
 - id: run-batch-file
   icon: batch
   name: Run Batch File

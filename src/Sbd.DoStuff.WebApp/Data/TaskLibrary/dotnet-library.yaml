@@ -18,6 +18,11 @@
   command: |-
     Import-Module Sbd.Dotnet
     Install-DotnetSdk -Major $Major
+- id: install-dotnet-5
+  name: Install .NET 5
+  baseTaskId: install-dotnet-sdk
+  parameterValues:
+    Major: 5
 - id: install-dotnet-8
   name: Install .NET 8
   baseTaskId: install-dotnet-sdk

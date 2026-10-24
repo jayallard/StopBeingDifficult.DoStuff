@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components;
 using Sbd.DoStuff.Domain.Execution;
 using Sbd.DoStuff.Domain.Library;
+using Sbd.DoStuff.Domain.Processes;
 
 namespace Sbd.DoStuff.WebApp.Components.Pages;
 
@@ -44,6 +45,11 @@ public partial class LibraryTask
             _loadError = ex.Message;
         }
     }
+
+    // The type can reference a parameter ("{Shell}"), so the edition follows the value currently selected.
+    private PowerShellEdition? SelectedEdition =>
+        PowerShellEditionNames.FromTypeName(ParameterTemplate.Substitute(
+            _effective!.Type, _effective.Parameters.ToDictionary(p => p.Name, CurrentValue)));
 
     protected override void OnInitialized() => Engine.RunChanged += OnRunChanged;
 

@@ -13,6 +13,10 @@ public abstract class ProcessRunnerBase(IEnumerable<string>? moduleDirectories =
 
     protected abstract (string FileName, string Arguments) BuildShellInvocation(string command, PowerShellEdition edition);
 
+    /// <summary>The <c>PSModulePath</c> the child starts from, before the module directories are prepended.</summary>
+    protected virtual string? GetBaseModulePath(PowerShellEdition edition, string? inheritedModulePath) =>
+        inheritedModulePath;
+
     public async Task<ProcessRunResult> RunAsync(
         ProcessRunRequest request,
         Action<TaskOutputLine> onOutputLine,
@@ -35,12 +39,21 @@ public abstract class ProcessRunnerBase(IEnumerable<string>? moduleDirectories =
             startInfo.WorkingDirectory = request.WorkingDirectory;
         }
 
-        if (_moduleDirectories.Count > 0)
+        startInfo.Environment.TryGetValue("PSModulePath", out var inheritedModulePath);
+        var baseModulePath = GetBaseModulePath(request.Edition, inheritedModulePath);
+        if (_moduleDirectories.Count > 0 || baseModulePath != inheritedModulePath)
         {
-            startInfo.Environment.TryGetValue("PSModulePath", out var existingModulePath);
-            startInfo.Environment["PSModulePath"] = string.Join(
+            var modulePath = string.Join(
                 Path.PathSeparator,
-                _moduleDirectories.Append(existingModulePath).Where(path => !string.IsNullOrEmpty(path)));
+                _moduleDirectories.Append(baseModulePath).Where(path => !string.IsNullOrEmpty(path)));
+            if (modulePath.Length > 0)
+            {
+                startInfo.Environment["PSModulePath"] = modulePath;
+            }
+            else
+            {
+                startInfo.Environment.Remove("PSModulePath");
+            }
         }
 
         if (request.EnvironmentVariables is not null)

@@ -6,13 +6,14 @@ namespace Sbd.DoStuff.Domain.Library;
 
 internal sealed class TaskFactory(IConfiguration? configuration = null) : ITaskFactory
 {
-    public ITask Create(EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> allParameterValues) =>
-        effective.Type switch
-        {
-            "powershell" => CreateShellCommandTask(effective, allParameterValues, PowerShellEdition.Core),
-            "windows-powershell" => CreateShellCommandTask(effective, allParameterValues, PowerShellEdition.Windows),
-            _ => throw new InvalidOperationException($"Unknown task type '{effective.Type}' for task '{effective.Id}'."),
-        };
+    // The type may reference a parameter ("{Shell}"), so one definition can offer a choice of shell.
+    public ITask Create(EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> allParameterValues)
+    {
+        var type = ParameterTemplate.Substitute(effective.Type, allParameterValues);
+        return PowerShellEditionNames.FromTypeName(type) is { } edition
+            ? CreateShellCommandTask(effective, allParameterValues, edition)
+            : throw new InvalidOperationException($"Unknown task type '{type}' for task '{effective.Id}'.");
+    }
 
     private ShellCommandTask CreateShellCommandTask(
         EffectiveTaskDefinition effective, IReadOnlyDictionary<string, string> values, PowerShellEdition edition)

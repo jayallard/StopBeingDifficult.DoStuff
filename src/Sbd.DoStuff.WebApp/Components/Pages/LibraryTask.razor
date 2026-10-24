@@ -1,4 +1,5 @@
 @page "/library/{LibraryId}/{TaskId}"
+@using Sbd.DoStuff.Domain.Processes
 @implements IDisposable
 @inject ITaskLibrary Library
 @inject ITaskFactory TaskFactory
@@ -16,7 +17,7 @@ else
     <h1 class="mb-1 text-2xl font-semibold text-slate-900">@_effective.Name</h1>
     <p class="mb-1 flex items-center gap-2 text-xs text-slate-400">
         @_effective.Id
-        @if (_effective.Type == "windows-powershell")
+        @if (SelectedEdition == PowerShellEdition.Windows)
         {
             <span class="rounded bg-amber-100 px-1.5 py-0.5 font-normal text-amber-700"
                   title="Runs in powershell.exe (Windows PowerShell 5.1); fails if it isn't installed">Windows PowerShell 5.1</span>
